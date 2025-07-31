@@ -8,6 +8,7 @@ export default async function HomePage() {
     redirect("/dashboard")
   } catch (error) {
     // If Supabase client creation fails, redirect to setup page
+    console.error("Failed to create server client on root page:", error) // Add this log for debugging
     redirect("/setup-required")
   }
 }

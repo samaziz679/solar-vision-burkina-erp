@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, ExternalLink } from "lucide-react"
+
 
 export default function SetupRequiredPage() {
   return (
@@ -8,7 +8,7 @@ export default function SetupRequiredPage() {
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+            
           </div>
           <CardTitle className="text-2xl font-bold text-red-600">Configuration Requise</CardTitle>
           <CardDescription>Les variables d'environnement Supabase sont manquantes</CardDescription>
@@ -37,7 +37,7 @@ export default function SetupRequiredPage() {
                     className="text-blue-600 hover:underline inline-flex items-center"
                   >
                     supabase.com/dashboard
-                    <ExternalLink className="w-3 h-3 ml-1" />
+                   
                   </a>{" "}
                   et créez un nouveau projet.
                 </p>

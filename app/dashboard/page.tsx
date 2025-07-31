@@ -1,7 +1,6 @@
 import { getCurrentUser, getUserRoles } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Package, ShoppingCart, AlertTriangle, DollarSign } from "lucide-react"
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
@@ -68,7 +67,7 @@ export default async function DashboardPage() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
                 <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                 
                 </div>
               </CardHeader>
               <CardContent>
@@ -121,7 +120,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-center py-8 text-gray-500">
-              <LayoutDashboard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              
               <p>Aucune activité récente</p>
               <p className="text-sm mt-1">Les actions apparaîtront ici</p>
             </div>

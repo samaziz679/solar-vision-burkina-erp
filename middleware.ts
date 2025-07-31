@@ -6,6 +6,11 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  // --- DEBUGGING LOGS ---
+  console.log("Middleware: NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl ? "Set" : "Not Set")
+  console.log("Middleware: NEXT_PUBLIC_SUPABASE_ANON_KEY:", supabaseAnonKey ? "Set" : "Not Set")
+  // --- END DEBUGGING LOGS ---
+
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Missing Supabase environment variables in middleware")
     // If we're missing env vars, redirect to a setup page or show error

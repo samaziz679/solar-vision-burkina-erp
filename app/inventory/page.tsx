@@ -1,7 +1,7 @@
 import { getProducts } from "@/lib/data/products"
 import ProductList from "@/components/inventory/product-list"
 import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
+
 import Link from "next/link"
 
 export default async function InventoryPage() {

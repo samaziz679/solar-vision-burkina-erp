@@ -7,9 +7,7 @@ export default function SetupRequiredPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            
-          </div>
+
           <CardTitle className="text-2xl font-bold text-red-600">Configuration Requise</CardTitle>
           <CardDescription>Les variables d'environnement Supabase sont manquantes</CardDescription>
         </CardHeader>

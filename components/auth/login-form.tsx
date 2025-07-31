@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
+import { Loader2 } from "lucide-react" // Keep Loader2 as it's used for the spinner
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
@@ -50,7 +50,7 @@ export default function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-            <Mail className="w-8 h-8 text-orange-600" />
+            {/* Removed Mail icon here */}
           </div>
           <CardTitle className="text-2xl font-bold">Solar Vision Burkina</CardTitle>
           <CardDescription>Système de gestion commerciale</CardDescription>
@@ -85,7 +85,7 @@ export default function LoginForm() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
-                  
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Envoi en cours...
                 </>
               ) : (

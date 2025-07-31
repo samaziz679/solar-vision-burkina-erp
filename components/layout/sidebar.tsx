@@ -5,18 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  TrendingUp,
-  CreditCard,
-  Banknote,
-  Users,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react"
+
 import type { UserRole } from "@/lib/supabase/types"
 
 interface SidebarProps {
@@ -133,7 +122,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                   `}
                   onClick={() => setIsOpen(false)}
                 >
-                  <Icon className="w-5 h-5" />
+                 <span>-</span>
                   <span>{item.title}</span>
                 </Link>
               )

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2 } from "lucide-react" // Keep Loader2 as it's used for the spinner
+// Removed: import { Loader2 } from 'lucide-react' // No more lucide-react imports
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
@@ -83,14 +83,10 @@ export default function LoginForm() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Envoi en cours...
-                </>
-              ) : (
-                "Envoyer le lien magique"
-              )}
+              {loading
+                ? // Replaced Loader2 with simple text
+                  "Envoi en cours..."
+                : "Envoyer le lien magique"}
             </Button>
           </form>
 

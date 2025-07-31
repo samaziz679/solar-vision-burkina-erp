@@ -13,7 +13,7 @@ export default async function InventoryPage() {
         <h1 className="text-3xl font-bold text-gray-900">Inventaire</h1>
         <Button asChild>
           <Link href="/inventory/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
+           
             Ajouter un produit
           </Link>
         </Button>

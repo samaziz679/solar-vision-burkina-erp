@@ -13,7 +13,7 @@ export default function SetupRequiredPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
+            
             <AlertDescription>
               Les variables d'environnement NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY sont requises pour
               faire fonctionner l'application.

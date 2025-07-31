@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Save } from "lucide-react"
+
 import { createProduct } from "@/app/inventory/actions" // Import the Server Action
 
 export default function ProductForm() {
@@ -129,12 +129,12 @@ export default function ProductForm() {
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+             
                 Ajout en cours...
               </>
             ) : (
               <>
-                <Save className="mr-2 h-4 w-4" />
+             
                 Ajouter le produit
               </>
             )}

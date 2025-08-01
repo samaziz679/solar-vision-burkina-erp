@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import Link from "next/link"
-// import { getSales } from "@/lib/data/sales" // Will be created later
-// import SalesList from "@/components/sales/sales-list" // Will be created later
+import { getSales } from "@/lib/data/sales" // Import the new data function
+import SalesList from "@/components/sales/sales-list" // Import the new component
 
 export default async function SalesPage() {
-  // const sales = await getSales() // Uncomment when getSales is implemented
+  const sales = await getSales() // Fetch sales data
 
   return (
     <div className="space-y-6">
@@ -18,12 +18,7 @@ export default async function SalesPage() {
           </Link>
         </Button>
       </div>
-      {/* <SalesList sales={sales} /> */} {/* Uncomment when SalesList is implemented */}
-      <div className="text-center py-8 text-gray-500">
-        <p>Liste des ventes à venir ici.</p>
-        <p className="text-sm mt-1">Cliquez sur "Enregistrer une vente" pour commencer.</p>
-      </div>
+      <SalesList sales={sales} /> {/* Pass sales data to SalesList */}
     </div>
   )
 }
-

@@ -9,19 +9,31 @@ import { Search, Package, AlertTriangle, Pencil } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import type { Product } from "@/lib/supabase/types"
+import DeleteProductDialog from "./delete-product-dialog" // Import the new component
 
 interface ProductListProps {
   products: Product[]
 }
 
-export default function ProductList({ products }: ProductListProps) {
+export default function ProductList({ products: initialProducts }: ProductListProps) {
+  // Rename prop to initialProducts
   const [searchTerm, setSearchTerm] = useState("")
+  const [products, setProducts] = useState(initialProducts) // Manage products state locally for immediate UI update
+
+  // Update products state when initialProducts prop changes (e.g., after revalidation)
+  useState(() => {
+    setProducts(initialProducts)
+  }, [initialProducts])
 
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.type?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const handleProductDelete = (deletedProductId: string) => {
+    setProducts((prevProducts) => prevProducts.filter((p) => p.id !== deletedProductId))
+  }
 
   return (
     <Card>
@@ -61,7 +73,7 @@ export default function ProductList({ products }: ProductListProps) {
                   <TableHead className="text-right">Prix Vente (D2)</TableHead>
                   <TableHead className="text-right">Prix Vente (Gros)</TableHead>
                   <TableHead className="text-center">Seuil Bas</TableHead>
-                  <TableHead className="text-center">Actions</TableHead> {/* This is the new column header */}
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -87,14 +99,18 @@ export default function ProductList({ products }: ProductListProps) {
                     </TableCell>
                     <TableCell className="text-right">{product.prix_vente_gros.toLocaleString("fr-FR")} FCFA</TableCell>
                     <TableCell className="text-center">{product.seuil_stock_bas}</TableCell>
-                    <TableCell className="text-center">
-                      {/* This is the new edit button */}
+                    <TableCell className="text-center flex items-center justify-center gap-1">
                       <Link href={`/inventory/${product.id}/edit`}>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Pencil className="h-4 w-4" />
                           <span className="sr-only">Modifier</span>
                         </Button>
                       </Link>
+                      <DeleteProductDialog
+                        productId={product.id}
+                        productName={product.name}
+                        onDeleteSuccess={() => handleProductDelete(product.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

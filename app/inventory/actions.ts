@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation" // Keep redirect for createProduct if it's still used that way
+import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/auth"
 import type { Database } from "@/lib/supabase/types"
@@ -44,13 +44,12 @@ export async function createProduct(prevState: any, formData: FormData) {
   }
 
   revalidatePath("/inventory")
-  redirect("/inventory") // This redirect is fine here as it's the final action for creation
+  redirect("/inventory")
 }
 
 export async function updateProduct(prevState: any, formData: FormData) {
   const user = await getCurrentUser()
   if (!user) {
-    // If user is not authenticated, redirect to login. This will stop the action.
     redirect("/login")
   }
 
@@ -81,10 +80,30 @@ export async function updateProduct(prevState: any, formData: FormData) {
 
   if (error) {
     console.error("Error updating product:", error.message)
-    return { success: false, error: "Failed to update product: " + error.message } // Return error state
+    return { success: false, error: "Failed to update product: " + error.message }
   }
 
-  revalidatePath("/inventory") // Revalidate the inventory page
-  revalidatePath(`/inventory/${id}/edit`) // Revalidate the specific edit page
-  return { success: true, message: "Product updated successfully!" } // Return success state
+  revalidatePath("/inventory")
+  revalidatePath(`/inventory/${id}/edit`)
+  return { success: true, message: "Product updated successfully!" }
+}
+
+export async function deleteProduct(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect("/login")
+  }
+
+  const id = formData.get("id") as string
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("products").delete().eq("id", id)
+
+  if (error) {
+    console.error("Error deleting product:", error.message)
+    return { success: false, error: "Failed to delete product: " + error.message }
+  }
+
+  revalidatePath("/inventory") // Revalidate the inventory page to reflect the deletion
+  return { success: true, message: "Product deleted successfully!" }
 }

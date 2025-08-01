@@ -92,4 +92,3 @@ export async function createSale(prevState: any, formData: FormData) {
   revalidatePath("/inventory") // Revalidate inventory list as stock changed
   return { success: true, message: "Vente enregistrée avec succès!" }
 }
-

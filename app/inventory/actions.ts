@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+import { redirect } from "next/navigation" // Keep redirect for createProduct if it's still used that way
 import { createServerClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/auth"
 import type { Database } from "@/lib/supabase/types"
@@ -9,7 +9,6 @@ import type { Database } from "@/lib/supabase/types"
 type ProductInsert = Database["public"]["Tables"]["products"]["Insert"]
 
 export async function createProduct(prevState: any, formData: FormData) {
-  // prevState added for useFormState
   const user = await getCurrentUser()
   if (!user) {
     redirect("/login")
@@ -41,9 +40,51 @@ export async function createProduct(prevState: any, formData: FormData) {
 
   if (error) {
     console.error("Error creating product:", error.message)
-    return { error: "Failed to create product: " + error.message } // Return error for useFormState
+    return { error: "Failed to create product: " + error.message }
   }
 
-  revalidatePath("/inventory") // Revalidate the inventory page to show the new product
-  redirect("/inventory") // Redirect back to the inventory list
+  revalidatePath("/inventory")
+  redirect("/inventory") // This redirect is fine here as it's the final action for creation
+}
+
+export async function updateProduct(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) {
+    // If user is not authenticated, redirect to login. This will stop the action.
+    redirect("/login")
+  }
+
+  const id = formData.get("id") as string
+  const name = formData.get("name") as string
+  const type = formData.get("type") as string
+  const quantity = Number.parseInt(formData.get("quantity") as string)
+  const prix_achat = Number.parseFloat(formData.get("prix_achat") as string)
+  const prix_vente_detail_1 = Number.parseFloat(formData.get("prix_vente_detail_1") as string)
+  const prix_vente_detail_2 = Number.parseFloat(formData.get("prix_vente_detail_2") as string)
+  const prix_vente_gros = Number.parseFloat(formData.get("prix_vente_gros") as string)
+  const seuil_stock_bas = Number.parseInt(formData.get("seuil_stock_bas") as string)
+
+  const updatedProduct: Partial<ProductInsert> = {
+    name,
+    type,
+    quantity,
+    prix_achat,
+    prix_vente_detail_1,
+    prix_vente_detail_2,
+    prix_vente_gros,
+    seuil_stock_bas,
+    updated_at: new Date().toISOString(),
+  }
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("products").update(updatedProduct).eq("id", id)
+
+  if (error) {
+    console.error("Error updating product:", error.message)
+    return { success: false, error: "Failed to update product: " + error.message } // Return error state
+  }
+
+  revalidatePath("/inventory") // Revalidate the inventory page
+  revalidatePath(`/inventory/${id}/edit`) // Revalidate the specific edit page
+  return { success: true, message: "Product updated successfully!" } // Return success state
 }

@@ -5,7 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Package, AlertTriangle } from "lucide-react"
+import { Search, Package, AlertTriangle, Pencil } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import type { Product } from "@/lib/supabase/types"
 
 interface ProductListProps {
@@ -59,6 +61,7 @@ export default function ProductList({ products }: ProductListProps) {
                   <TableHead className="text-right">Prix Vente (D2)</TableHead>
                   <TableHead className="text-right">Prix Vente (Gros)</TableHead>
                   <TableHead className="text-center">Seuil Bas</TableHead>
+                  <TableHead className="text-center">Actions</TableHead> {/* This is the new column header */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -84,6 +87,15 @@ export default function ProductList({ products }: ProductListProps) {
                     </TableCell>
                     <TableCell className="text-right">{product.prix_vente_gros.toLocaleString("fr-FR")} FCFA</TableCell>
                     <TableCell className="text-center">{product.seuil_stock_bas}</TableCell>
+                    <TableCell className="text-center">
+                      {/* This is the new edit button */}
+                      <Link href={`/inventory/${product.id}/edit`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Modifier</span>
+                        </Button>
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

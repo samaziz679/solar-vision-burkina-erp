@@ -192,4 +192,3 @@ export default function SaleForm({ products /*, clients */ }: SaleFormProps) {
     </Card>
   )
 }
-

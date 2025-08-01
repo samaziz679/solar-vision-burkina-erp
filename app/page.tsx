@@ -1,14 +1,9 @@
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
 
 export default async function HomePage() {
-  try {
-    // Try to create a Supabase client to check if env vars are available
-    await createServerClient()
-    redirect("/dashboard")
-  } catch (error) {
-    // If Supabase client creation fails, redirect to setup page
-    console.error("Failed to create server client on root page:", error) // Add this log for debugging
-    redirect("/setup-required")
-  }
+  // The middleware already handles redirection to /login or /setup-required
+  // if the user is not authenticated or env vars are missing.
+  // If we reach this page, it means the middleware allowed it,
+  // so we can safely redirect to the dashboard.
+  redirect("/dashboard")
 }

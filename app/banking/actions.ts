@@ -2,25 +2,25 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server" // Corrected import
 import type { BankEntry } from "@/lib/supabase/types"
 
 export async function createBankEntry(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const date = formData.get("date") as string
-  const amount = Number.parseFloat(formData.get("amount") as string)
   const description = formData.get("description") as string
+  const amount = Number.parseFloat(formData.get("amount") as string)
   const type = formData.get("type") as BankEntry["type"]
 
-  if (!date || isNaN(amount) || !description || !type) {
-    return { error: "Tous les champs sont requis." }
+  if (!date || !description || isNaN(amount) || !type) {
+    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase.from("bank_entries").insert({
     date,
-    amount,
     description,
+    amount,
     type,
   })
 
@@ -34,24 +34,24 @@ export async function createBankEntry(prevState: any, formData: FormData) {
 }
 
 export async function updateBankEntry(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const id = formData.get("id") as string
   const date = formData.get("date") as string
-  const amount = Number.parseFloat(formData.get("amount") as string)
   const description = formData.get("description") as string
+  const amount = Number.parseFloat(formData.get("amount") as string)
   const type = formData.get("type") as BankEntry["type"]
 
-  if (!id || !date || isNaN(amount) || !description || !type) {
-    return { error: "Tous les champs sont requis." }
+  if (!id || !date || !description || isNaN(amount) || !type) {
+    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase
     .from("bank_entries")
     .update({
       date,
-      amount,
       description,
+      amount,
       type,
     })
     .eq("id", id)
@@ -66,7 +66,7 @@ export async function updateBankEntry(prevState: any, formData: FormData) {
 }
 
 export async function deleteBankEntry(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.from("bank_entries").delete().eq("id", id)
 

@@ -49,6 +49,12 @@ const menuItems = [
     roles: ["admin", "stock_manager"],
   },
   {
+    title: "Achats",
+    href: "/purchases",
+    icon: TrendingUp,
+    roles: ["admin", "stock_manager"],
+  },
+  {
     title: "Dépenses",
     href: "/expenses",
     icon: CreditCard,

@@ -1,117 +1,69 @@
 "use client"
 
-import { useFormState } from "react-dom"
-import { useRouter } from "next/navigation"
+import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Save } from "lucide-react"
-import { createSupplier, updateSupplier } from "@/app/suppliers/actions" // Will be created next
+import { Textarea } from "@/components/ui/textarea"
 import type { Supplier } from "@/lib/supabase/types"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 
 interface SupplierFormProps {
-  supplier?: Supplier // Optional prop for editing existing suppliers
+  action: FormAction
+  initialData?: Supplier
 }
 
-export default function SupplierForm({ supplier }: SupplierFormProps) {
-  const router = useRouter()
-  const isEditing = !!supplier
-
-  // Determine which action to use based on whether we're editing or creating
-  const action = isEditing ? updateSupplier : createSupplier
-  const [state, formAction, isPending] = useFormState(action, { error: null, success: false })
-
-  // Redirect on success
-  if (state?.success) {
-    router.push("/suppliers")
-  }
-
+function SubmitButton() {
+  const { pending } = useFormStatus()
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>{isEditing ? "Modifier le fournisseur" : "Ajouter un nouveau fournisseur"}</CardTitle>
-        <CardDescription>
-          {isEditing ? "Mettez à jour les détails du fournisseur." : "Remplissez les détails du nouveau fournisseur."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-6">
-          {isEditing && <input type="hidden" name="id" value={supplier.id} />}
-
-          <div>
-            <Label htmlFor="name">Nom du fournisseur</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              defaultValue={supplier?.name || ""}
-              required
-              disabled={isPending}
-            />
-          </div>
-          <div>
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              defaultValue={supplier?.phone || ""}
-              placeholder="Ex: +226 70 12 34 56"
-              disabled={isPending}
-            />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              defaultValue={supplier?.email || ""}
-              placeholder="Ex: fournisseur@example.com"
-              disabled={isPending}
-            />
-          </div>
-          <div>
-            <Label htmlFor="address">Adresse</Label>
-            <Input
-              id="address"
-              name="address"
-              type="text"
-              defaultValue={supplier?.address || ""}
-              placeholder="Ex: Zone Industrielle, Ouagadougou"
-              disabled={isPending}
-            />
-          </div>
-
-          {state?.error && (
-            <Alert variant="destructive">
-              <AlertDescription>{state.error}</AlertDescription>
-            </Alert>
-          )}
-          {state?.success && (
-            <Alert>
-              <AlertDescription>{state.message}</AlertDescription>
-            </Alert>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isEditing ? "Mise à jour..." : "Ajout en cours..."}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {isEditing ? "Mettre à jour le fournisseur" : "Ajouter le fournisseur"}
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <Button type="submit" disabled={pending}>
+      {pending ? "Enregistrement..." : "Enregistrer le fournisseur"}
+    </Button>
   )
 }
 
+export default function SupplierForm({ action, initialData }: SupplierFormProps) {
+  const [state, formAction] = useFormState(action, {})
+
+  return (
+    <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
+      <div className="grid gap-2">
+        <Label htmlFor="name">Nom</Label>
+        <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="contact_person">Personne Contact</Label>
+        <Input id="contact_person" name="contact_person" type="text" defaultValue={initialData?.contact_person || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="phone">Téléphone</Label>
+        <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="address">Adresse</Label>
+        <Textarea
+          id="address"
+          name="address"
+          placeholder="Adresse du fournisseur"
+          defaultValue={initialData?.address || ""}
+        />
+      </div>
+      {state?.error && (
+        <Alert variant="destructive" className="md:col-span-2">
+          <ExclamationTriangleIcon className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      )}
+      <div className="md:col-span-2 flex justify-end">
+        <SubmitButton />
+      </div>
+    </form>
+  )
+}

@@ -66,6 +66,12 @@ const menuItems = [
     icon: Users,
     roles: ["admin"],
   },
+  {
+    title: "Fournisseurs",
+    href: "/suppliers",
+    icon: Users, // You can choose a different icon if you prefer, e.g., Truck or Factory
+    roles: ["admin", "stock_manager", "visitor"],
+  },
 ]
 
 export default function Sidebar({ userRoles }: SidebarProps) {
@@ -163,3 +169,4 @@ export default function Sidebar({ userRoles }: SidebarProps) {
     </>
   )
 }
+</merged_code>

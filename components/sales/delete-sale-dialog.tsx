@@ -78,4 +78,3 @@ export default function DeleteSaleDialog({ saleId, productName, onDeleteSuccess 
     </AlertDialog>
   )
 }
-

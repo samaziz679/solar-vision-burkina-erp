@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import type { BankEntry } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons" // Ensure this import is present
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 
 interface BankingFormProps {
   action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
@@ -29,6 +29,7 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="date">Date</Label>
         <Input

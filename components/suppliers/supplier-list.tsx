@@ -101,4 +101,3 @@ export default function SupplierList({ suppliers: initialSuppliers }: SupplierLi
     </Card>
   )
 }
-

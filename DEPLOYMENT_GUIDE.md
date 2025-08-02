@@ -57,7 +57,7 @@ Pour toute assistance technique, contactez l'équipe de développement.
 **Solar Vision Burkina** - Powering sustainable energy solutions in Burkina Faso 🌞
 \`\`\`
 
-```shellscript file="deploy.sh"
+\`\`\`shellscript file="deploy.sh"
 #!/bin/bash
 # Deployment script for Solar Vision Burkina ERP
 

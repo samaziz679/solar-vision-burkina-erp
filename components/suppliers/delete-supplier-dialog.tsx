@@ -79,4 +79,3 @@ export default function DeleteSupplierDialog({ supplierId, supplierName, onDelet
     </AlertDialog>
   )
 }
-

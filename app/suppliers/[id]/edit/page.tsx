@@ -22,4 +22,3 @@ export default async function EditSupplierPage({ params }: EditSupplierPageProps
     </div>
   )
 }
-

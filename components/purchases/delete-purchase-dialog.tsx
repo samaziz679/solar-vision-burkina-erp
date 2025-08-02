@@ -79,4 +79,3 @@ export default function DeletePurchaseDialog({ purchaseId, productName, onDelete
     </AlertDialog>
   )
 }
-

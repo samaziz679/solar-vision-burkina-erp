@@ -106,4 +106,3 @@ export default function PurchaseList({ purchases: initialPurchases }: PurchaseLi
     </Card>
   )
 }
-

@@ -61,10 +61,10 @@ const menuItems = [
     roles: ["admin", "finance"],
   },
   {
-    title: "Utilisateurs",
-    href: "/users",
+    title: "Clients",
+    href: "/clients",
     icon: Users,
-    roles: ["admin"],
+    roles: ["admin", "commercial", "seller", "visitor"],
   },
   {
     title: "Fournisseurs",
@@ -169,4 +169,3 @@ export default function Sidebar({ userRoles }: SidebarProps) {
     </>
   )
 }
-</merged_code>

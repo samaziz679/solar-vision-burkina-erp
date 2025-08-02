@@ -2,45 +2,52 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
-import { getCurrentUser } from "@/lib/auth"
-import type { Database } from "@/lib/supabase/types"
-
-type ProductInsert = Database["public"]["Tables"]["products"]["Insert"]
+import { createClient } from "@/lib/supabase/server"
+import type { Product } from "@/lib/supabase/types"
 
 export async function createProduct(prevState: any, formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user) {
-    redirect("/login")
-  }
+  const supabase = await createClient()
 
   const name = formData.get("name") as string
-  const type = formData.get("type") as string
+  const description = formData.get("description") as string
   const quantity = Number.parseInt(formData.get("quantity") as string)
+  const unit = formData.get("unit") as string
   const prix_achat = Number.parseFloat(formData.get("prix_achat") as string)
   const prix_vente_detail_1 = Number.parseFloat(formData.get("prix_vente_detail_1") as string)
   const prix_vente_detail_2 = Number.parseFloat(formData.get("prix_vente_detail_2") as string)
   const prix_vente_gros = Number.parseFloat(formData.get("prix_vente_gros") as string)
-  const seuil_stock_bas = Number.parseInt(formData.get("seuil_stock_bas") as string)
+  const type = formData.get("type") as Product["type"]
+  const image = formData.get("image") as string // Added line
 
-  const newProduct: ProductInsert = {
+  if (
+    !name ||
+    isNaN(quantity) ||
+    !unit ||
+    isNaN(prix_achat) ||
+    isNaN(prix_vente_detail_1) ||
+    isNaN(prix_vente_detail_2) ||
+    isNaN(prix_vente_gros) ||
+    !type
+  ) {
+    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
+  }
+
+  const { error } = await supabase.from("products").insert({
     name,
-    type,
+    description,
     quantity,
+    unit,
     prix_achat,
     prix_vente_detail_1,
     prix_vente_detail_2,
     prix_vente_gros,
-    seuil_stock_bas,
-    created_by: user.id,
-  }
-
-  const supabase = await createServerClient()
-  const { error } = await supabase.from("products").insert(newProduct)
+    type,
+    image, // Added line
+  })
 
   if (error) {
-    console.error("Error creating product:", error.message)
-    return { error: "Failed to create product: " + error.message }
+    console.error("Error creating product:", error)
+    return { error: "Échec de l'ajout du produit. Veuillez réessayer." }
   }
 
   revalidatePath("/inventory")
@@ -48,62 +55,69 @@ export async function createProduct(prevState: any, formData: FormData) {
 }
 
 export async function updateProduct(prevState: any, formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user) {
-    redirect("/login")
-  }
+  const supabase = await createClient()
 
   const id = formData.get("id") as string
   const name = formData.get("name") as string
-  const type = formData.get("type") as string
+  const description = formData.get("description") as string
   const quantity = Number.parseInt(formData.get("quantity") as string)
+  const unit = formData.get("unit") as string
   const prix_achat = Number.parseFloat(formData.get("prix_achat") as string)
   const prix_vente_detail_1 = Number.parseFloat(formData.get("prix_vente_detail_1") as string)
   const prix_vente_detail_2 = Number.parseFloat(formData.get("prix_vente_detail_2") as string)
   const prix_vente_gros = Number.parseFloat(formData.get("prix_vente_gros") as string)
-  const seuil_stock_bas = Number.parseInt(formData.get("seuil_stock_bas") as string)
+  const type = formData.get("type") as Product["type"]
+  const image = formData.get("image") as string // Added line
 
-  const updatedProduct: Partial<ProductInsert> = {
-    name,
-    type,
-    quantity,
-    prix_achat,
-    prix_vente_detail_1,
-    prix_vente_detail_2,
-    prix_vente_gros,
-    seuil_stock_bas,
-    updated_at: new Date().toISOString(),
+  if (
+    !id ||
+    !name ||
+    isNaN(quantity) ||
+    !unit ||
+    isNaN(prix_achat) ||
+    isNaN(prix_vente_detail_1) ||
+    isNaN(prix_vente_detail_2) ||
+    isNaN(prix_vente_gros) ||
+    !type
+  ) {
+    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
-  const supabase = await createServerClient()
-  const { error } = await supabase.from("products").update(updatedProduct).eq("id", id)
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name,
+      description,
+      quantity,
+      unit,
+      prix_achat,
+      prix_vente_detail_1,
+      prix_vente_detail_2,
+      prix_vente_gros,
+      type,
+      image, // Added line
+    })
+    .eq("id", id)
 
   if (error) {
-    console.error("Error updating product:", error.message)
-    return { success: false, error: "Failed to update product: " + error.message }
+    console.error("Error updating product:", error)
+    return { error: "Échec de la mise à jour du produit. Veuillez réessayer." }
   }
 
   revalidatePath("/inventory")
-  revalidatePath(`/inventory/${id}/edit`)
-  return { success: true, message: "Product updated successfully!" }
+  redirect("/inventory")
 }
 
-export async function deleteProduct(prevState: any, formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user) {
-    redirect("/login")
-  }
+export async function deleteProduct(id: string) {
+  const supabase = await createClient()
 
-  const id = formData.get("id") as string
-
-  const supabase = await createServerClient()
   const { error } = await supabase.from("products").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting product:", error.message)
-    return { success: false, error: "Failed to delete product: " + error.message }
+    console.error("Error deleting product:", error)
+    return { error: "Échec de la suppression du produit. Veuillez réessayer." }
   }
 
-  revalidatePath("/inventory") // Revalidate the inventory page to reflect the deletion
-  return { success: true, message: "Product deleted successfully!" }
+  revalidatePath("/inventory")
+  return { success: true }
 }

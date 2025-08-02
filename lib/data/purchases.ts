@@ -53,4 +53,3 @@ export async function getPurchaseById(id: string): Promise<PurchaseWithDetails |
 
   return data as PurchaseWithDetails
 }
-

@@ -24,4 +24,3 @@ export async function getClientById(id: string): Promise<Client | null> {
 
   return data as Client
 }
-

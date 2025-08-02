@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { updateProduct } from "@/app/inventory/actions"
 
 interface EditProductFormProps {
   initialData: Product
+  action: FormAction // Add action prop with FormAction type
 }
 
 function SubmitButton() {
@@ -24,8 +24,8 @@ function SubmitButton() {
   )
 }
 
-export default function EditProductForm({ initialData }: EditProductFormProps) {
-  const [state, formAction] = useFormState(updateProduct, {})
+export default function EditProductForm({ initialData, action }: EditProductFormProps) {
+  const [state, formAction] = useFormState(action, {}) // Update the useFormState call to pass `action`
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

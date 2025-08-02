@@ -22,4 +22,3 @@ export async function getSales(): Promise<Sale[]> {
   // Type casting to include joined table data
   return data as (Sale & { products: { name: string; type: string | null } | null; clients: { name: string } | null })[]
 }
-

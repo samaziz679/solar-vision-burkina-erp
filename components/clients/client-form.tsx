@@ -1,0 +1,64 @@
+"use client"
+
+import { useFormState, useFormStatus } from "react-dom"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import type { Client } from "@/lib/supabase/types"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+
+interface ClientFormProps {
+  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
+  initialData?: Client
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Enregistrement..." : "Enregistrer le client"}
+    </Button>
+  )
+}
+
+export default function ClientForm({ action, initialData }: ClientFormProps) {
+  const [state, formAction] = useFormState(action, {})
+
+  return (
+    <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-2">
+        <Label htmlFor="name">Nom</Label>
+        <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="phone">Téléphone</Label>
+        <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="address">Adresse</Label>
+        <Textarea
+          id="address"
+          name="address"
+          placeholder="Adresse du client"
+          defaultValue={initialData?.address || ""}
+        />
+      </div>
+      {state?.error && (
+        <Alert variant="destructive" className="md:col-span-2">
+          <ExclamationTriangleIcon className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      )}
+      <div className="md:col-span-2 flex justify-end">
+        <SubmitButton />
+      </div>
+    </form>
+  )
+}

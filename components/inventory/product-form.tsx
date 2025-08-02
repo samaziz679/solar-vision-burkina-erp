@@ -25,6 +25,9 @@ function SubmitButton() {
 }
 
 export default function ProductForm({ action, initialData }: ProductFormProps) {
+  // This comment is added to ensure the file is re-processed during build.
+  // It can be removed after the build issue is resolved.
+  // console.log("ProductForm component rendering.");
   const [state, formAction] = useFormState(action, {})
 
   return (

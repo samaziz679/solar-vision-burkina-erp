@@ -24,4 +24,3 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
 
   return data as Supplier
 }
-

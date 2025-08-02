@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient as createSupabaseClient } from "@/lib/supabase/server"
+import { createServerClient as createSupabaseClient } from "@/lib/supabase/server"
 
-export async function createClient(formData: FormData) {
+export async function createClient(prevState: any, formData: FormData) {
   const supabase = await createSupabaseClient()
 
   const name = formData.get("name") as string
@@ -13,7 +13,7 @@ export async function createClient(formData: FormData) {
   const address = formData.get("address") as string
 
   if (!name) {
-    return { error: "Name is required." }
+    return { error: "Le nom du client est requis." }
   }
 
   const { error } = await supabase.from("clients").insert({
@@ -24,24 +24,25 @@ export async function createClient(formData: FormData) {
   })
 
   if (error) {
-    console.error("Error creating client:", error.message)
-    return { error: "Failed to create client." }
+    console.error("Error creating client:", error)
+    return { error: "Échec de l'ajout du client. Veuillez réessayer." }
   }
 
   revalidatePath("/clients")
   redirect("/clients")
 }
 
-export async function updateClient(id: string, formData: FormData) {
+export async function updateClient(prevState: any, formData: FormData) {
   const supabase = await createSupabaseClient()
 
+  const id = formData.get("id") as string
   const name = formData.get("name") as string
   const email = formData.get("email") as string
   const phone = formData.get("phone") as string
   const address = formData.get("address") as string
 
-  if (!name) {
-    return { error: "Name is required." }
+  if (!id || !name) {
+    return { error: "Le nom du client est requis." }
   }
 
   const { error } = await supabase
@@ -55,8 +56,8 @@ export async function updateClient(id: string, formData: FormData) {
     .eq("id", id)
 
   if (error) {
-    console.error("Error updating client:", error.message)
-    return { error: "Failed to update client." }
+    console.error("Error updating client:", error)
+    return { error: "Échec de la mise à jour du client. Veuillez réessayer." }
   }
 
   revalidatePath("/clients")
@@ -69,8 +70,8 @@ export async function deleteClient(id: string) {
   const { error } = await supabase.from("clients").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting client:", error.message)
-    return { error: "Failed to delete client." }
+    console.error("Error deleting client:", error)
+    return { error: "Échec de la suppression du client. Veuillez réessayer." }
   }
 
   revalidatePath("/clients")

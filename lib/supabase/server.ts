@@ -1,10 +1,14 @@
-import { createServerClient as createSupabaseClient } from "@supabase/ssr"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import type { Database } from "@/lib/supabase/types"
 
-export async function createServerClient() {
+export function createClient() {
+  const cookieStore = cookies()
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  // These logs are crucial for debugging
   console.log(
     "DEBUG: Server Supabase URL:",
     supabaseUrl ? "Set" : "Not Set",
@@ -17,25 +21,33 @@ export async function createServerClient() {
   )
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Throw a more explicit error if env vars are missing
     throw new Error(
-      "Missing Supabase environment variables. Please check your environment variables and ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.",
+      "Supabase environment variables are missing or invalid. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are correctly set in Vercel.",
     )
   }
 
-  const cookieStore = await cookies()
-
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      getAll() {
-        return cookieStore.getAll()
+      get(name: string) {
+        return cookieStore.get(name)?.value
       },
-      setAll(cookiesToSet) {
+      set(name: string, value: string, options: CookieOptions) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-        } catch {
-          // The `setAll` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          // The `cookies().set()` method can only be called from a Server Component or Server Action.
+          // This error is typically ignored if we're in a Client Component.
+          // console.warn("Could not set cookie from server component:", error);
+        }
+      },
+      remove(name: string, options: CookieOptions) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          // The `cookies().set()` method can only be called from a Server Component or Server Action.
+          // This error is typically ignored if we're in a Client Component.
+          // console.warn("Could not remove cookie from server component:", error);
         }
       },
     },

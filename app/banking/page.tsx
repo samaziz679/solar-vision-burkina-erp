@@ -3,8 +3,7 @@ import Link from "next/link"
 import { PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BankingListSkeleton } from "@/components/banking/banking-list"
-import BankingList from "@/components/banking/banking-list"
+import BankingList, { BankingListSkeleton } from "@/components/banking/banking-list"
 import { fetchBankEntries } from "@/lib/data/banking"
 
 export default async function BankingPage() {

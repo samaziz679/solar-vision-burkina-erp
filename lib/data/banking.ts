@@ -1,21 +1,16 @@
-import { unstable_noStore as noStore } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import type { BankEntry } from "@/lib/supabase/types"
+import { unstable_noStore as noStore } from "next/cache"
 
 export async function fetchBankEntries() {
   noStore()
   const supabase = createClient()
-  const { data, error } = await supabase
-    .from("bank_entries")
-    .select("*")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
+  const { data, error } = await supabase.from("bank_entries").select("*").order("date", { ascending: false })
 
   if (error) {
-    console.error("Database Error:", error)
-    throw new Error("Failed to fetch bank entries.")
+    console.error("Error fetching bank entries:", error)
+    return []
   }
-  return data as BankEntry[]
+  return data
 }
 
 export async function fetchBankEntryById(id: string) {
@@ -24,8 +19,8 @@ export async function fetchBankEntryById(id: string) {
   const { data, error } = await supabase.from("bank_entries").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Database Error:", error)
-    throw new Error("Failed to fetch bank entry.")
+    console.error("Error fetching bank entry by ID:", error)
+    return null
   }
-  return data as BankEntry
+  return data
 }

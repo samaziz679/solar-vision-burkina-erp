@@ -4,14 +4,11 @@ import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Search, ShoppingCart } from "lucide-react"
-import type { Sale } from "@/lib/supabase/types"
-
-// Extend Sale type to include joined product and client names
-type SaleWithDetails = Sale & {
-  products: { name: string; type: string | null } | null
-  clients: { name: string } | null
-}
+import { Search, ShoppingCart, Pencil } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import type { SaleWithDetails } from "@/lib/data/sales" // Import the extended type
+import DeleteSaleDialog from "./delete-sale-dialog" // Import the new component
 
 interface SalesListProps {
   sales: SaleWithDetails[]
@@ -19,9 +16,8 @@ interface SalesListProps {
 
 export default function SalesList({ sales: initialSales }: SalesListProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [sales, setSales] = useState(initialSales) // Manage sales state locally
+  const [sales, setSales] = useState(initialSales)
 
-  // Update sales state when initialSales prop changes (e.g., after revalidation)
   useState(() => {
     setSales(initialSales)
   }, [initialSales])
@@ -32,6 +28,10 @@ export default function SalesList({ sales: initialSales }: SalesListProps) {
       sale.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sale.notes?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const handleSaleDelete = (deletedSaleId: string) => {
+    setSales((prevSales) => prevSales.filter((s) => s.id !== deletedSaleId))
+  }
 
   return (
     <Card>
@@ -71,6 +71,7 @@ export default function SalesList({ sales: initialSales }: SalesListProps) {
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Plan de Prix</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead className="text-center">Actions</TableHead> {/* New Actions column */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -84,6 +85,19 @@ export default function SalesList({ sales: initialSales }: SalesListProps) {
                     <TableCell className="text-right">{sale.total.toLocaleString("fr-FR")} FCFA</TableCell>
                     <TableCell>{sale.price_plan}</TableCell>
                     <TableCell className="text-sm text-gray-500">{sale.notes || "-"}</TableCell>
+                    <TableCell className="text-center flex items-center justify-center gap-1">
+                      <Link href={`/sales/${sale.id}/edit`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Modifier</span>
+                        </Button>
+                      </Link>
+                      <DeleteSaleDialog
+                        saleId={sale.id}
+                        productName={sale.products?.name || "Produit Inconnu"}
+                        onDeleteSuccess={() => handleSaleDelete(sale.id)}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

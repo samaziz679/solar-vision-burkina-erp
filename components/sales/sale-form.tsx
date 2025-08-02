@@ -15,14 +15,15 @@ import { createSale } from "@/app/sales/actions" // Will be created next
 
 interface SaleFormProps {
   products: Product[]
-  clients?: Client[] // Clients will be added later
+  clients: Client[] // Clients will be added later
 }
 
-export default function SaleForm({ products /*, clients */ }: SaleFormProps) {
+export default function SaleForm({ products, clients }: SaleFormProps) {
   const router = useRouter()
   const [state, formAction, isPending] = useFormState(createSale, { error: null, success: false })
 
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined)
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined)
   const [quantity, setQuantity] = useState<number>(1)
   const [pricePlan, setPricePlan] = useState<"detail_1" | "detail_2" | "gros">("detail_1")
   const [unitPrice, setUnitPrice] = useState<number>(0)
@@ -139,20 +140,25 @@ export default function SaleForm({ products /*, clients */ }: SaleFormProps) {
             </div>
           </div>
 
-          {/* Client Selection (Placeholder for now) */}
+          {/* Client Selection */}
           <div>
             <Label htmlFor="client_id">Client</Label>
-            <Select name="client_id" disabled={isPending}>
+            <Select
+              name="client_id"
+              value={selectedClientId}
+              onValueChange={(value) => setSelectedClientId(value === "none" ? undefined : value)}
+              disabled={isPending}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un client (optionnel)" />
               </SelectTrigger>
               <SelectContent>
-                {/* {clients?.map((client) => (
+                <SelectItem value="none">Aucun client</SelectItem> {/* Option for no client */}
+                {clients?.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
                   </SelectItem>
-                ))} */}
-                <SelectItem value="new-client">Ajouter un nouveau client (à venir)</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

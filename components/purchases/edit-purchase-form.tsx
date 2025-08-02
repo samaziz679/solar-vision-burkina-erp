@@ -1,186 +1,138 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useFormState } from "react-dom"
-import { useRouter } from "next/navigation"
+import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Save } from "lucide-react"
-import type { Product, Supplier } from "@/lib/supabase/types"
-import { updatePurchase } from "@/app/purchases/actions"
-import type { PurchaseWithDetails } from "@/lib/data/purchases"
+import { Textarea } from "@/components/ui/textarea"
+import type { Product, Supplier, Purchase } from "@/lib/supabase/types"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { useEffect, useState } from "react"
 
 interface EditPurchaseFormProps {
-  purchase: PurchaseWithDetails
+  initialData: Purchase
   products: Product[]
   suppliers: Supplier[]
+  action: FormAction // Add action prop with FormAction type
 }
 
-export default function EditPurchaseForm({ purchase, products, suppliers }: EditPurchaseFormProps) {
-  const router = useRouter()
-  const [state, formAction, isPending] = useFormState(updatePurchase, { error: null, success: false })
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Mise à jour..." : "Mettre à jour l'achat"}
+    </Button>
+  )
+}
 
-  const [selectedProductId, setSelectedProductId] = useState<string>(purchase.product_id)
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | undefined>(purchase.supplier_id || undefined)
-  const [quantity, setQuantity] = useState<number>(purchase.quantity)
-  const [unitPrice, setUnitPrice] = useState<number>(purchase.unit_price)
-  const [totalPrice, setTotalPrice] = useState<number>(purchase.total)
-  const [notes, setNotes] = useState<string>(purchase.notes || "")
-
-  const currentProduct = products.find((p) => p.id === selectedProductId)
-
-  useEffect(() => {
-    // Recalculate total price based on quantity and unit price
-    setTotalPrice(unitPrice * quantity)
-  }, [quantity, unitPrice])
+export default function EditPurchaseForm({ initialData, products, suppliers, action }: EditPurchaseFormProps) {
+  const [state, formAction] = useFormState(action, {}) // Update the useFormState call to pass `action`
+  const [selectedProductId, setSelectedProductId] = useState(initialData?.product_id || "")
+  const [quantity, setQuantity] = useState(initialData?.quantity_purchased || 0)
+  const [unitCost, setUnitCost] = useState(initialData?.unit_cost || 0)
+  const [totalCost, setTotalCost] = useState(initialData?.total_cost || 0)
 
   useEffect(() => {
-    if (state?.success) {
-      router.push("/purchases") // Redirect to purchases list on success
+    if (quantity > 0 && unitCost > 0) {
+      setTotalCost(quantity * unitCost)
+    } else {
+      setTotalCost(0)
     }
-  }, [state, router])
+  }, [quantity, unitCost])
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Modifier l'achat</CardTitle>
-        <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-6">
-          <input type="hidden" name="id" value={purchase.id} />
-
-          {/* Product Selection */}
-          <div>
-            <Label htmlFor="product_id">Produit</Label>
-            <Select
-              name="product_id"
-              value={selectedProductId}
-              onValueChange={(value) => setSelectedProductId(value)}
-              disabled={isPending}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un produit" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name} (Stock: {product.quantity})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Quantity and Unit Price */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="quantity">Quantité</Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                min={1}
-                required
-                disabled={isPending}
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit_price">Prix Unitaire (FCFA)</Label>
-              <Input
-                id="unit_price"
-                name="unit_price"
-                type="number"
-                step="0.01"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(Number(e.target.value))}
-                min={0}
-                required
-                disabled={isPending}
-              />
-            </div>
-          </div>
-
-          {/* Total Price (Display Only) */}
-          <div>
-            <Label>Total (FCFA)</Label>
-            <Input type="text" value={totalPrice.toLocaleString("fr-FR")} readOnly disabled />
-            <input type="hidden" name="total" value={totalPrice} />
-          </div>
-
-          {/* Supplier Selection */}
-          <div>
-            <Label htmlFor="supplier_id">Fournisseur</Label>
-            <Select
-              name="supplier_id"
-              value={selectedSupplierId}
-              onValueChange={(value) => setSelectedSupplierId(value === "none" ? undefined : value)}
-              disabled={isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un fournisseur (optionnel)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucun fournisseur</SelectItem>
-                {suppliers?.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Notes (Optional) */}
-          <div>
-            <Label htmlFor="notes">Notes (optionnel)</Label>
-            <Input
-              id="notes"
-              name="notes"
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
-
-          {state?.error && (
-            <Alert variant="destructive">
-              <AlertDescription>{state.error}</AlertDescription>
-            </Alert>
-          )}
-          {state?.success && (
-            <Alert>
-              <AlertDescription>{state.message}</AlertDescription>
-            </Alert>
-          )}
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isPending || !selectedProductId || quantity <= 0 || unitPrice < 0}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Mise à jour...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Mettre à jour l'achat
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      <input type="hidden" name="id" value={initialData.id} />
+      <div className="grid gap-2">
+        <Label htmlFor="purchase_date">Date d'achat</Label>
+        <Input id="purchase_date" name="purchase_date" type="date" defaultValue={initialData.purchase_date} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="product_id">Produit</Label>
+        <Select name="product_id" value={selectedProductId} onValueChange={setSelectedProductId} required>
+          <SelectTrigger id="product_id">
+            <SelectValue placeholder="Sélectionner un produit" />
+          </SelectTrigger>
+          <SelectContent>
+            {products.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="supplier_id">Fournisseur</Label>
+        <Select name="supplier_id" defaultValue={initialData.supplier_id || ""} required>
+          <SelectTrigger id="supplier_id">
+            <SelectValue placeholder="Sélectionner un fournisseur" />
+          </SelectTrigger>
+          <SelectContent>
+            {suppliers.map((supplier) => (
+              <SelectItem key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="quantity_purchased">Quantité achetée</Label>
+        <Input
+          id="quantity_purchased"
+          name="quantity_purchased"
+          type="number"
+          defaultValue={initialData.quantity_purchased}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="unit_cost">Coût unitaire</Label>
+        <Input
+          id="unit_cost"
+          name="unit_cost"
+          type="number"
+          step="0.01"
+          defaultValue={initialData.unit_cost}
+          onChange={(e) => setUnitCost(Number(e.target.value))}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="total_cost">Coût total</Label>
+        <Input id="total_cost" name="total_cost" type="number" step="0.01" value={totalCost} readOnly required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="payment_status">Statut du paiement</Label>
+        <Select name="payment_status" defaultValue={initialData.payment_status} required>
+          <SelectTrigger id="payment_status">
+            <SelectValue placeholder="Sélectionner le statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">En attente</SelectItem>
+            <SelectItem value="paid">Payé</SelectItem>
+            <SelectItem value="partially_paid">Partiellement payé</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea id="notes" name="notes" placeholder="Notes sur l'achat" defaultValue={initialData.notes || ""} />
+      </div>
+      {state?.error && (
+        <Alert variant="destructive" className="md:col-span-2">
+          <ExclamationTriangleIcon className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      )}
+      <div className="md:col-span-2 flex justify-end">
+        <SubmitButton />
+      </div>
+    </form>
   )
 }

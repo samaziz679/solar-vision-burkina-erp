@@ -17,10 +17,10 @@ import type { SaleWithDetails } from "@/lib/data/sales" // Import the extended t
 interface EditSaleFormProps {
   sale: SaleWithDetails
   products: Product[]
-  clients?: Client[] // Clients will be added later
+  clients: Client[] // Clients will be added later
 }
 
-export default function EditSaleForm({ sale, products /*, clients */ }: EditSaleFormProps) {
+export default function EditSaleForm({ sale, products, clients }: EditSaleFormProps) {
   const router = useRouter()
   const [state, formAction, isPending] = useFormState(updateSale, { error: null, success: false })
 
@@ -151,20 +151,19 @@ export default function EditSaleForm({ sale, products /*, clients */ }: EditSale
             <Select
               name="client_id"
               value={selectedClientId}
-              onValueChange={(value) => setSelectedClientId(value)}
+              onValueChange={(value) => setSelectedClientId(value === "none" ? undefined : value)}
               disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un client (optionnel)" />
               </SelectTrigger>
               <SelectContent>
-                {/* {clients?.map((client) => (
+                <SelectItem value="none">Aucun client</SelectItem> {/* Option for no client */}
+                {clients?.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
                   </SelectItem>
-                ))} */}
-                <SelectItem value="none">Aucun client</SelectItem> {/* Option for no client */}
-                <SelectItem value="new-client">Ajouter un nouveau client (à venir)</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

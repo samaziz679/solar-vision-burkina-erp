@@ -184,4 +184,3 @@ export default function EditPurchaseForm({ purchase, products, suppliers }: Edit
     </Card>
   )
 }
-

@@ -28,6 +28,7 @@ export default function ClientForm({ action, initialData }: ClientFormProps) {
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="name">Nom</Label>
         <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />

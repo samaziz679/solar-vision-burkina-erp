@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useFormStatus } from "react-dom"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteBankEntry } from "@/app/banking/actions"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 interface DeleteBankingDialogProps {
   open: boolean
@@ -22,22 +21,14 @@ interface DeleteBankingDialogProps {
   onClose: () => void
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <AlertDialogAction type="submit" disabled={pending}>
-      {pending ? "Suppression..." : "Supprimer"}
-    </AlertDialogAction>
-  )
-}
-
 export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, onClose }: DeleteBankingDialogProps) {
-  const [error, setError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
 
-  const handleDelete = async (formData: FormData) => {
+  const handleDelete = async () => {
+    setIsDeleting(true)
     const result = await deleteBankEntry(bankEntryId)
     if (result?.error) {
-      setError(result.error)
       toast({
         title: "Erreur de suppression",
         description: result.error,
@@ -45,11 +36,12 @@ export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, o
       })
     } else {
       toast({
-        title: "Entrée supprimée",
-        description: "L'entrée bancaire a été supprimée avec succès.",
+        title: "Succès",
+        description: "L'entrée bancaire a été supprimée.",
       })
-      onClose()
     }
+    setIsDeleting(false)
+    onClose()
   }
 
   return (
@@ -61,13 +53,12 @@ export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, o
             Cette action ne peut pas être annulée. Cela supprimera définitivement cette entrée bancaire de votre base de
             données.
           </AlertDialogDescription>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>Annuler</AlertDialogCancel>
-          <form action={handleDelete}>
-            <SubmitButton />
-          </form>
+          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? "Suppression..." : "Supprimer"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

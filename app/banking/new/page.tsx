@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import BankingForm from "@/components/banking/banking-form"
+import { createBankEntry } from "@/app/banking/actions"
 
 export default function NewBankingPage() {
   return (
@@ -12,7 +13,7 @@ export default function NewBankingPage() {
           <CardTitle>Nouvelle Entrée Bancaire</CardTitle>
         </CardHeader>
         <CardContent>
-          <BankingForm />
+          <BankingForm action={createBankEntry} />
         </CardContent>
       </Card>
     </div>

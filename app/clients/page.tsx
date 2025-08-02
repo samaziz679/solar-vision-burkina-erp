@@ -1,24 +1,37 @@
-import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
+import { Suspense } from "react"
 import Link from "next/link"
-import { getClients } from "@/lib/data/clients" // Import the new data function
-import ClientList from "@/components/clients/client-list" // Will be created next
+import { PlusCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import ClientList, { ClientListSkeleton } from "@/components/clients/client-list"
+import { getClients } from "@/lib/data/clients"
 
 export default async function ClientsPage() {
   const clients = await getClients()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-        <Button asChild>
-          <Link href="/clients/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Ajouter un client
-          </Link>
-        </Button>
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <div className="flex items-center">
+        <h1 className="text-lg font-semibold md:text-2xl">Clients</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" asChild>
+            <Link href="/clients/new">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Ajouter un client
+            </Link>
+          </Button>
+        </div>
       </div>
-      <ClientList clients={clients} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Liste des Clients</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<ClientListSkeleton />}>
+            <ClientList clients={clients} />
+          </Suspense>
+        </CardContent>
+      </Card>
     </div>
   )
 }

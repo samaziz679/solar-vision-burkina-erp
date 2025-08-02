@@ -1,7 +1,7 @@
 "use client"
 
-import { useTransition } from "react"
-import { toast } from "sonner"
+import { useState } from "react"
+import { useFormStatus } from "react-dom"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,27 +13,43 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteBankEntry } from "@/app/banking/actions"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeleteBankingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   bankEntryId: string
+  onClose: () => void
 }
 
-export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId }: DeleteBankingDialogProps) {
-  const [isPending, startTransition] = useTransition()
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <AlertDialogAction type="submit" disabled={pending}>
+      {pending ? "Suppression..." : "Supprimer"}
+    </AlertDialogAction>
+  )
+}
 
-  const handleDelete = async () => {
-    startTransition(async () => {
-      try {
-        await deleteBankEntry(bankEntryId)
-        toast.success("Entrée bancaire supprimée avec succès.")
-        onOpenChange(false)
-      } catch (error) {
-        toast.error("Échec de la suppression de l'entrée bancaire.")
-        console.error("Failed to delete bank entry:", error)
-      }
-    })
+export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, onClose }: DeleteBankingDialogProps) {
+  const [error, setError] = useState<string | null>(null)
+
+  const handleDelete = async (formData: FormData) => {
+    const result = await deleteBankEntry(bankEntryId)
+    if (result?.error) {
+      setError(result.error)
+      toast({
+        title: "Erreur de suppression",
+        description: result.error,
+        variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Entrée supprimée",
+        description: "L'entrée bancaire a été supprimée avec succès.",
+      })
+      onClose()
+    }
   }
 
   return (
@@ -45,12 +61,13 @@ export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId }:
             Cette action ne peut pas être annulée. Cela supprimera définitivement cette entrée bancaire de votre base de
             données.
           </AlertDialogDescription>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isPending}>
-            {isPending ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel onClick={onClose}>Annuler</AlertDialogCancel>
+          <form action={handleDelete}>
+            <SubmitButton />
+          </form>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

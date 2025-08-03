@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react" // Keep useState for date picker, remove useEffect for isClient
+import { useState } from "react"
 
 interface ExpenseFormProps {
   action: FormAction
@@ -31,7 +31,6 @@ function SubmitButton() {
 }
 
 export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
-  // Removed isClient state and useEffect as dynamic import with ssr: false handles this
   const [state, formAction] = useFormState(action, {})
   const [date, setDate] = useState(initialData?.expense_date ? new Date(initialData.expense_date) : undefined)
 

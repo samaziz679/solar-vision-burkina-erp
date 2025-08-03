@@ -25,7 +25,6 @@ function SubmitButton() {
 }
 
 export default function ProductForm({ action, initialData }: ProductFormProps) {
-  // Removed isClient state and useEffect as dynamic import with ssr: false handles this
   const [state, formAction] = useFormState(action, {})
 
   return (

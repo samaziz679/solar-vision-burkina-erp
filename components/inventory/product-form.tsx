@@ -25,13 +25,11 @@ function SubmitButton() {
 }
 
 export default function ProductForm({ action, initialData }: ProductFormProps) {
-  // This comment is added to ensure the file is re-processed during build.
-  // It can be removed after the build issue is resolved.
-  // console.log("ProductForm component rendering.");
   const [state, formAction] = useFormState(action, {})
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="name">Nom</Label>
         <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />

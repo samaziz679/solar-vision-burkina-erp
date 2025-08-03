@@ -1,24 +1,36 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
 import { getExpenseById } from "@/lib/data/expenses"
-import ExpenseForm from "@/components/expenses/expense-form"
-import { notFound } from "next/navigation"
+import { updateExpense } from "@/app/expenses/actions"
 
-interface EditExpensePageProps {
-  params: {
-    id: string
+const ExpenseForm = dynamic(() => import("@/components/expenses/expense-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
+export default async function EditExpensePage({ params }: { params: { id: string } }) {
+  const id = params.id
+  const { data: expense, error } = await getExpenseById(id)
+
+  if (error) {
+    return <div className="text-red-500">Erreur: {error.message}</div>
   }
-}
-
-export default async function EditExpensePage({ params }: EditExpensePageProps) {
-  const expense = await getExpenseById(params.id)
 
   if (!expense) {
-    notFound() // Show 404 if expense not found
+    return <div className="text-gray-500">Dépense non trouvée.</div>
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Modifier Dépense: {expense.description}</h1>
-      <ExpenseForm expense={expense} />
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Modifier la dépense</CardTitle>
+          <CardDescription>Mettez à jour les détails de la dépense.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ExpenseForm action={updateExpense} initialData={expense} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

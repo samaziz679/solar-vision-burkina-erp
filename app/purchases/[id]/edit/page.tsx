@@ -1,28 +1,36 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
 import { getPurchaseById } from "@/lib/data/purchases"
-import { getProducts } from "@/lib/data/products"
-import { getSuppliers } from "@/lib/data/suppliers"
-import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
-import { notFound } from "next/navigation"
+import { updatePurchase } from "@/app/purchases/actions"
 
-interface EditPurchasePageProps {
-  params: {
-    id: string
+const PurchaseForm = dynamic(() => import("@/components/purchases/purchase-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
+export default async function EditPurchasePage({ params }: { params: { id: string } }) {
+  const id = params.id
+  const { data: purchase, error } = await getPurchaseById(id)
+
+  if (error) {
+    return <div className="text-red-500">Erreur: {error.message}</div>
   }
-}
-
-export default async function EditPurchasePage({ params }: EditPurchasePageProps) {
-  const purchase = await getPurchaseById(params.id)
-  const products = await getProducts()
-  const suppliers = await getSuppliers()
 
   if (!purchase) {
-    notFound() // Show 404 if purchase not found
+    return <div className="text-gray-500">Achat non trouvé.</div>
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Modifier Achat: {purchase.products?.name || "Achat Inconnu"}</h1>
-      <EditPurchaseForm purchase={purchase} products={products} suppliers={suppliers} />
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Modifier l'achat</CardTitle>
+          <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PurchaseForm action={updatePurchase} initialData={purchase} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -34,6 +34,10 @@ export default function ClientForm({ action, initialData }: ClientFormProps) {
         <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
       </div>
       <div className="grid gap-2">
+        <Label htmlFor="contact_person">Personne Contact</Label>
+        <Input id="contact_person" name="contact_person" type="text" defaultValue={initialData?.contact_person || ""} />
+      </div>
+      <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
       </div>
@@ -41,7 +45,7 @@ export default function ClientForm({ action, initialData }: ClientFormProps) {
         <Label htmlFor="phone">Téléphone</Label>
         <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
       </div>
-      <div className="grid gap-2">
+      <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="address">Adresse</Label>
         <Textarea
           id="address"

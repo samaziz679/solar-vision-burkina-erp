@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Supplier } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react"
 
 interface SupplierFormProps {
   action: FormAction
@@ -25,16 +24,8 @@ function SubmitButton() {
 }
 
 export default function SupplierForm({ action, initialData }: SupplierFormProps) {
-  const [isClient, setIsClient] = useState(false) // State to track if component is mounted on client
+  // Removed isClient state and useEffect as dynamic import with ssr: false handles this
   const [state, formAction] = useFormState(action, {})
-
-  useEffect(() => {
-    setIsClient(true) // Set to true once component mounts on client
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div> // Render a loading state on the server
-  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

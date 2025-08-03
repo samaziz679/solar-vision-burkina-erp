@@ -1,15 +1,24 @@
-import PurchaseForm from "@/components/purchases/purchase-form"
-import { getProducts } from "@/lib/data/products"
-import { getSuppliers } from "@/lib/data/suppliers"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamicImport from "next/dynamic"
+import { createPurchase } from "@/app/purchases/actions"
 
-export default async function NewPurchasePage() {
-  const products = await getProducts()
-  const suppliers = await getSuppliers()
+const PurchaseForm = dynamicImport(() => import("@/components/purchases/purchase-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
 
+export default function NewPurchasePage() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Enregistrer un nouvel achat</h1>
-      <PurchaseForm products={products} suppliers={suppliers} />
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Ajouter un nouvel achat</CardTitle>
+          <CardDescription>Remplissez les détails du nouvel achat.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PurchaseForm action={createPurchase} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

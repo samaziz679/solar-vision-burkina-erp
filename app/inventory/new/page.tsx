@@ -1,8 +1,14 @@
-export const dynamic = "force-dynamic" // Ensures this page is rendered dynamically on the server
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import ProductForm from "@/components/inventory/product-form"
+
 import { createProduct } from "@/app/inventory/actions"
+
+// Dynamically import ProductForm with ssr: false
+const ProductForm = dynamic(() => import("@/components/inventory/product-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>, // Optional loading component
+})
+
+export const dynamic = "force-dynamic"
 
 export default function NewProductPage() {
   return (

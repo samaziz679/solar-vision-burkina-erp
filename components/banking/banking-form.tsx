@@ -6,13 +6,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { BankEntry } from "@/lib/supabase/types"
+import type { BankingEntry } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 interface BankingFormProps {
   action: FormAction
-  initialData?: BankEntry
+  initialData?: BankingEntry
 }
 
 function SubmitButton() {
@@ -26,45 +32,55 @@ function SubmitButton() {
 
 export default function BankingForm({ action, initialData }: BankingFormProps) {
   const [state, formAction] = useFormState(action, {})
+  const [date, setDate] = useState(initialData?.date ? new Date(initialData.date) : undefined)
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="date">Date</Label>
-        <Input
-          id="date"
-          name="date"
-          type="date"
-          defaultValue={initialData?.date || new Date().toISOString().split("T")[0]}
-          required
-        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {date ? format(date, "PPP") : <span>Choisir une date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+          </PopoverContent>
+        </Popover>
+        <input type="hidden" name="date" value={date ? format(date, "yyyy-MM-dd") : ""} />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          placeholder="Description de l'entrée bancaire"
-          defaultValue={initialData?.description || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="type">Type</Label>
         <Select name="type" defaultValue={initialData?.type || ""}>
           <SelectTrigger id="type">
             <SelectValue placeholder="Sélectionner le type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="deposit">Dépôt</SelectItem>
-            <SelectItem value="withdrawal">Retrait</SelectItem>
+            <SelectItem value="Dépôt">Dépôt</SelectItem>
+            <SelectItem value="Retrait">Retrait</SelectItem>
+            <SelectItem value="Transfert">Transfert</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="amount">Montant</Label>
+        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="Description de l'entrée"
+          defaultValue={initialData?.description || ""}
+          required
+        />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

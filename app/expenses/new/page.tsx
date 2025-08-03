@@ -1,7 +1,12 @@
-export const dynamic = "force-dynamic" // Ensures this page is rendered dynamically on the server
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import ExpenseForm from "@/components/expenses/expense-form"
+import dynamic from "next/dynamic" // Import dynamic
+
+// Dynamically import ExpenseForm with ssr: false
+const ExpenseForm = dynamic(() => import("@/components/expenses/expense-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>, // Optional loading component
+})
+
 import { createExpense } from "@/app/expenses/actions"
 
 export default function NewExpensePage() {

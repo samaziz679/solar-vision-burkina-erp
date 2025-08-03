@@ -1,24 +1,36 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
 import { getSupplierById } from "@/lib/data/suppliers"
-import SupplierForm from "@/components/suppliers/supplier-form"
-import { notFound } from "next/navigation"
+import { updateSupplier } from "@/app/suppliers/actions"
 
-interface EditSupplierPageProps {
-  params: {
-    id: string
+const SupplierForm = dynamic(() => import("@/components/suppliers/supplier-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
+export default async function EditSupplierPage({ params }: { params: { id: string } }) {
+  const id = params.id
+  const { data: supplier, error } = await getSupplierById(id)
+
+  if (error) {
+    return <div className="text-red-500">Erreur: {error.message}</div>
   }
-}
-
-export default async function EditSupplierPage({ params }: EditSupplierPageProps) {
-  const supplier = await getSupplierById(params.id)
 
   if (!supplier) {
-    notFound() // Show 404 if supplier not found
+    return <div className="text-gray-500">Fournisseur non trouvé.</div>
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Modifier Fournisseur: {supplier.name}</h1>
-      <SupplierForm supplier={supplier} />
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Modifier le fournisseur</CardTitle>
+          <CardDescription>Mettez à jour les détails du fournisseur.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SupplierForm action={updateSupplier} initialData={supplier} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

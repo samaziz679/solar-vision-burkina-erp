@@ -1,24 +1,36 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
 import { getProductById } from "@/lib/data/products"
-import EditProductForm from "@/components/inventory/edit-product-form"
-import { notFound } from "next/navigation"
+import { updateProduct } from "@/app/inventory/actions"
 
-interface EditProductPageProps {
-  params: {
-    id: string
+const ProductForm = dynamic(() => import("@/components/inventory/product-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
+export default async function EditProductPage({ params }: { params: { id: string } }) {
+  const id = params.id
+  const { data: product, error } = await getProductById(id)
+
+  if (error) {
+    return <div className="text-red-500">Erreur: {error.message}</div>
   }
-}
-
-export default async function EditProductPage({ params }: EditProductPageProps) {
-  const product = await getProductById(params.id)
 
   if (!product) {
-    notFound() // Show 404 if product not found
+    return <div className="text-gray-500">Produit non trouvé.</div>
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Modifier Produit: {product.name}</h1>
-      <EditProductForm product={product} />
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Modifier le produit</CardTitle>
+          <CardDescription>Mettez à jour les détails du produit.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProductForm action={updateProduct} initialData={product} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

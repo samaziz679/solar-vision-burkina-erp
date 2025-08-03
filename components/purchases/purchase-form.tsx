@@ -4,18 +4,20 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { Product, Supplier, Purchase } from "@/lib/supabase/types"
+import type { Purchase } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useEffect, useState } from "react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 interface PurchaseFormProps {
   action: FormAction
   initialData?: Purchase
-  products: Product[]
-  suppliers: Supplier[]
 }
 
 function SubmitButton() {
@@ -27,107 +29,70 @@ function SubmitButton() {
   )
 }
 
-export default function PurchaseForm({ action, initialData, products, suppliers }: PurchaseFormProps) {
+export default function PurchaseForm({ action, initialData }: PurchaseFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [selectedProductId, setSelectedProductId] = useState(initialData?.product_id || "")
-  const [quantity, setQuantity] = useState(initialData?.quantity_purchased || 0)
-  const [unitCost, setUnitCost] = useState(initialData?.unit_cost || 0)
-  const [totalCost, setTotalCost] = useState(initialData?.total_cost || 0)
-
-  useEffect(() => {
-    if (quantity > 0 && unitCost > 0) {
-      setTotalCost(quantity * unitCost)
-    } else {
-      setTotalCost(0)
-    }
-  }, [quantity, unitCost])
+  const [purchaseDate, setPurchaseDate] = useState(
+    initialData?.purchase_date ? new Date(initialData.purchase_date) : undefined,
+  )
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="purchase_date">Date d'achat</Label>
-        <Input
-          id="purchase_date"
-          name="purchase_date"
-          type="date"
-          defaultValue={initialData?.purchase_date || new Date().toISOString().split("T")[0]}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
         <Label htmlFor="product_id">Produit</Label>
-        <Select name="product_id" value={selectedProductId} onValueChange={setSelectedProductId} required>
-          <SelectTrigger id="product_id">
-            <SelectValue placeholder="Sélectionner un produit" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input id="product_id" name="product_id" type="text" defaultValue={initialData?.product_id || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="supplier_id">Fournisseur</Label>
-        <Select name="supplier_id" defaultValue={initialData?.supplier_id || ""} required>
-          <SelectTrigger id="supplier_id">
-            <SelectValue placeholder="Sélectionner un fournisseur" />
-          </SelectTrigger>
-          <SelectContent>
-            {suppliers.map((supplier) => (
-              <SelectItem key={supplier.id} value={supplier.id}>
-                {supplier.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input id="supplier_id" name="supplier_id" type="text" defaultValue={initialData?.supplier_id || ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="quantity_purchased">Quantité achetée</Label>
-        <Input
-          id="quantity_purchased"
-          name="quantity_purchased"
-          type="number"
-          defaultValue={initialData?.quantity_purchased || ""}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          required
-        />
+        <Label htmlFor="quantity">Quantité</Label>
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="unit_cost">Coût unitaire</Label>
+        <Label htmlFor="unit_price">Prix Unitaire</Label>
         <Input
-          id="unit_cost"
-          name="unit_cost"
+          id="unit_price"
+          name="unit_price"
           type="number"
           step="0.01"
-          defaultValue={initialData?.unit_cost || ""}
-          onChange={(e) => setUnitCost(Number(e.target.value))}
+          defaultValue={initialData?.unit_price || ""}
           required
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="total_cost">Coût total</Label>
-        <Input id="total_cost" name="total_cost" type="number" step="0.01" value={totalCost} readOnly required />
+        <Label htmlFor="total_price">Prix Total</Label>
+        <Input
+          id="total_price"
+          name="total_price"
+          type="number"
+          step="0.01"
+          defaultValue={initialData?.total_price || ""}
+          required
+        />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="payment_status">Statut du paiement</Label>
-        <Select name="payment_status" defaultValue={initialData?.payment_status || "pending"} required>
-          <SelectTrigger id="payment_status">
-            <SelectValue placeholder="Sélectionner le statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="paid">Payé</SelectItem>
-            <SelectItem value="partially_paid">Partiellement payé</SelectItem>
-          </SelectContent>
-        </Select>
+        <Label htmlFor="purchase_date">Date d'achat</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn("w-full justify-start text-left font-normal", !purchaseDate && "text-muted-foreground")}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {purchaseDate ? format(purchaseDate, "PPP") : <span>Choisir une date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar mode="single" selected={purchaseDate} onSelect={setPurchaseDate} initialFocus />
+          </PopoverContent>
+        </Popover>
+        <input type="hidden" name="purchase_date" value={purchaseDate ? format(purchaseDate, "yyyy-MM-dd") : ""} />
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes sur l'achat" defaultValue={initialData?.notes || ""} />
+        <Textarea id="notes" name="notes" placeholder="Notes supplémentaires" defaultValue={initialData?.notes || ""} />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

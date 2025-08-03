@@ -10,25 +10,35 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "avatars.githubusercontent.com",
-        port: "",
-        pathname: "**",
+        hostname: "lh3.googleusercontent.com",
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-        port: "",
-        pathname: "**",
+        hostname: "avatars.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "source.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
       },
     ],
     unoptimized: true,
   },
-  experimental: {
-    serverActions: {
-      allowedOrigins: ["localhost:3000", "*.vercel.app"],
-    },
-  },
-  // No 'output' configuration here to allow for hybrid rendering (SSR for dynamic pages, SSG for static)
 }
 
 module.exports = nextConfig

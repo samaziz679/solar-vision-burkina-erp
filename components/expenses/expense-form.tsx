@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react"
+import { useState } from "react" // Keep useState for date picker, remove useEffect for isClient
 
 interface ExpenseFormProps {
   action: FormAction
@@ -31,17 +31,9 @@ function SubmitButton() {
 }
 
 export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
-  const [isClient, setIsClient] = useState(false) // State to track if component is mounted on client
+  // Removed isClient state and useEffect as dynamic import with ssr: false handles this
   const [state, formAction] = useFormState(action, {})
   const [date, setDate] = useState(initialData?.expense_date ? new Date(initialData.expense_date) : undefined)
-
-  useEffect(() => {
-    setIsClient(true) // Set to true once component mounts on client
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div> // Render a loading state on the server
-  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

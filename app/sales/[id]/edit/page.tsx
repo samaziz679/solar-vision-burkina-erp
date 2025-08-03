@@ -1,28 +1,36 @@
-import { getSaleById } from "@/lib/data/sales" // Need to update getSaleById to fetch product and client details
-import { getProducts } from "@/lib/data/products"
-import { getClients } from "@/lib/data/clients" // Will be created later
-import EditSaleForm from "@/components/sales/edit-sale-form"
-import { notFound } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
+import { getSaleById } from "@/lib/data/sales"
+import { updateSale } from "@/app/sales/actions"
 
-interface EditSalePageProps {
-  params: {
-    id: string
+const SaleForm = dynamic(() => import("@/components/sales/sale-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
+export default async function EditSalePage({ params }: { params: { id: string } }) {
+  const id = params.id
+  const { data: sale, error } = await getSaleById(id)
+
+  if (error) {
+    return <div className="text-red-500">Erreur: {error.message}</div>
   }
-}
-
-export default async function EditSalePage({ params }: EditSalePageProps) {
-  const sale = await getSaleById(params.id)
-  const products = await getProducts()
-  const clients = await getClients() // Uncomment when getClients is implemented
 
   if (!sale) {
-    notFound() // Show 404 if sale not found
+    return <div className="text-gray-500">Vente non trouvée.</div>
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Modifier Vente: {sale.products?.name || "Vente Inconnue"}</h1>
-      <EditSaleForm sale={sale} products={products} clients={clients} />
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Modifier la vente</CardTitle>
+          <CardDescription>Mettez à jour les détails de la vente.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SaleForm action={updateSale} initialData={sale} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

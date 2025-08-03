@@ -1,7 +1,12 @@
-export const dynamic = "force-dynamic" // Ensures this page is rendered dynamically on the server
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import SupplierForm from "@/components/suppliers/supplier-form"
+import dynamic from "next/dynamic" // Import dynamic
+
+// Dynamically import SupplierForm with ssr: false
+const SupplierForm = dynamic(() => import("@/components/suppliers/supplier-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>, // Optional loading component
+})
+
 import { createSupplier } from "@/app/suppliers/actions"
 
 export default function NewSupplierPage() {

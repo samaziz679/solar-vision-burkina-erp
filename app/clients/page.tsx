@@ -1,25 +1,35 @@
-import { notFound } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import BankingForm from "@/components/banking/banking-form"
-import { getBankEntryById } from "@/lib/data/banking"
-import { updateBankEntry } from "@/app/banking/actions"
+import { Suspense } from "react"
+import Link from "next/link"
+import { PlusCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import ClientList, { ClientListSkeleton } from "@/components/clients/client-list"
+import { getClients } from "@/lib/data/clients"
 
-export default async function EditBankingPage({ params }: { params: { id: string } }) {
-  const bankEntry = await getBankEntryById(params.id)
-
-  if (!bankEntry) {
-    notFound()
-  }
+export default async function ClientsPage() {
+  const clients = await getClients()
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full max-w-2xl mx-auto">
+      <div className="flex items-center">
+        <h1 className="text-lg font-semibold md:text-2xl">Clients</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" asChild>
+            <Link href="/clients/new">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Ajouter un client
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <Card>
         <CardHeader>
-          <CardTitle>Modifier l'entrée bancaire</CardTitle>
-          <CardDescription>Mettez à jour les détails de l'entrée bancaire.</CardDescription>
+          <CardTitle>Liste des Clients</CardTitle>
         </CardHeader>
         <CardContent>
-          <BankingForm action={updateBankEntry} initialData={bankEntry} />
+          <Suspense fallback={<ClientListSkeleton />}>
+            <ClientList clients={clients} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>

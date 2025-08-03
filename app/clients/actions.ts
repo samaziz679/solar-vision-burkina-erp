@@ -2,82 +2,61 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import type { Database } from "@/lib/supabase/types"
+import { createClient as createSupabaseClient } from "@/lib/supabase/server"
 
-export async function addClient(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: "User not authenticated." }
-  }
+export async function createClient(formData: FormData) {
+  const supabase = await createSupabaseClient()
 
   const name = formData.get("name") as string
-  const contact = formData.get("contact") as string
   const email = formData.get("email") as string
+  const phone = formData.get("phone") as string
   const address = formData.get("address") as string
 
-  if (!name || !contact) {
-    return { error: "Le nom et le contact sont requis." }
+  if (!name) {
+    return { error: "Name is required." }
   }
 
   const { error } = await supabase.from("clients").insert({
-    user_id: user.id,
     name,
-    contact,
     email,
+    phone,
     address,
   })
 
   if (error) {
-    console.error("Error adding client:", error)
-    return { error: error.message }
+    console.error("Error creating client:", error.message)
+    return { error: "Failed to create client." }
   }
 
   revalidatePath("/clients")
   redirect("/clients")
 }
 
-export async function updateClient(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
+export async function updateClient(id: string, formData: FormData) {
+  const supabase = await createSupabaseClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: "User not authenticated." }
-  }
-
-  const id = formData.get("id") as string
   const name = formData.get("name") as string
-  const contact = formData.get("contact") as string
   const email = formData.get("email") as string
+  const phone = formData.get("phone") as string
   const address = formData.get("address") as string
 
-  if (!id || !name || !contact) {
-    return { error: "Le nom et le contact sont requis." }
+  if (!name) {
+    return { error: "Name is required." }
   }
 
   const { error } = await supabase
     .from("clients")
     .update({
       name,
-      contact,
       email,
+      phone,
       address,
     })
     .eq("id", id)
-    .eq("user_id", user.id)
 
   if (error) {
-    console.error("Error updating client:", error)
-    return { error: error.message }
+    console.error("Error updating client:", error.message)
+    return { error: "Failed to update client." }
   }
 
   revalidatePath("/clients")
@@ -85,21 +64,13 @@ export async function updateClient(prevState: any, formData: FormData) {
 }
 
 export async function deleteClient(id: string) {
-  const supabase = createServerActionClient<Database>({ cookies })
+  const supabase = await createSupabaseClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { success: false, error: "User not authenticated." }
-  }
-
-  const { error } = await supabase.from("clients").delete().eq("id", id).eq("user_id", user.id)
+  const { error } = await supabase.from("clients").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting client:", error)
-    return { success: false, error: error.message }
+    console.error("Error deleting client:", error.message)
+    return { error: "Failed to delete client." }
   }
 
   revalidatePath("/clients")

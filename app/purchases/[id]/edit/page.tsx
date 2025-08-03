@@ -1,33 +1,28 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
 import { getPurchaseById } from "@/lib/data/purchases"
-import { updatePurchase } from "@/app/purchases/actions"
 import { getProducts } from "@/lib/data/products"
 import { getSuppliers } from "@/lib/data/suppliers"
+import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
 import { notFound } from "next/navigation"
 
-export const dynamic = "force-dynamic"
+interface EditPurchasePageProps {
+  params: {
+    id: string
+  }
+}
 
-export default async function EditPurchasePage({ params }: { params: { id: string } }) {
+export default async function EditPurchasePage({ params }: EditPurchasePageProps) {
   const purchase = await getPurchaseById(params.id)
   const products = await getProducts()
   const suppliers = await getSuppliers()
 
   if (!purchase) {
-    notFound()
+    notFound() // Show 404 if purchase not found
   }
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Modifier l'achat</CardTitle>
-          <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} action={updatePurchase} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Modifier Achat: {purchase.products?.name || "Achat Inconnu"}</h1>
+      <EditPurchaseForm purchase={purchase} products={products} suppliers={suppliers} />
     </div>
   )
 }

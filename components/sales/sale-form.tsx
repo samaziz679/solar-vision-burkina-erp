@@ -19,8 +19,8 @@ import { useState, useEffect } from "react"
 interface SaleFormProps {
   action: FormAction
   initialData?: Sale
-  products: { id: string; name: string }[]
   clients: { id: string; name: string }[]
+  products: { id: string; name: string }[]
 }
 
 function SubmitButton() {
@@ -32,7 +32,7 @@ function SubmitButton() {
   )
 }
 
-export default function SaleForm({ action, initialData, products, clients }: SaleFormProps) {
+export default function SaleForm({ action, initialData, clients, products }: SaleFormProps) {
   const [state, formAction] = useFormState(action, {})
   const [saleDate, setSaleDate] = useState(initialData?.sale_date ? new Date(initialData.sale_date) : undefined)
   const [isClient, setIsClient] = useState(false)
@@ -48,57 +48,6 @@ export default function SaleForm({ action, initialData, products, clients }: Sal
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid gap-2">
-        <Label htmlFor="product_id">Produit</Label>
-        <Select name="product_id" defaultValue={initialData?.product_id || ""}>
-          <SelectTrigger id="product_id">
-            <SelectValue placeholder="Sélectionner un produit" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Select name="client_id" defaultValue={initialData?.client_id || ""}>
-          <SelectTrigger id="client_id">
-            <SelectValue placeholder="Sélectionner un client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="quantity_sold">Quantité Vendue</Label>
-        <Input
-          id="quantity_sold"
-          name="quantity_sold"
-          type="number"
-          defaultValue={initialData?.quantity_sold || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Prix Unitaire</Label>
-        <Input
-          id="unit_price"
-          name="unit_price"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.unit_price || ""}
-          required
-        />
-      </div>
       <div className="grid gap-2">
         <Label htmlFor="sale_date">Date de vente</Label>
         <Popover>
@@ -116,6 +65,81 @@ export default function SaleForm({ action, initialData, products, clients }: Sal
           </PopoverContent>
         </Popover>
         <input type="hidden" name="sale_date" value={saleDate ? format(saleDate, "yyyy-MM-dd") : ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="client_id">Client</Label>
+        <Select name="client_id" defaultValue={initialData?.client_id || ""}>
+          <SelectTrigger id="client_id">
+            <SelectValue placeholder="Sélectionner un client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="product_id">Produit</Label>
+        <Select name="product_id" defaultValue={initialData?.product_id || ""}>
+          <SelectTrigger id="product_id">
+            <SelectValue placeholder="Sélectionner un produit" />
+          </SelectTrigger>
+          <SelectContent>
+            {products.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="quantity_sold">Quantité vendue</Label>
+        <Input
+          id="quantity_sold"
+          name="quantity_sold"
+          type="number"
+          defaultValue={initialData?.quantity_sold || ""}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="unit_price">Prix unitaire</Label>
+        <Input
+          id="unit_price"
+          name="unit_price"
+          type="number"
+          step="0.01"
+          defaultValue={initialData?.unit_price || ""}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="total_price">Prix total</Label>
+        <Input
+          id="total_price"
+          name="total_price"
+          type="number"
+          step="0.01"
+          defaultValue={initialData?.total_price || ""}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="payment_status">Statut de paiement</Label>
+        <Select name="payment_status" defaultValue={initialData?.payment_status || ""}>
+          <SelectTrigger id="payment_status">
+            <SelectValue placeholder="Sélectionner le statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Payé">Payé</SelectItem>
+            <SelectItem value="En attente">En attente</SelectItem>
+            <SelectItem value="Partiellement payé">Partiellement payé</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="notes">Notes</Label>

@@ -51,6 +51,24 @@ export default function PurchaseForm({ action, initialData, products, suppliers 
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
+        <Label htmlFor="purchase_date">Date d'achat</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn("w-full justify-start text-left font-normal", !purchaseDate && "text-muted-foreground")}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {purchaseDate ? format(purchaseDate, "PPP") : <span>Choisir une date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar mode="single" selected={purchaseDate} onSelect={setPurchaseDate} initialFocus />
+          </PopoverContent>
+        </Popover>
+        <input type="hidden" name="purchase_date" value={purchaseDate ? format(purchaseDate, "yyyy-MM-dd") : ""} />
+      </div>
+      <div className="grid gap-2">
         <Label htmlFor="product_id">Produit</Label>
         <Select name="product_id" defaultValue={initialData?.product_id || ""}>
           <SelectTrigger id="product_id">
@@ -60,21 +78,6 @@ export default function PurchaseForm({ action, initialData, products, suppliers 
             {products.map((product) => (
               <SelectItem key={product.id} value={product.id}>
                 {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="supplier_id">Fournisseur</Label>
-        <Select name="supplier_id" defaultValue={initialData?.supplier_id || ""}>
-          <SelectTrigger id="supplier_id">
-            <SelectValue placeholder="Sélectionner un fournisseur" />
-          </SelectTrigger>
-          <SelectContent>
-            {suppliers.map((supplier) => (
-              <SelectItem key={supplier.id} value={supplier.id}>
-                {supplier.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -96,22 +99,32 @@ export default function PurchaseForm({ action, initialData, products, suppliers 
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="purchase_date">Date d'achat</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn("w-full justify-start text-left font-normal", !purchaseDate && "text-muted-foreground")}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {purchaseDate ? format(purchaseDate, "PPP") : <span>Choisir une date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar mode="single" selected={purchaseDate} onSelect={setPurchaseDate} initialFocus />
-          </PopoverContent>
-        </Popover>
-        <input type="hidden" name="purchase_date" value={purchaseDate ? format(purchaseDate, "yyyy-MM-dd") : ""} />
+        <Label htmlFor="supplier_id">Fournisseur</Label>
+        <Select name="supplier_id" defaultValue={initialData?.supplier_id || ""}>
+          <SelectTrigger id="supplier_id">
+            <SelectValue placeholder="Sélectionner un fournisseur" />
+          </SelectTrigger>
+          <SelectContent>
+            {suppliers.map((supplier) => (
+              <SelectItem key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="payment_status">Statut de paiement</Label>
+        <Select name="payment_status" defaultValue={initialData?.payment_status || ""}>
+          <SelectTrigger id="payment_status">
+            <SelectValue placeholder="Sélectionner le statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Payé">Payé</SelectItem>
+            <SelectItem value="En attente">En attente</SelectItem>
+            <SelectItem value="Partiellement payé">Partiellement payé</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="notes">Notes</Label>

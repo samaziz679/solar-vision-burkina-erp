@@ -3,17 +3,27 @@
 
 echo "🚀 Deploying Solar Vision Burkina ERP..."
 
-# Deploy to Vercel
-# The --prod flag deploys to the production environment
-# The --confirm flag bypasses the confirmation prompt
-vercel --prod --confirm
+# Exit immediately if a command exits with a non-zero status.
+set -e
 
-if [ $? -eq 0 ]; then
-  echo "Deployment successful!"
-else
-  echo "Deployment failed. Please check the Vercel logs for more details."
-  exit 1
+# Check if npm is installed
+if ! command -v npm &> /dev/null
+then
+    echo "npm could not be found, please install Node.js and npm."
+    exit 1
 fi
+
+# Install Vercel CLI if not installed
+npm install -g vercel
+
+echo "Installing dependencies..."
+npm install
+
+echo "Running build process..."
+npm run build
+
+# Deploy to Vercel
+vercel --prod
 
 echo "✅ Deployment complete!"
 echo "📝 Don't forget to add your Supabase environment variables in Vercel dashboard"

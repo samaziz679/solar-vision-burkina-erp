@@ -1,39 +1,42 @@
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { createMiddlewareClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
-
 import type { NextRequest } from "next/server"
-import type { Database } from "@/lib/supabase/types"
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient<Database>({ req, res })
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+  const supabase = createMiddlewareClient({ req: request, res: response })
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  if (user && req.nextUrl.pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", req.url))
+  const publicPaths = ["/login", "/auth/callback", "/setup-required"]
+
+  // If there is no session and the path is not public, redirect to login
+  if (!session && !publicPaths.includes(request.nextUrl.pathname)) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = "/login"
+    redirectUrl.searchParams.set(`redirectedFrom`, request.nextUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
   }
 
-  if (!user && req.nextUrl.pathname !== "/login") {
-    return NextResponse.redirect(new URL("/login", req.url))
+  // If there is a session and the path is login, redirect to dashboard
+  if (session && request.nextUrl.pathname === "/login") {
+    return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
-  return res
+  return response
 }
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/dashboard/:path*",
-    "/inventory/:path*",
-    "/sales/:path*",
-    "/purchases/:path*",
-    "/expenses/:path*",
-    "/banking/:path*",
-    "/clients/:path*",
-    "/suppliers/:path*",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - any other static assets in /public
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

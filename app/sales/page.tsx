@@ -1,40 +1,24 @@
-import { Suspense } from "react"
+import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import SalesList, { SalesListSkeleton } from "@/components/sales/sales-list"
-import { getSales } from "@/lib/data/sales"
-
-export const dynamic = "force-dynamic"
+import { getSales } from "@/lib/data/sales" // Import the new data function
+import SalesList from "@/components/sales/sales-list" // Import the new component
 
 export default async function SalesPage() {
-  const sales = await getSales()
+  const sales = await getSales() // Fetch sales data
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <div className="flex items-center">
-        <h1 className="font-semibold text-lg md:text-2xl">Ventes</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Button size="sm" asChild>
-            <Link href="/sales/new">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Enregistrer une vente
-            </Link>
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Ventes</h1>
+        <Button asChild>
+          <Link href="/sales/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Enregistrer une vente
+          </Link>
+        </Button>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des Ventes</CardTitle>
-          <CardDescription>Gérez vos enregistrements de ventes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<SalesListSkeleton />}>
-            <SalesList sales={sales} />
-          </Suspense>
-        </CardContent>
-      </Card>
+      <SalesList sales={sales} /> {/* Pass sales data to SalesList */}
     </div>
   )
 }

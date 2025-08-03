@@ -1,232 +1,258 @@
--- This script sets up the full Supabase schema for the Solar Vision Burkina ERP.
--- It includes tables for products, sales, purchases, expenses, banking accounts, clients, and suppliers.
--- It also sets up Row Level Security (RLS) policies to ensure data is secure and accessible only by the owning user.
+-- This script sets up the full database schema for the Solar Vision Burkina ERP system.
 
--- Enable Row Level Security (RLS)
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE banking_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+-- Enable the "uuid-ossp" extension for generating UUIDs
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create the 'products' table
-CREATE TABLE products (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- Create the "public" schema if it doesn't exist (usually exists by default)
+CREATE SCHEMA IF NOT EXISTS public;
+
+-- Set the search path to "public"
+SET search_path TO public;
+
+-- Drop tables if they exist to ensure a clean slate for schema creation
+DROP TABLE IF EXISTS sales_items CASCADE;
+DROP TABLE IF EXISTS purchase_items CASCADE;
+DROP TABLE IF EXISTS sales CASCADE;
+DROP TABLE IF EXISTS purchases CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS expenses CASCADE;
+DROP TABLE IF EXISTS banking_transactions CASCADE;
+DROP TABLE IF EXISTS clients CASCADE;
+DROP TABLE IF EXISTS suppliers CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
+-- Create the "profiles" table to store user profiles
+CREATE TABLE profiles (
+    id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT UNIQUE,
+    avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    price NUMERIC(10, 2) NOT NULL,
-    stock INTEGER NOT NULL DEFAULT 0,
-    category TEXT NOT NULL,
-    image_url TEXT -- Added for product images
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'products' table
-CREATE POLICY "Users can view their own products." ON products
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable Row Level Security (RLS) for the "profiles" table
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can insert their own products." ON products
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Create RLS policies for the "profiles" table
+CREATE POLICY "Public profiles are viewable by everyone." ON profiles FOR SELECT USING (TRUE);
+CREATE POLICY "Users can insert their own profile." ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update their own profile." ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can delete their own profile." ON profiles FOR DELETE USING (auth.uid() = id);
 
-CREATE POLICY "Users can update their own products." ON products
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own products." ON products
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create the 'clients' table
+-- Create the "clients" table
 CREATE TABLE clients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    name TEXT NOT NULL,
-    contact_person TEXT NOT NULL,
-    email TEXT,
-    phone TEXT NOT NULL,
-    address TEXT NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'clients' table
-CREATE POLICY "Users can view their own clients." ON clients
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable RLS for the "clients" table
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can insert their own clients." ON clients
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Create RLS policies for the "clients" table
+CREATE POLICY "Clients are viewable by authenticated users." ON clients FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create clients." ON clients FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update clients." ON clients FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete clients." ON clients FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can update their own clients." ON clients
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own clients." ON clients
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create the 'suppliers' table
+-- Create the "suppliers" table
 CREATE TABLE suppliers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    name TEXT NOT NULL,
-    contact_person TEXT NOT NULL,
-    email TEXT,
-    phone TEXT NOT NULL,
-    address TEXT NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'suppliers' table
-CREATE POLICY "Users can view their own suppliers." ON suppliers
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable RLS for the "suppliers" table
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can insert their own suppliers." ON suppliers
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Create RLS policies for the "suppliers" table
+CREATE POLICY "Suppliers are viewable by authenticated users." ON suppliers FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create suppliers." ON suppliers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update suppliers." ON suppliers FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete suppliers." ON suppliers FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can update their own suppliers." ON suppliers
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own suppliers." ON suppliers
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create the 'sales' table
-CREATE TABLE sales (
+-- Create the "products" table
+CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    price NUMERIC(10, 2) NOT NULL,
+    stock_quantity INT NOT NULL,
+    image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    product_id UUID REFERENCES products(id) ON DELETE RESTRICT NOT NULL, -- RESTRICT to prevent deleting products with sales
-    client_id UUID REFERENCES clients(id) ON DELETE RESTRICT NOT NULL,   -- RESTRICT to prevent deleting clients with sales
-    quantity INTEGER NOT NULL,
-    unit_price NUMERIC(10, 2) NOT NULL,
-    total_amount NUMERIC(10, 2) NOT NULL,
-    sale_date DATE NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'sales' table
-CREATE POLICY "Users can view their own sales." ON sales
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable RLS for the "products" table
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can insert their own sales." ON sales
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Create RLS policies for the "products" table
+CREATE POLICY "Products are viewable by authenticated users." ON products FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create products." ON products FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update products." ON products FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete products." ON products FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can update their own sales." ON sales
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own sales." ON sales
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create the 'purchases' table
+-- Create the "purchases" table
 CREATE TABLE purchases (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    product_id UUID REFERENCES products(id) ON DELETE RESTRICT NOT NULL, -- RESTRICT to prevent deleting products with purchases
-    supplier_id UUID REFERENCES suppliers(id) ON DELETE RESTRICT NOT NULL, -- RESTRICT to prevent deleting suppliers with purchases
-    quantity INTEGER NOT NULL,
-    unit_cost NUMERIC(10, 2) NOT NULL,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    purchase_date DATE NOT NULL,
     total_amount NUMERIC(10, 2) NOT NULL,
-    purchase_date DATE NOT NULL
+    status VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'purchases' table
-CREATE POLICY "Users can view their own purchases." ON purchases
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable RLS for the "purchases" table
+ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can insert their own purchases." ON purchases
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Create RLS policies for the "purchases" table
+CREATE POLICY "Purchases are viewable by authenticated users." ON purchases FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create purchases." ON purchases FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update purchases." ON purchases FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete purchases." ON purchases FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can update their own purchases." ON purchases
-  FOR UPDATE USING (auth.uid() = user_id);
+-- Create the "purchase_items" table
+CREATE TABLE purchase_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    purchase_id UUID REFERENCES purchases(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+    quantity INT NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-CREATE POLICY "Users can delete their own purchases." ON purchases
-  FOR DELETE USING (auth.uid() = user_id);
+-- Enable RLS for the "purchase_items" table
+ALTER TABLE purchase_items ENABLE ROW LEVEL SECURITY;
 
--- Create the 'expenses' table
+-- Create RLS policies for the "purchase_items" table
+CREATE POLICY "Purchase items are viewable by authenticated users." ON purchase_items FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create purchase items." ON purchase_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update purchase items." ON purchase_items FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete purchase items." ON purchase_items FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Create the "sales" table
+CREATE TABLE sales (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+    sale_date DATE NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for the "sales" table
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for the "sales" table
+CREATE POLICY "Sales are viewable by authenticated users." ON sales FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create sales." ON sales FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update sales." ON sales FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete sales." ON sales FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Create the "sales_items" table
+CREATE TABLE sales_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sale_id UUID REFERENCES sales(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+    quantity INT NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for the "sales_items" table
+ALTER TABLE sales_items ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for the "sales_items" table
+CREATE POLICY "Sales items are viewable by authenticated users." ON sales_items FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create sales items." ON sales_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update sales items." ON sales_items FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete sales items." ON sales_items FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Create the "expenses" table
 CREATE TABLE expenses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     description TEXT NOT NULL,
     amount NUMERIC(10, 2) NOT NULL,
-    date DATE NOT NULL,
-    category TEXT NOT NULL
-);
-
--- RLS policies for 'expenses' table
-CREATE POLICY "Users can view their own expenses." ON expenses
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own expenses." ON expenses
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own expenses." ON expenses
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own expenses." ON expenses
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create the 'banking_accounts' table
-CREATE TABLE banking_accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    expense_date DATE NOT NULL,
+    category VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    account_name TEXT NOT NULL,
-    account_number TEXT NOT NULL,
-    bank_name TEXT NOT NULL,
-    balance NUMERIC(10, 2) NOT NULL DEFAULT 0
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'banking_accounts' table
-CREATE POLICY "Users can view their own banking accounts." ON banking_accounts
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable RLS for the "expenses" table
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can insert their own banking accounts." ON banking_accounts
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Create RLS policies for the "expenses" table
+CREATE POLICY "Expenses are viewable by authenticated users." ON expenses FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create expenses." ON expenses FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update expenses." ON expenses FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete expenses." ON expenses FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can update their own banking accounts." ON banking_accounts
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own banking accounts." ON banking_accounts
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create the 'user_profiles' table to store additional user information
-CREATE TABLE user_profiles (
+-- Create the "banking_transactions" table
+CREATE TABLE banking_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    transaction_date DATE NOT NULL,
+    description TEXT NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- e.g., 'deposit', 'withdrawal', 'transfer'
+    category VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
-    is_admin BOOLEAN DEFAULT FALSE
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS policies for 'user_profiles' table
-CREATE POLICY "Users can view their own profile." ON user_profiles
-  FOR SELECT USING (auth.uid() = user_id);
+-- Enable RLS for the "banking_transactions" table
+ALTER TABLE banking_transactions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view all user profiles." ON user_profiles
-  FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM user_profiles WHERE user_id = auth.uid() AND is_admin = TRUE));
+-- Create RLS policies for the "banking_transactions" table
+CREATE POLICY "Banking transactions are viewable by authenticated users." ON banking_transactions FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create banking transactions." ON banking_transactions FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update banking transactions." ON banking_transactions FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete banking transactions." ON banking_transactions FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can insert their own profile." ON user_profiles
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own profile." ON user_profiles
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can update any user profile." ON user_profiles
-  FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM user_profiles WHERE user_id = auth.uid() AND is_admin = TRUE));
-
--- Function to create a user profile on new user signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- Set up a trigger to update `updated_at` column automatically
+CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.user_profiles (user_id, is_admin)
-  VALUES (NEW.id, FALSE);
-  RETURN NEW;
+    NEW.updated_at = NOW();
+    RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
--- Trigger to call the function on new user signup
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_auth_user_created') THEN
-    CREATE TRIGGER on_auth_user_created
-      AFTER INSERT ON auth.users
-      FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-  END IF;
-END $$;
+-- Apply the trigger to all tables that have an `updated_at` column
+DO $$
+DECLARE
+    t_name TEXT;
+BEGIN
+    FOR t_name IN (SELECT table_name FROM information_schema.columns WHERE column_name = 'updated_at' AND table_schema = 'public')
+    LOOP
+        EXECUTE FORMAT('CREATE OR REPLACE TRIGGER set_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();', t_name);
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Optional: Add indexes for performance on frequently queried columns
+CREATE INDEX idx_clients_name ON clients(name);
+CREATE INDEX idx_suppliers_name ON suppliers(name);
+CREATE INDEX idx_products_name ON products(name);
+CREATE INDEX idx_products_category ON products(category);
+CREATE INDEX idx_purchases_date ON purchases(purchase_date);
+CREATE INDEX idx_sales_date ON sales(sale_date);
+CREATE INDEX idx_expenses_date ON expenses(expense_date);
+CREATE INDEX idx_banking_transactions_date ON banking_transactions(transaction_date);

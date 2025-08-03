@@ -37,7 +37,7 @@ export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, o
     } else {
       toast({
         title: "Succès",
-        description: "L'opération bancaire a été supprimée.",
+        description: "L'entrée bancaire a été supprimée.",
       })
     }
     setIsDeleting(false)
@@ -50,8 +50,8 @@ export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, o
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette opération bancaire de votre base
-            de données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cette entrée bancaire de votre base de
+            données.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -2,106 +2,106 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createServerClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth"
 import type { Database } from "@/lib/supabase/types"
 
-export async function addSupplier(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
+type SupplierInsert = Database["public"]["Tables"]["suppliers"]["Insert"]
+type SupplierUpdate = Database["public"]["Tables"]["suppliers"]["Update"]
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export async function createSupplier(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
   if (!user) {
-    return { error: "User not authenticated." }
+    redirect("/login")
   }
 
   const name = formData.get("name") as string
-  const contact = formData.get("contact") as string
-  const email = formData.get("email") as string
-  const address = formData.get("address") as string
+  const phone = formData.get("phone") as string | null
+  const email = formData.get("email") as string | null
+  const address = formData.get("address") as string | null
 
-  if (!name || !contact) {
-    return { error: "Le nom et le contact sont requis." }
-  }
-
-  const { error } = await supabase.from("suppliers").insert({
-    user_id: user.id,
+  const newSupplier: SupplierInsert = {
     name,
-    contact,
+    phone,
     email,
     address,
-  })
+    created_by: user.id,
+  }
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("suppliers").insert(newSupplier)
 
   if (error) {
-    console.error("Error adding supplier:", error)
-    return { error: error.message }
+    console.error("Error creating supplier:", error.message)
+    // Check for unique constraint violation (e.g., supplier name already exists)
+    if (error.code === "23505") {
+      // PostgreSQL unique_violation error code
+      return { success: false, error: "Un fournisseur avec ce nom existe déjà." }
+    }
+    return { success: false, error: "Échec de la création du fournisseur: " + error.message }
   }
 
   revalidatePath("/suppliers")
-  redirect("/suppliers")
+  return { success: true, message: "Fournisseur créé avec succès!" }
 }
 
 export async function updateSupplier(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   if (!user) {
-    return { error: "User not authenticated." }
+    redirect("/login")
   }
 
   const id = formData.get("id") as string
   const name = formData.get("name") as string
-  const contact = formData.get("contact") as string
-  const email = formData.get("email") as string
-  const address = formData.get("address") as string
+  const phone = formData.get("phone") as string | null
+  const email = formData.get("email") as string | null
+  const address = formData.get("address") as string | null
 
-  if (!id || !name || !contact) {
-    return { error: "Le nom et le contact sont requis." }
+  const updatedSupplier: SupplierUpdate = {
+    name,
+    phone,
+    email,
+    address,
   }
 
-  const { error } = await supabase
-    .from("suppliers")
-    .update({
-      name,
-      contact,
-      email,
-      address,
-    })
-    .eq("id", id)
-    .eq("user_id", user.id)
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("suppliers").update(updatedSupplier).eq("id", id)
 
   if (error) {
-    console.error("Error updating supplier:", error)
-    return { error: error.message }
+    console.error("Error updating supplier:", error.message)
+    if (error.code === "23505") {
+      // PostgreSQL unique_violation error code
+      return { success: false, error: "Un fournisseur avec ce nom existe déjà." }
+    }
+    return { success: false, error: "Échec de la mise à jour du fournisseur: " + error.message }
   }
 
   revalidatePath("/suppliers")
-  redirect("/suppliers")
+  revalidatePath(`/suppliers/${id}/edit`)
+  return { success: true, message: "Fournisseur mis à jour avec succès!" }
 }
 
-export async function deleteSupplier(id: string) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export async function deleteSupplier(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
   if (!user) {
-    return { success: false, error: "User not authenticated." }
+    redirect("/login")
   }
 
-  const { error } = await supabase.from("suppliers").delete().eq("id", id).eq("user_id", user.id)
+  const id = formData.get("id") as string
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("suppliers").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting supplier:", error)
-    return { success: false, error: error.message }
+    console.error("Error deleting supplier:", error.message)
+    // Check for foreign key constraint violation (supplier might be linked to purchases)
+    if (error.code === "23503") {
+      // PostgreSQL foreign_key_violation error code
+      return { success: false, error: "Impossible de supprimer ce fournisseur car il est lié à des achats existants." }
+    }
+    return { success: false, error: "Échec de la suppression du fournisseur: " + error.message }
   }
 
   revalidatePath("/suppliers")
-  return { success: true }
+  return { success: true, message: "Fournisseur supprimé avec succès!" }
 }

@@ -2,31 +2,31 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server" // Corrected import
 import type { BankEntry } from "@/lib/supabase/types"
 
 export async function createBankEntry(prevState: any, formData: FormData) {
   const supabase = await createServerClient()
 
   const date = formData.get("date") as string
-  const type = formData.get("type") as BankEntry["type"]
-  const amount = Number.parseFloat(formData.get("amount") as string)
   const description = formData.get("description") as string
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const type = formData.get("type") as BankEntry["type"]
 
-  if (!date || !type || isNaN(amount) || !description) {
+  if (!date || !description || isNaN(amount) || !type) {
     return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase.from("bank_entries").insert({
     date,
-    type,
-    amount,
     description,
+    amount,
+    type,
   })
 
   if (error) {
     console.error("Error creating bank entry:", error)
-    return { error: "Échec de l'ajout de l'opération bancaire. Veuillez réessayer." }
+    return { error: "Échec de l'ajout de l'entrée bancaire. Veuillez réessayer." }
   }
 
   revalidatePath("/banking")
@@ -38,11 +38,11 @@ export async function updateBankEntry(prevState: any, formData: FormData) {
 
   const id = formData.get("id") as string
   const date = formData.get("date") as string
-  const type = formData.get("type") as BankEntry["type"]
-  const amount = Number.parseFloat(formData.get("amount") as string)
   const description = formData.get("description") as string
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const type = formData.get("type") as BankEntry["type"]
 
-  if (!id || !date || !type || isNaN(amount) || !description) {
+  if (!id || !date || !description || isNaN(amount) || !type) {
     return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
@@ -50,15 +50,15 @@ export async function updateBankEntry(prevState: any, formData: FormData) {
     .from("bank_entries")
     .update({
       date,
-      type,
-      amount,
       description,
+      amount,
+      type,
     })
     .eq("id", id)
 
   if (error) {
     console.error("Error updating bank entry:", error)
-    return { error: "Échec de la mise à jour de l'opération bancaire. Veuillez réessayer." }
+    return { error: "Échec de la mise à jour de l'entrée bancaire. Veuillez réessayer." }
   }
 
   revalidatePath("/banking")
@@ -72,7 +72,7 @@ export async function deleteBankEntry(id: string) {
 
   if (error) {
     console.error("Error deleting bank entry:", error)
-    return { error: "Échec de la suppression de l'opération bancaire. Veuillez réessayer." }
+    return { error: "Échec de la suppression de l'entrée bancaire. Veuillez réessayer." }
   }
 
   revalidatePath("/banking")

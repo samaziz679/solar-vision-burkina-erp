@@ -4,16 +4,16 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { BankEntry } from "@/lib/supabase/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { Banking } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 import { useState, useEffect } from "react"
 
 interface BankingFormProps {
   action: FormAction
-  initialData?: BankEntry
+  initialData?: Banking
 }
 
 function SubmitButton() {
@@ -42,13 +42,7 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="date">Date</Label>
-        <Input
-          id="date"
-          name="date"
-          type="date"
-          defaultValue={initialData?.date || new Date().toISOString().split("T")[0]}
-          required
-        />
+        <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="type">Type</Label>
@@ -59,6 +53,7 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
           <SelectContent>
             <SelectItem value="Dépôt">Dépôt</SelectItem>
             <SelectItem value="Retrait">Retrait</SelectItem>
+            <SelectItem value="Transfert">Transfert</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -66,14 +61,13 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
         <Label htmlFor="amount">Montant</Label>
         <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
       </div>
-      <div className="grid gap-2 md:col-span-2">
+      <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
           name="description"
           placeholder="Description de l'opération"
           defaultValue={initialData?.description || ""}
-          required
         />
       </div>
       {state?.error && (

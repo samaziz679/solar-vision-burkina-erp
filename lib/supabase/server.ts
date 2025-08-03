@@ -1,28 +1,40 @@
-import { createServerClient as createClient } from "@supabase/ssr"
+import { createServerClient as createSupabaseClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import type { Database } from "@/lib/supabase/types"
 
 export async function createServerClient() {
   const cookieStore = cookies()
 
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  console.log(
+    "DEBUG: Server Supabase URL:",
+    supabaseUrl ? "Set" : "Not Set",
+    supabaseUrl ? "Length: " + supabaseUrl.length : "N/A",
+  )
+  console.log(
+    "DEBUG: Server Supabase Anon Key:",
+    supabaseAnonKey ? "Set" : "Not Set",
+    supabaseAnonKey ? "Length: " + supabaseAnonKey.length : "N/A",
+  )
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase environment variables. Please check your environment variables and ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.",
+    )
+  }
+
+  return createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
+      getAll() {
+        return cookieStore.getAll()
       },
-      set(name: string, value: string, options: any) {
+      setAll(cookiesToSet) {
         try {
-          cookieStore.set({ name, value, ...options })
-        } catch (error) {
-          // The `cookies().set()` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-        }
-      },
-      remove(name: string, options: any) {
-        try {
-          cookieStore.set({ name, value: "", ...options })
-        } catch (error) {
-          // The `cookies().delete()` method was called from a Server Component.
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+        } catch {
+          // The `setAll` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing
           // user sessions.
         }

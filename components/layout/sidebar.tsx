@@ -1,234 +1,171 @@
 "use client"
 
-import type React from "react"
-
-import { Button } from "@/components/ui/button"
-
+import { useState } from "react"
 import Link from "next/link"
-import {
-  HomeIcon,
-  Package2Icon,
-  ShoppingCartIcon,
-  UsersIcon,
-  LineChartIcon,
-  BanknoteIcon,
-  TruckIcon,
-  ReceiptTextIcon,
-} from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePathname } from "next/navigation"
-import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
-import { toast } from "@/components/ui/use-toast"
-import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  CreditCard,
+  Banknote,
+  Users,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react"
+import type { UserRole } from "@/lib/supabase/types"
 
 interface SidebarProps {
-  user: User | null
+  userRoles: UserRole[]
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+const menuItems = [
+  {
+    title: "Tableau de bord",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    roles: ["admin", "stock_manager", "commercial", "finance", "visitor", "seller"],
+  },
+  {
+    title: "Inventaire",
+    href: "/inventory",
+    icon: Package,
+    roles: ["admin", "stock_manager"],
+  },
+  {
+    title: "Ventes",
+    href: "/sales",
+    icon: ShoppingCart,
+    roles: ["admin", "commercial", "seller"],
+  },
+  {
+    title: "Achats",
+    href: "/purchases",
+    icon: TrendingUp,
+    roles: ["admin", "stock_manager"],
+  },
+  {
+    title: "Dépenses",
+    href: "/expenses",
+    icon: CreditCard,
+    roles: ["admin", "finance"],
+  },
+  {
+    title: "Banque",
+    href: "/banking",
+    icon: Banknote,
+    roles: ["admin", "finance"],
+  },
+  {
+    title: "Clients",
+    href: "/clients",
+    icon: Users,
+    roles: ["admin", "commercial", "seller", "visitor"],
+  },
+  {
+    title: "Fournisseurs",
+    href: "/suppliers",
+    icon: Users, // You can choose a different icon if you prefer, e.g., Truck or Factory
+    roles: ["admin", "stock_manager", "visitor"],
+  },
+]
+
+export default function Sidebar({ userRoles }: SidebarProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
   const supabase = createClient()
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      toast({
-        title: "Erreur de déconnexion",
-        description: error.message,
-        variant: "destructive",
-      })
-    } else {
-      toast({
-        title: "Déconnexion réussie",
-        description: "Vous avez été déconnecté.",
-      })
-      router.push("/login")
-    }
+    await supabase.auth.signOut()
+    window.location.href = "/login"
   }
 
-  return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-      <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-        <Link
-          href="/dashboard"
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-        >
-          <Package2Icon className="h-4 w-4 transition-all group-hover:scale-110" />
-          <span className="sr-only">Solar Vision Burkina ERP</span>
-        </Link>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/dashboard"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname === "/dashboard" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <HomeIcon className="h-5 w-5" />
-                <span className="sr-only">Tableau de Bord</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Tableau de Bord</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/inventory"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/inventory") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Package2Icon className="h-5 w-5" />
-                <span className="sr-only">Inventaire</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Inventaire</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/sales"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/sales") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <ShoppingCartIcon className="h-5 w-5" />
-                <span className="sr-only">Ventes</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Ventes</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/purchases"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/purchases") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <TruckIcon className="h-5 w-5" />
-                <span className="sr-only">Achats</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Achats</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/clients"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/clients") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <UsersIcon className="h-5 w-5" />
-                <span className="sr-only">Clients</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Clients</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/suppliers"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/suppliers") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <ReceiptTextIcon className="h-5 w-5" />
-                <span className="sr-only">Fournisseurs</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Fournisseurs</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/expenses"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/expenses") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <LineChartIcon className="h-5 w-5" />
-                <span className="sr-only">Dépenses</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Dépenses</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/banking"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/banking") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <BanknoteIcon className="h-5 w-5" />
-                <span className="sr-only">Opérations Bancaires</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Opérations Bancaires</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </nav>
-      <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mt-auto rounded-lg"
-                aria-label="Se déconnecter"
-                onClick={handleLogout}
-              >
-                <LogOutIcon className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Se déconnecter</TooltipContent>
-          </Tooltip>
-          {user && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/profile">
-                  <Image
-                    src={user.user_metadata.avatar_url || "/placeholder-user.jpg"}
-                    width={32}
-                    height={32}
-                    alt="Avatar"
-                    className="rounded-full"
-                  />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Profil</TooltipContent>
-            </Tooltip>
-          )}
-        </TooltipProvider>
-      </nav>
-    </aside>
-  )
-}
+  const hasAccess = (requiredRoles: string[]) => {
+    return requiredRoles.some((role) => userRoles.includes(role as UserRole))
+  }
 
-function LogOutIcon(props: React.SVGProps<SVGSVGElement>) {
+  const filteredMenuItems = menuItems.filter((item) => hasAccess(item.roles))
+
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="17 16 22 12 17 8" />
-      <line x1="22" x2="10" y1="12" y2="12" />
-    </svg>
+    <>
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden fixed top-4 left-4 z-50"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </Button>
+
+      {/* Sidebar */}
+      <div
+        className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
+        lg:translate-x-0 lg:static lg:inset-0
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">SV</span>
+              </div>
+              <span className="font-bold text-lg">Solar Vision</span>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {filteredMenuItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                    ${
+                      isActive ? "bg-orange-100 text-orange-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }
+                  `}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* User info and logout */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="mb-3 text-xs text-gray-500">Rôles: {userRoles.join(", ")}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Déconnexion
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" onClick={() => setIsOpen(false)} />
+      )}
+    </>
   )
 }

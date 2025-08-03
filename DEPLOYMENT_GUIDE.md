@@ -1,70 +1,73 @@
-# Deployment Guide for Solar Vision Burkina ERP on Vercel
+# Solar Vision Burkina ERP - Deployment Guide
 
-This guide provides detailed steps for deploying the Solar Vision Burkina ERP application to Vercel.
+## Quick Deployment Steps
 
-## 1. Prepare Your Project
+### 1. Deploy to Vercel
+- Go to [vercel.com](https://vercel.com)
+- Click "New Project"
+- Import this repository
+- Deploy
 
-Before deploying, ensure your project is ready:
+### 2. Add Environment Variables in Vercel
+After deployment, add these in Vercel Dashboard → Settings → Environment Variables:
 
--   **All changes committed**: Make sure all your latest code changes are committed and pushed to your Git repository (GitHub, GitLab, Bitbucket).
--   **Environment Variables**: You should have a `.env.local` file for local development. For Vercel, you will configure these directly in the Vercel dashboard.
--   **Supabase Setup**: Ensure your Supabase project is set up, and the database schema (from `scripts/complete_supabase_schema.sql` or incremental scripts) is applied.
+\`\`\`
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SITE_URL=https://your-production-domain.com # e.g., https://solar-vision-burkina-erp.vercel.app
+\`\`\`
 
-## 2. Connect Your Git Repository to Vercel
+### 3. Supabase Setup
+- Create project at [supabase.com](https://supabase.com)
+- Run the SQL schema from `scripts/complete_supabase_schema_final_correction_v2.sql`
+- Get API keys from Settings → API
+- **Important:** In Supabase, go to **Authentication -> URL Configuration** and set:
+    - **Site URL:** Your Vercel deployment URL (e.g., `https://solar-vision-burkina-erp.vercel.app`)
+    - **Redirect URLs:** Add your Vercel deployment URL and your local development URL (e.g., `http://localhost:3000/auth/callback`, `https://solar-vision-burkina-erp.vercel.app/auth/callback`)
 
-If you haven't already, connect your Git repository to Vercel:
+### 4. First Admin User
+- After logging in for the first time, get your user ID from Supabase (Authentication -> Users).
+- Run this SQL query in Supabase SQL Editor to assign yourself the 'admin' role:
 
-1.  Go to your [Vercel Dashboard](https://vercel.com/dashboard).
-2.  Click "Add New..." > "Project".
-3.  Select your Git provider (GitHub, GitLab, Bitbucket) and import the repository where your ERP project is located.
-4.  If prompted, grant Vercel access to your repository.
+\`\`\`sql
+INSERT INTO user_roles (user_id, role) VALUES ('your-user-id', 'admin');
+\`\`\`
 
-## 3. Configure Environment Variables on Vercel
+## 🏃‍♂️ Développement local
 
-Your application relies on Supabase environment variables. These need to be configured in your Vercel project settings.
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
 
-1.  In your Vercel project dashboard, go to "Settings" > "Environment Variables".
-2.  Add the following environment variables:
-    -   **`NEXT_PUBLIC_SUPABASE_URL`**: Your Supabase Project URL.
-        -   *Value*: Found in your Supabase project settings under `API` > `Project URL`.
-    -   **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**: Your Supabase Anon Key.
-        -   *Value*: Found in your Supabase project settings under `API` > `Project API keys` > `anon public`.
-    -   **`NEXT_PUBLIC_SITE_URL`**: The public URL of your Vercel deployment.
-        -   *Value*: For production, this will be your Vercel domain (e.g., `https://your-project-name.vercel.app`). For preview deployments, Vercel automatically sets this. You can initially set it to your primary domain if you have one, or leave it blank if you're relying on Vercel's default domain.
+## 📊 Stack Technique
 
-    **Important**: Ensure these variables are available for both "Production" and "Preview" environments.
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, Shadcn/ui
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **Déploiement**: Vercel
+- **Icons**: Lucide React
 
-## 4. Deployment
+## 📞 Support
 
-Vercel automatically detects Next.js projects. Once your repository is connected and environment variables are set, Vercel will trigger a new deployment.
+Pour toute assistance technique, contactez l'équipe de développement.
 
--   **Automatic Deployments**: By default, Vercel deploys every push to your production branch (usually `main` or `master`) and creates preview deployments for every pull request.
--   **Manual Deployment**: You can also trigger a deployment manually from your Vercel project dashboard by clicking the "Deploy" button.
+---
 
-### Troubleshooting Deployment Errors
+**Solar Vision Burkina** - Powering sustainable energy solutions in Burkina Faso 🌞
+\`\`\`
 
-If your deployment fails, check the build logs on Vercel. Common issues include:
+\`\`\`shellscript file="deploy.sh"
+#!/bin/bash
+# Deployment script for Solar Vision Burkina ERP
 
--   **Missing Environment Variables**: Double-check that all required environment variables are correctly set in Vercel.
--   **Build Command Errors**: If you have a custom build command, ensure it's correct. (For Next.js, `next build` is usually sufficient and auto-detected).
--   **Dependency Issues**: Ensure your `package.json` is correct and all dependencies can be installed.
--   **`useFormState` or `useState` errors during build**: If you encounter errors related to client-side hooks during the build (e.g., `TypeError: Cannot read properties of undefined (reading 'useFormState')`), this often means a client component is being server-rendered or statically generated when it shouldn't be.
-    -   **Solution**: Ensure your client components that use these hooks are wrapped with `dynamic(() => import('YourComponent'), { ssr: false })` in their parent `page.tsx` files. Also, ensure you have an `isClient` check within the client component itself:
-        \`\`\`typescript
-        "use client"
-        import { useState, useEffect } from 'react';
-        // ... other imports
+echo "🚀 Deploying Solar Vision Burkina ERP..."
 
-        export default function YourFormComponent() {
-          const [isClient, setIsClient] = useState(false);
+# Install Vercel CLI if not installed
+npm install -g vercel
 
-          useEffect(() => {
-            setIsClient(true);
-          }, []);
+# Deploy to Vercel
+vercel --prod
 
-          if (!isClient) {
-            return <div>Loading form...</div>; // Or a skeleton loader
-          }
-
-          // ... rest of your client component code using useFormState, useState etc.
-        }
+echo "✅ Deployment complete!"
+echo "📝 Don't forget to add your Supabase environment variables in Vercel dashboard"

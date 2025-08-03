@@ -12,34 +12,36 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteBankEntry } from "@/app/banking/actions"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
-interface DeleteBankEntryDialogProps {
+interface DeleteBankingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   bankEntryId: string
+  onClose: () => void
 }
 
-export default function DeleteBankEntryDialog({ open, onOpenChange, bankEntryId }: DeleteBankEntryDialogProps) {
+export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, onClose }: DeleteBankingDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteBankEntry(bankEntryId)
-    if (result.success) {
+    if (result?.error) {
       toast({
-        title: "Opération supprimée",
-        description: "L'opération bancaire a été supprimée avec succès.",
+        title: "Erreur de suppression",
+        description: result.error,
+        variant: "destructive",
       })
-      onOpenChange(false)
     } else {
       toast({
-        title: "Erreur",
-        description: result.error || "Échec de la suppression de l'opération bancaire.",
-        variant: "destructive",
+        title: "Succès",
+        description: "L'entrée bancaire a été supprimée.",
       })
     }
     setIsDeleting(false)
+    onClose()
   }
 
   return (
@@ -48,8 +50,8 @@ export default function DeleteBankEntryDialog({ open, onOpenChange, bankEntryId 
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette opération bancaire de nos
-            serveurs.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cette entrée bancaire de votre base de
+            données.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

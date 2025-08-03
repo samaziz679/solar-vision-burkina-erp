@@ -4,9 +4,8 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { Sale, Client } from "@/lib/supabase/types"
+import type { Sale } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 import { useState, useEffect } from "react"
@@ -14,7 +13,6 @@ import { useState, useEffect } from "react"
 interface SaleFormProps {
   action: FormAction
   initialData?: Sale
-  clients: Client[]
 }
 
 function SubmitButton() {
@@ -26,7 +24,7 @@ function SubmitButton() {
   )
 }
 
-export default function SaleForm({ action, initialData, clients }: SaleFormProps) {
+export default function SaleForm({ action, initialData }: SaleFormProps) {
   const [state, formAction] = useFormState(action, {})
   const [isClient, setIsClient] = useState(false)
 
@@ -42,57 +40,51 @@ export default function SaleForm({ action, initialData, clients }: SaleFormProps
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="sale_date">Date de vente</Label>
-        <Input
-          id="sale_date"
-          name="sale_date"
-          type="date"
-          defaultValue={initialData?.sale_date || new Date().toISOString().split("T")[0]}
-          required
-        />
+        <Label htmlFor="date">Date</Label>
+        <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="client_id">Client</Label>
-        <Select name="client_id" defaultValue={initialData?.client_id || ""}>
-          <SelectTrigger id="client_id">
-            <SelectValue placeholder="Sélectionner un client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input id="client_id" name="client_id" type="text" defaultValue={initialData?.client_id || ""} />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="total_amount">Montant Total</Label>
+        <Label htmlFor="product_id">Produit</Label>
+        <Input id="product_id" name="product_id" type="text" defaultValue={initialData?.product_id || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="quantity">Quantité</Label>
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="unit_price">Prix unitaire</Label>
         <Input
-          id="total_amount"
-          name="total_amount"
+          id="unit_price"
+          name="unit_price"
           type="number"
           step="0.01"
-          defaultValue={initialData?.total_amount || ""}
+          defaultValue={initialData?.unit_price || ""}
           required
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="payment_status">Statut de Paiement</Label>
-        <Select name="payment_status" defaultValue={initialData?.payment_status || ""}>
-          <SelectTrigger id="payment_status">
-            <SelectValue placeholder="Sélectionner le statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Pending">En attente</SelectItem>
-            <SelectItem value="Paid">Payé</SelectItem>
-            <SelectItem value="Partially Paid">Partiellement payé</SelectItem>
-          </SelectContent>
-        </Select>
+        <Label htmlFor="total_price">Prix total</Label>
+        <Input
+          id="total_price"
+          name="total_price"
+          type="number"
+          step="0.01"
+          defaultValue={initialData?.total_price || ""}
+          required
+        />
       </div>
       <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes supplémentaires" defaultValue={initialData?.notes || ""} />
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="Description de la vente"
+          defaultValue={initialData?.description || ""}
+        />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

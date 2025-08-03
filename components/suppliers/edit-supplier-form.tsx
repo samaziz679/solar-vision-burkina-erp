@@ -5,47 +5,45 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { Supplier } from "@/lib/supabase/types"
+import type { Supplier } from "@/lib/supabase/types" // Corrected import path
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react"
 
-interface SupplierFormProps {
+interface EditSupplierFormProps {
+  initialData: Supplier
   action: FormAction
-  initialData?: Supplier
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer le fournisseur"}
+      {pending ? "Mise à jour..." : "Mettre à jour le fournisseur"}
     </Button>
   )
 }
 
-export default function SupplierForm({ action, initialData }: SupplierFormProps) {
+export default function EditSupplierForm({ initialData, action }: EditSupplierFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div>
-  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
+      <input type="hidden" name="id" value={initialData.id} />
       <div className="grid gap-2">
         <Label htmlFor="name">Nom</Label>
-        <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
+        <Input id="name" name="name" type="text" defaultValue={initialData.name} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="contact">Contact</Label>
-        <Input id="contact" name="contact" type="text" defaultValue={initialData?.contact || ""} />
+        <Label htmlFor="contact_person">Personne Contact</Label>
+        <Input id="contact_person" name="contact_person" type="text" defaultValue={initialData.contact_person || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={initialData.email || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="phone">Téléphone</Label>
+        <Input id="phone" name="phone" type="tel" defaultValue={initialData.phone || ""} />
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="address">Adresse</Label>
@@ -53,7 +51,7 @@ export default function SupplierForm({ action, initialData }: SupplierFormProps)
           id="address"
           name="address"
           placeholder="Adresse du fournisseur"
-          defaultValue={initialData?.address || ""}
+          defaultValue={initialData.address || ""}
         />
       </div>
       {state?.error && (

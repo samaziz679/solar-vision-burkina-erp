@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,52 +9,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react"
 
-interface ProductFormProps {
-  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
-  initialData?: Product
+interface EditProductFormProps {
+  initialData: Product
+  action: FormAction // Add action prop with FormAction type
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer le produit"}
+      {pending ? "Mise à jour..." : "Mettre à jour le produit"}
     </Button>
   )
 }
 
-export default function ProductForm({ action, initialData }: ProductFormProps) {
-  const [state, formAction] = useFormState(action, {})
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div>
-  }
+export default function EditProductForm({ initialData, action }: EditProductFormProps) {
+  const [state, formAction] = useFormState(action, {}) // Update the useFormState call to pass `action`
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
+      <input type="hidden" name="id" value={initialData.id} />
       <div className="grid gap-2">
         <Label htmlFor="name">Nom</Label>
-        <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
+        <Input id="name" name="name" type="text" defaultValue={initialData.name} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantité</Label>
-        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData.quantity} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="unit">Unité</Label>
-        <Input id="unit" name="unit" type="text" defaultValue={initialData?.unit || ""} />
+        <Input id="unit" name="unit" type="text" defaultValue={initialData.unit || ""} />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="type">Type</Label>
-        <Select name="type" defaultValue={initialData?.type || ""}>
+        <Select name="type" defaultValue={initialData.type || ""}>
           <SelectTrigger id="type">
             <SelectValue placeholder="Sélectionner le type" />
           </SelectTrigger>
@@ -74,7 +64,7 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           name="prix_achat"
           type="number"
           step="0.01"
-          defaultValue={initialData?.prix_achat || ""}
+          defaultValue={initialData.prix_achat || ""}
         />
       </div>
       <div className="grid gap-2">
@@ -84,7 +74,7 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           name="prix_vente_detail_1"
           type="number"
           step="0.01"
-          defaultValue={initialData?.prix_vente_detail_1 || ""}
+          defaultValue={initialData.prix_vente_detail_1 || ""}
         />
       </div>
       <div className="grid gap-2">
@@ -94,7 +84,7 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           name="prix_vente_detail_2"
           type="number"
           step="0.01"
-          defaultValue={initialData?.prix_vente_detail_2 || ""}
+          defaultValue={initialData.prix_vente_detail_2 || ""}
         />
       </div>
       <div className="grid gap-2">
@@ -104,7 +94,7 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           name="prix_vente_gros"
           type="number"
           step="0.01"
-          defaultValue={initialData?.prix_vente_gros || ""}
+          defaultValue={initialData.prix_vente_gros || ""}
         />
       </div>
       <div className="grid gap-2 md:col-span-2">
@@ -113,7 +103,7 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           id="description"
           name="description"
           placeholder="Description du produit"
-          defaultValue={initialData?.description || ""}
+          defaultValue={initialData.description || ""}
         />
       </div>
       <div className="grid gap-2 md:col-span-2">
@@ -123,7 +113,7 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           name="image"
           type="url"
           placeholder="https://example.com/image.jpg"
-          defaultValue={initialData?.image || ""}
+          defaultValue={initialData.image || ""}
         />
       </div>
       {state?.error && (

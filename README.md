@@ -1,58 +1,66 @@
 # Solar Vision Burkina ERP
 
-This is an Enterprise Resource Planning (ERP) system designed for Solar Vision Burkina, built with Next.js, React, and Supabase.
+Système de gestion commerciale pour Solar Vision Burkina - Un ERP complet pour la gestion des ventes, achats, inventaire et finances.
 
-## Features
+## 🚀 Déploiement Rapide
 
--   **User Authentication**: Secure login and user management using Supabase Auth.
--   **Dashboard**: Overview of key business metrics (stock value, sales, purchases, expenses, bank balance).
--   **Inventory Management**: Track products, quantities, purchase prices, and multiple sales prices.
--   **Client Management**: Manage client information.
--   **Supplier Management**: Manage supplier information.
--   **Sales Management**: Record sales, link to clients and products.
--   **Purchase Management**: Record purchases, link to suppliers and products.
--   **Expense Tracking**: Log and categorize business expenses.
--   **Banking Operations**: Track deposits and withdrawals.
--   **Responsive Design**: Optimized for various screen sizes.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/solar-vision-burkina-erp)
 
-## Technologies Used
+## 📋 Fonctionnalités
 
--   **Next.js**: React framework for production.
--   **React**: Frontend library.
--   **Supabase**: Backend-as-a-Service for database, authentication, and storage.
--   **Tailwind CSS**: For styling and responsive design.
--   **Shadcn/ui**: Reusable UI components.
--   **Lucide React**: Icon library.
+- ✅ **Authentification sécurisée** avec Supabase Auth (Magic Links)
+- ✅ **Gestion des rôles** (Admin, Stock Manager, Commercial, Finance, Visitor, Seller)
+- ✅ **Tableau de bord** avec statistiques en temps réel
+- ✅ **Gestion d'inventaire** avec alertes de stock bas
+- ✅ **Module de ventes** avec différents plans de prix
+- ✅ **Suivi des achats** et fournisseurs
+- ✅ **Suivi des dépenses** par catégorie
+- ✅ **Rapprochement bancaire** (Mobile Money + Banque)
+- ✅ **Interface en français**
+- ✅ **Responsive design**
 
-## Getting Started
+## 🛠️ Configuration
 
-### Prerequisites
+### 1. Variables d'environnement
 
--   Node.js (v18.18.0 or later)
--   npm or Yarn
--   A Supabase project
+Créez un fichier `.env.local` avec :
 
-### 1. Clone the repository
-
-\`\`\`bash
-git clone https://github.com/your-username/solar-vision-burkina-erp.git
-cd solar-vision-burkina-erp
+\`\`\`env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 \`\`\`
 
-### 2. Install dependencies
+### 2. Base de données Supabase
+
+Exécutez le script SQL fourni dans `scripts/complete_supabase_schema_final_correction_v2.sql`
+
+### 3. Premier utilisateur admin
+
+Après connexion, ajoutez votre rôle admin dans Supabase :
+
+\`\`\`sql
+INSERT INTO user_roles (user_id, role) VALUES ('your-user-id', 'admin');
+\`\`\`
+
+## 🏃‍♂️ Développement local
 
 \`\`\`bash
 npm install
-# or
-yarn install
+npm run dev
 \`\`\`
 
-### 3. Set up Supabase
+## 📊 Stack Technique
 
-1.  **Create a new Supabase project**: Go to [Supabase](https://supabase.com/) and create a new project.
-2.  **Get your API keys**:
-    -   Go to `Project Settings` > `API`.
-    -   Copy your `Project URL` and `anon public` key.
-3.  **Configure Environment Variables**:
-    -   Create a `.env.local` file in the root of your project (copy from `.env.local.example`).
-    -   Add your Supabase Project URL and Anon Key:
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, Shadcn/ui
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **Déploiement**: Vercel
+- **Icons**: Lucide React
+
+## 📞 Support
+
+Pour toute assistance technique, contactez l'équipe de développement.
+
+---
+
+**Solar Vision Burkina** - Powering sustainable energy solutions in Burkina Faso 🌞

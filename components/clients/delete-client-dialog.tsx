@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useFormStatus } from "react-dom"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,28 +19,37 @@ interface DeleteClientDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   clientId: string
+  onClose: () => void
 }
 
-export default function DeleteClientDialog({ open, onOpenChange, clientId }: DeleteClientDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <AlertDialogAction type="submit" disabled={pending}>
+      {pending ? "Suppression..." : "Supprimer"}
+    </AlertDialogAction>
+  )
+}
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
+export default function DeleteClientDialog({ open, onOpenChange, clientId, onClose }: DeleteClientDialogProps) {
+  const [error, setError] = useState<string | null>(null)
+
+  const handleDelete = async (formData: FormData) => {
     const result = await deleteClient(clientId)
-    if (result.success) {
+    if (result?.error) {
+      setError(result.error)
+      toast({
+        title: "Erreur de suppression",
+        description: result.error,
+        variant: "destructive",
+      })
+    } else {
       toast({
         title: "Client supprimé",
         description: "Le client a été supprimé avec succès.",
       })
-      onOpenChange(false)
-    } else {
-      toast({
-        title: "Erreur",
-        description: result.error || "Échec de la suppression du client.",
-        variant: "destructive",
-      })
+      onClose()
     }
-    setIsDeleting(false)
   }
 
   return (
@@ -48,14 +58,15 @@ export default function DeleteClientDialog({ open, onOpenChange, clientId }: Del
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce client de nos serveurs.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement ce client de votre base de données.
           </AlertDialogDescription>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel onClick={onClose}>Annuler</AlertDialogCancel>
+          <form action={handleDelete}>
+            <SubmitButton />
+          </form>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

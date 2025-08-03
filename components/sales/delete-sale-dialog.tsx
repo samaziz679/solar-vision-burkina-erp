@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useFormState } from "react-dom"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,51 +10,69 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Trash, Loader2 } from "lucide-react"
 import { deleteSale } from "@/app/sales/actions"
-import { toast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react"
 
 interface DeleteSaleDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
   saleId: string
+  productName: string
+  onDeleteSuccess: () => void // Callback to notify parent of successful deletion
 }
 
-export default function DeleteSaleDialog({ open, onOpenChange, saleId }: DeleteSaleDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
+export default function DeleteSaleDialog({ saleId, productName, onDeleteSuccess }: DeleteSaleDialogProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [state, formAction, isPending] = useFormState(deleteSale, { error: null, success: false })
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteSale(saleId)
-    if (result.success) {
-      toast({
-        title: "Vente supprimée",
-        description: "La vente a été supprimée avec succès.",
-      })
-      onOpenChange(false)
-    } else {
-      toast({
-        title: "Erreur",
-        description: result.error || "Échec de la suppression de la vente.",
-        variant: "destructive",
-      })
+  useEffect(() => {
+    if (state?.success) {
+      setIsOpen(false) // Close dialog on success
+      onDeleteSuccess() // Notify parent component
     }
-    setIsDeleting(false)
-  }
+    // Optionally, handle error state here if you want to display it in the dialog
+    // if (state?.error) {
+    //   console.error("Deletion error:", state.error);
+    // }
+  }, [state, onDeleteSuccess])
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-red-500 hover:text-red-600"
+        onClick={() => setIsOpen(true)}
+      >
+        <Trash className="h-4 w-4" />
+        <span className="sr-only">Supprimer</span>
+      </Button>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette vente de nos serveurs.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement la vente du produit{" "}
+            <span className="font-semibold">{productName}</span> et remettra la quantité en stock.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel disabled={isPending}>Annuler</AlertDialogCancel>
+          <form action={formAction}>
+            <input type="hidden" name="id" value={saleId} />
+            <Button type="submit" variant="destructive" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash className="mr-2 h-4 w-4" />
+                  Supprimer
+                </>
+              )}
+            </Button>
+          </form>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

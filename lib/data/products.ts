@@ -1,39 +1,26 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { unstable_cache } from "next/cache"
 import type { Product } from "@/lib/supabase/types"
 
-export const getProducts = unstable_cache(
-  async () => {
-    const supabase = await createServerClient()
-    const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
+export async function getProducts(): Promise<Product[]> {
+  const supabase = await createServerClient()
+  const { data, error } = await supabase.from("products").select("*").order("name", { ascending: true })
 
-    if (error) {
-      console.error("Error fetching products:", error)
-      return []
-    }
+  if (error) {
+    console.error("Error fetching products:", error.message)
+    return []
+  }
 
-    return data as Product[]
-  },
-  ["products"],
-  {
-    tags: ["products"],
-  },
-)
+  return data as Product[]
+}
 
-export const getProductById = unstable_cache(
-  async (id: string) => {
-    const supabase = await createServerClient()
-    const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
+export async function getProductById(id: string): Promise<Product | null> {
+  const supabase = await createServerClient()
+  const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
 
-    if (error) {
-      console.error("Error fetching product:", error)
-      return null
-    }
+  if (error) {
+    console.error(`Error fetching product with ID ${id}:`, error.message)
+    return null
+  }
 
-    return data as Product
-  },
-  ["product"],
-  {
-    tags: ["product"],
-  },
-)
+  return data as Product
+}

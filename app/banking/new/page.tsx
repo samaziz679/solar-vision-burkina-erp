@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from "next/dynamic"
 
@@ -6,7 +8,7 @@ const BankingForm = dynamic(() => import("@/components/banking/banking-form"), {
   loading: () => <div>Chargement du formulaire...</div>,
 })
 
-import { createBankEntry } from "@/app/banking/actions"
+import { createBanking } from "@/app/banking/actions"
 
 export default function NewBankingPage() {
   return (
@@ -17,7 +19,7 @@ export default function NewBankingPage() {
           <CardDescription>Remplissez les détails de la nouvelle opération.</CardDescription>
         </CardHeader>
         <CardContent>
-          <BankingForm action={createBankEntry} />
+          <BankingForm action={createBanking} />
         </CardContent>
       </Card>
     </div>

@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useFormState } from "react-dom"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,51 +10,70 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Trash, Loader2 } from "lucide-react"
 import { deleteSupplier } from "@/app/suppliers/actions"
-import { toast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react"
 
 interface DeleteSupplierDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
   supplierId: string
+  supplierName: string
+  onDeleteSuccess: () => void // Callback to notify parent of successful deletion
 }
 
-export default function DeleteSupplierDialog({ open, onOpenChange, supplierId }: DeleteSupplierDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
+export default function DeleteSupplierDialog({ supplierId, supplierName, onDeleteSuccess }: DeleteSupplierDialogProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [state, formAction, isPending] = useFormState(deleteSupplier, { error: null, success: false })
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteSupplier(supplierId)
-    if (result.success) {
-      toast({
-        title: "Fournisseur supprimé",
-        description: "Le fournisseur a été supprimé avec succès.",
-      })
-      onOpenChange(false)
-    } else {
-      toast({
-        title: "Erreur",
-        description: result.error || "Échec de la suppression du fournisseur.",
-        variant: "destructive",
-      })
+  useEffect(() => {
+    if (state?.success) {
+      setIsOpen(false) // Close dialog on success
+      onDeleteSuccess() // Notify parent component
     }
-    setIsDeleting(false)
-  }
+    // Optionally, handle error state here if you want to display it in the dialog
+    // if (state?.error) {
+    //   console.error("Deletion error:", state.error);
+    // }
+  }, [state, onDeleteSuccess])
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-red-500 hover:text-red-600"
+        onClick={() => setIsOpen(true)}
+      >
+        <Trash className="h-4 w-4" />
+        <span className="sr-only">Supprimer</span>
+      </Button>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce fournisseur de nos serveurs.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement le fournisseur{" "}
+            <span className="font-semibold">{supplierName}</span>.
+            {state?.error && <p className="text-red-500 mt-2">{state.error}</p>}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel disabled={isPending}>Annuler</AlertDialogCancel>
+          <form action={formAction}>
+            <input type="hidden" name="id" value={supplierId} />
+            <Button type="submit" variant="destructive" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash className="mr-2 h-4 w-4" />
+                  Supprimer
+                </>
+              )}
+            </Button>
+          </form>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

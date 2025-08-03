@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { BankEntry } from "@/lib/supabase/types"
+import type { Banking } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 import { Calendar } from "@/components/ui/calendar"
@@ -18,21 +18,21 @@ import { useState, useEffect } from "react"
 
 interface BankingFormProps {
   action: FormAction
-  initialData?: BankEntry
+  initialData?: Banking
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer l'entrée"}
+      {pending ? "Enregistrement..." : "Enregistrer la transaction"}
     </Button>
   )
 }
 
 export default function BankingForm({ action, initialData }: BankingFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [date, setDate] = useState(initialData?.entry_date ? new Date(initialData.entry_date) : undefined)
+  const [date, setDate] = useState(initialData?.transaction_date ? new Date(initialData.transaction_date) : undefined)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="entry_date">Date de l'entrée</Label>
+        <Label htmlFor="transaction_date">Date de la transaction</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -62,21 +62,22 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
             <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
           </PopoverContent>
         </Popover>
-        <input type="hidden" name="entry_date" value={date ? format(date, "yyyy-MM-dd") : ""} />
+        <input type="hidden" name="transaction_date" value={date ? format(date, "yyyy-MM-dd") : ""} />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="amount">Montant</Label>
         <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="type">Type</Label>
+        <Label htmlFor="type">Type de transaction</Label>
         <Select name="type" defaultValue={initialData?.type || ""}>
           <SelectTrigger id="type">
-            <SelectValue placeholder="Sélectionner le type" />
+            <SelectValue placeholder="Sélectionner un type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Dépôt">Dépôt</SelectItem>
             <SelectItem value="Retrait">Retrait</SelectItem>
+            <SelectItem value="Transfert">Transfert</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -100,10 +101,14 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
         <Textarea
           id="description"
           name="description"
-          placeholder="Description de l'entrée"
+          placeholder="Description de la transaction"
           defaultValue={initialData?.description || ""}
           required
         />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea id="notes" name="notes" placeholder="Notes supplémentaires" defaultValue={initialData?.notes || ""} />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

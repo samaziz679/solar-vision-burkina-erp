@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic" // Ensures this page is rendered dynamically on the server
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import ProductForm from "@/components/inventory/product-form"

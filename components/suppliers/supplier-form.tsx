@@ -1,4 +1,4 @@
-"use client"
+"use client" // Marks this component as a Client Component
 
 import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Supplier } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react" // Import useState and useEffect
+import { useState, useEffect } from "react"
 
 interface SupplierFormProps {
   action: FormAction

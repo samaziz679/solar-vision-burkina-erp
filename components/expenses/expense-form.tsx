@@ -1,4 +1,4 @@
-"use client"
+"use client" // Marks this component as a Client Component
 
 import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react" // Import useState and useEffect
+import { useState, useEffect } from "react"
 
 interface ExpenseFormProps {
   action: FormAction

@@ -82,3 +82,4 @@ If you have SQL scripts to seed your database (e.g., `scripts/insert_initial_sto
 *   **Supabase Connection Issues**: Ensure your Supabase URL and Anon Key are correctly configured as environment variables in Vercel. Also, verify that your Supabase database is accessible and your RLS (Row Level Security) policies are correctly set up if you are using them.
 
 For more detailed information on Vercel deployments, refer to the [Vercel documentation](https://vercel.com/docs/deployments/overview).
+\`\`\`

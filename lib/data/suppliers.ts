@@ -1,12 +1,25 @@
-import { createServerClient } from "@/lib/supabase/server"
-import type { Supplier } from "@/lib/supabase/types"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import type { Database, Supplier } from "@/lib/supabase/types"
 
 export async function getSuppliers(): Promise<Supplier[]> {
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("suppliers").select("*").order("name", { ascending: true })
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("name", { ascending: true })
 
   if (error) {
-    console.error("Error fetching suppliers:", error.message)
+    console.error("Error fetching suppliers:", error)
     return []
   }
 
@@ -14,11 +27,19 @@ export async function getSuppliers(): Promise<Supplier[]> {
 }
 
 export async function getSupplierById(id: string): Promise<Supplier | null> {
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).single()
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return null
+  }
+
+  const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).eq("user_id", user.id).single()
 
   if (error) {
-    console.error(`Error fetching supplier with ID ${id}:`, error.message)
+    console.error("Error fetching supplier by ID:", error)
     return null
   }
 

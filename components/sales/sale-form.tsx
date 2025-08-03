@@ -4,15 +4,16 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import type { Sale } from "@/lib/supabase/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { Sale, Product, Client } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react"
 
 interface SaleFormProps {
   action: FormAction
   initialData?: Sale
+  products: Product[]
+  clients: Client[]
 }
 
 function SubmitButton() {
@@ -24,39 +25,39 @@ function SubmitButton() {
   )
 }
 
-export default function SaleForm({ action, initialData }: SaleFormProps) {
+export default function SaleForm({ action, initialData, products, clients }: SaleFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div>
-  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="date">Date</Label>
-        <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Input id="client_id" name="client_id" type="text" defaultValue={initialData?.client_id || ""} />
-      </div>
-      <div className="grid gap-2">
         <Label htmlFor="product_id">Produit</Label>
-        <Input id="product_id" name="product_id" type="text" defaultValue={initialData?.product_id || ""} />
+        <Select name="product_id" defaultValue={initialData?.product_id || ""} required>
+          <SelectTrigger id="product_id">
+            <SelectValue placeholder="Sélectionner un produit" />
+          </SelectTrigger>
+          <SelectContent>
+            {products.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="quantity">Quantité</Label>
-        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
+        <Label htmlFor="quantity_sold">Quantité Vendue</Label>
+        <Input
+          id="quantity_sold"
+          name="quantity_sold"
+          type="number"
+          defaultValue={initialData?.quantity_sold || ""}
+          required
+        />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="unit_price">Prix unitaire</Label>
+        <Label htmlFor="unit_price">Prix Unitaire</Label>
         <Input
           id="unit_price"
           name="unit_price"
@@ -67,24 +68,29 @@ export default function SaleForm({ action, initialData }: SaleFormProps) {
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="total_price">Prix total</Label>
+        <Label htmlFor="sale_date">Date de Vente</Label>
         <Input
-          id="total_price"
-          name="total_price"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.total_price || ""}
+          id="sale_date"
+          name="sale_date"
+          type="date"
+          defaultValue={initialData?.sale_date || new Date().toISOString().split("T")[0]}
           required
         />
       </div>
       <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          placeholder="Description de la vente"
-          defaultValue={initialData?.description || ""}
-        />
+        <Label htmlFor="client_id">Client</Label>
+        <Select name="client_id" defaultValue={initialData?.client_id || ""} required>
+          <SelectTrigger id="client_id">
+            <SelectValue placeholder="Sélectionner un client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

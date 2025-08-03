@@ -1,27 +1,33 @@
-import { createServerClient } from "./supabase/server"
-import type { UserRole } from "./supabase/types"
+"use server"
 
-export async function getCurrentUser() {
-  const supabase = await createServerClient()
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
+import type { Database } from "@/lib/supabase/types"
+import type { User } from "@supabase/supabase-js"
+
+export async function login(prevState: any, formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+
+  const supabase = createServerActionClient<Database>({ cookies })
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  redirect("/dashboard")
+}
+
+export async function getAuthUser(): Promise<User | null> {
+  const supabase = createServerActionClient<Database>({ cookies })
   const {
     data: { user },
   } = await supabase.auth.getUser()
   return user
-}
-
-export async function getUserRoles(userId: string): Promise<UserRole[]> {
-  const supabase = await createServerClient()
-  const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId)
-
-  return roles?.map((r) => r.role) || []
-}
-
-export async function hasRole(userId: string, role: UserRole): Promise<boolean> {
-  const roles = await getUserRoles(userId)
-  return roles.includes(role)
-}
-
-export async function hasAnyRole(userId: string, roles: UserRole[]): Promise<boolean> {
-  const userRoles = await getUserRoles(userId)
-  return roles.some((role) => userRoles.includes(role))
 }

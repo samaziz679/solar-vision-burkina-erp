@@ -1,32 +1,31 @@
-"use client"
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
+import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
 import { getPurchaseById } from "@/lib/data/purchases"
-
-const PurchaseForm = dynamic(() => import("@/components/purchases/purchase-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
 import { updatePurchase } from "@/app/purchases/actions"
+import { getProducts } from "@/lib/data/products"
+import { getSuppliers } from "@/lib/data/suppliers"
+import { notFound } from "next/navigation"
+
+export const dynamic = "force-dynamic"
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
   const purchase = await getPurchaseById(params.id)
+  const products = await getProducts()
+  const suppliers = await getSuppliers()
 
   if (!purchase) {
-    return <div>Achat non trouvé.</div>
+    notFound()
   }
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full max-w-2xl mx-auto">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Modifier l'achat</CardTitle>
           <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
         </CardHeader>
         <CardContent>
-          <PurchaseForm action={updatePurchase} initialData={purchase} />
+          <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} action={updatePurchase} />
         </CardContent>
       </Card>
     </div>

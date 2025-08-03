@@ -1,55 +1,52 @@
-import { createServerClient } from "@/lib/supabase/server"
-import type { Purchase } from "@/lib/supabase/types"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import type { Database, Purchase } from "@/lib/supabase/types"
 
-// Extend Purchase type to include joined product and supplier names for display
-export type PurchaseWithDetails = Purchase & {
-  products: {
-    id: string
-    name: string
-    type: string | null
-  } | null
-  suppliers: { id: string; name: string } | null
-}
+export async function getPurchases(): Promise<Purchase[]> {
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-export async function getPurchases(): Promise<PurchaseWithDetails[]> {
-  const supabase = await createServerClient()
-  const { data, error } = await supabase
-    .from("purchases")
-    .select(
-      `
-      *,
-      products (name, type),
-      suppliers (name)
-    `,
-    )
-    .order("purchase_date", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching purchases:", error.message)
+  if (!user) {
     return []
   }
 
-  return data as PurchaseWithDetails[]
-}
-
-export async function getPurchaseById(id: string): Promise<PurchaseWithDetails | null> {
-  const supabase = await createServerClient()
   const { data, error } = await supabase
     .from("purchases")
-    .select(
-      `
-      *,
-      products (id, name, type),
-      suppliers (id, name)
-    `,
-    )
-    .eq("id", id)
-    .single()
+    .select("*, products(name), suppliers(name)")
+    .eq("user_id", user.id)
+    .order("purchase_date", { ascending: false })
 
   if (error) {
-    console.error(`Error fetching purchase with ID ${id}:`, error.message)
+    console.error("Error fetching purchases:", error)
+    return []
+  }
+
+  return data as Purchase[]
+}
+
+export async function getPurchaseById(id: string): Promise<Purchase | null> {
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
     return null
   }
 
-  return data as PurchaseWithDetails
+  const { data, error } = await supabase
+    .from("purchases")
+    .select("*, products(name), suppliers(name)")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single()
+
+  if (error) {
+    console.error("Error fetching purchase by ID:", error)
+    return null
+  }
+
+  return data as Purchase
 }

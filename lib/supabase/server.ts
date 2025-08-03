@@ -1,44 +1,12 @@
-import { createServerClient as createSupabaseClient } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import type { Database } from "@/lib/supabase/types"
 
-export async function createServerClient() {
-  const cookieStore = cookies()
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  console.log(
-    "DEBUG: Server Supabase URL:",
-    supabaseUrl ? "Set" : "Not Set",
-    supabaseUrl ? "Length: " + supabaseUrl.length : "N/A",
-  )
-  console.log(
-    "DEBUG: Server Supabase Anon Key:",
-    supabaseAnonKey ? "Set" : "Not Set",
-    supabaseAnonKey ? "Length: " + supabaseAnonKey.length : "N/A",
-  )
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Please check your environment variables and ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.",
-    )
-  }
-
-  return createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey, {
+export function createServerSupabaseClient() {
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-        } catch {
-          // The `setAll` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-        }
-      },
+      get: (name: string) => cookies().get(name)?.value,
+      set: (name: string, value: string, options: any) => cookies().set(name, value, options),
+      remove: (name: string, options: any) => cookies().set(name, "", options),
     },
   })
 }

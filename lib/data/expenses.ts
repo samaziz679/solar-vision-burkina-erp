@@ -1,27 +1,47 @@
-import { createServerClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
-import type { Expense } from "@/lib/supabase/types"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import type { Database, Expense } from "@/lib/supabase/types"
 
 export async function getExpenses(): Promise<Expense[]> {
-  noStore()
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("expenses").select("*").order("expense_date", { ascending: false })
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (error) {
-    console.error("Database Error:", error)
+  if (!user) {
     return []
   }
+
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("expense_date", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching expenses:", error)
+    return []
+  }
+
   return data as Expense[]
 }
 
 export async function getExpenseById(id: string): Promise<Expense | null> {
-  noStore()
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("expenses").select("*").eq("id", id).single()
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (error) {
-    console.error("Database Error:", error)
+  if (!user) {
     return null
   }
+
+  const { data, error } = await supabase.from("expenses").select("*").eq("id", id).eq("user_id", user.id).single()
+
+  if (error) {
+    console.error("Error fetching expense by ID:", error)
+    return null
+  }
+
   return data as Expense
 }

@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Client } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react"
 
 interface ClientFormProps {
   action: FormAction
@@ -26,15 +25,6 @@ function SubmitButton() {
 
 export default function ClientForm({ action, initialData }: ClientFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div>
-  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
@@ -45,7 +35,11 @@ export default function ClientForm({ action, initialData }: ClientFormProps) {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="contact">Contact</Label>
-        <Input id="contact" name="contact" type="text" defaultValue={initialData?.contact || ""} />
+        <Input id="contact" name="contact" type="text" defaultValue={initialData?.contact || ""} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="address">Adresse</Label>

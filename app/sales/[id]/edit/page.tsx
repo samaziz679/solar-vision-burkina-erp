@@ -1,32 +1,31 @@
-"use client"
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
+import EditSaleForm from "@/components/sales/edit-sale-form"
 import { getSaleById } from "@/lib/data/sales"
-
-const SaleForm = dynamic(() => import("@/components/sales/sale-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
 import { updateSale } from "@/app/sales/actions"
+import { getProducts } from "@/lib/data/products"
+import { getClients } from "@/lib/data/clients"
+import { notFound } from "next/navigation"
+
+export const dynamic = "force-dynamic"
 
 export default async function EditSalePage({ params }: { params: { id: string } }) {
   const sale = await getSaleById(params.id)
+  const products = await getProducts()
+  const clients = await getClients()
 
   if (!sale) {
-    return <div>Vente non trouvée.</div>
+    notFound()
   }
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full max-w-2xl mx-auto">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Modifier la vente</CardTitle>
           <CardDescription>Mettez à jour les détails de la vente.</CardDescription>
         </CardHeader>
         <CardContent>
-          <SaleForm action={updateSale} initialData={sale} />
+          <EditSaleForm initialData={sale} products={products} clients={clients} action={updateSale} />
         </CardContent>
       </Card>
     </div>

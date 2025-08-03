@@ -1,27 +1,47 @@
-import { createServerClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
-import type { BankEntry } from "@/lib/supabase/types"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import type { Database, BankEntry } from "@/lib/supabase/types"
 
-export async function fetchBankEntries(): Promise<BankEntry[]> {
-  noStore() // Opt-out of static rendering for this data fetch
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("bank_entries").select("*").order("date", { ascending: false })
+export async function getBankEntries(): Promise<BankEntry[]> {
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (error) {
-    console.error("Error fetching bank entries:", error.message)
+  if (!user) {
     return []
   }
+
+  const { data, error } = await supabase
+    .from("bank_entries")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("date", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching bank entries:", error)
+    return []
+  }
+
   return data as BankEntry[]
 }
 
 export async function getBankEntryById(id: string): Promise<BankEntry | null> {
-  noStore() // Opt-out of static rendering for this data fetch
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("bank_entries").select("*").eq("id", id).single()
+  const supabase = createServerActionClient<Database>({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (error) {
-    console.error(`Error fetching bank entry with ID ${id}:`, error.message)
+  if (!user) {
     return null
   }
+
+  const { data, error } = await supabase.from("bank_entries").select("*").eq("id", id).eq("user_id", user.id).single()
+
+  if (error) {
+    console.error("Error fetching bank entry by ID:", error)
+    return null
+  }
+
   return data as BankEntry
 }

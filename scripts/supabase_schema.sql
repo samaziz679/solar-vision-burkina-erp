@@ -1,189 +1,170 @@
--- Enable RLS (Row Level Security)
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
+-- Enable uuid-ossp extension for uuid_generate_v4()
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create custom types
-CREATE TYPE user_role AS ENUM ('admin', 'stock_manager', 'commercial', 'finance', 'visitor', 'seller');
-CREATE TYPE expense_category AS ENUM ('salaire', 'loyer', 'emprunt', 'electricite', 'eau', 'internet', 'carburant', 'maintenance', 'autre');
-CREATE TYPE price_plan AS ENUM ('detail_1', 'detail_2', 'gros');
-
--- User roles table (many-to-many relationship)
-CREATE TABLE user_roles (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    role user_role NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id),
-    UNIQUE(user_id, role)
+-- Create a table for public profiles
+create table profiles (
+  id uuid references auth.users on delete cascade not null primary key,
+  updated_at timestamp with time zone,
+  username text unique,
+  full_name text,
+  avatar_url text,
+  website text
 );
 
--- Products table
+-- Set up Row Level Security (RLS)
+alter table profiles enable row level security;
+
+create policy "Public profiles are viewable by everyone." on profiles for select using (true);
+
+create policy "Users can insert their own profile." on profiles for insert with check (auth.uid() = id);
+
+create policy "Users can update own profile." on profiles for update using (auth.uid() = id);
+
+-- This trigger automatically creates a profile entry when a new user signs up via Supabase Auth.
+-- See https://supabase.com/docs/guides/auth/managing-user-data#using-triggers for details.
+create function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, avatar_url)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
+  return new;
+end;
+$$ language plpgsql security definer;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- Create products table
 CREATE TABLE products (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    type VARCHAR(100),
-    quantity INTEGER DEFAULT 0,
-    prix_achat DECIMAL(10,2) DEFAULT 0,
-    prix_vente_detail_1 DECIMAL(10,2) DEFAULT 0,
-    prix_vente_detail_2 DECIMAL(10,2) DEFAULT 0,
-    prix_vente_gros DECIMAL(10,2) DEFAULT 0,
-    seuil_stock_bas INTEGER DEFAULT 10,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id)
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  name TEXT NOT NULL,
+  quantity INT NOT NULL,
+  unit TEXT,
+  type TEXT,
+  prix_achat NUMERIC(10, 2) NOT NULL,
+  prix_vente_detail_1 NUMERIC(10, 2) NOT NULL,
+  prix_vente_detail_2 NUMERIC(10, 2),
+  prix_vente_gros NUMERIC(10, 2)
 );
 
--- Clients table
-CREATE TABLE clients (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    email VARCHAR(255),
-    address TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id)
-);
-
--- Suppliers table
-CREATE TABLE suppliers (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    email VARCHAR(255),
-    address TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id)
-);
-
--- Sales table
-CREATE TABLE sales (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    product_id UUID REFERENCES products(id) ON DELETE RESTRICT,
-    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
-    quantity INTEGER NOT NULL,
-    price_plan price_plan NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    sale_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id),
-    notes TEXT
-);
-
--- Purchases table
-CREATE TABLE purchases (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    product_id UUID REFERENCES products(id) ON DELETE RESTRICT,
-    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-    quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    purchase_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id),
-    notes TEXT
-);
-
--- Expenses table
-CREATE TABLE expenses (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    description VARCHAR(255) NOT NULL,
-    category expense_category NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    expense_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id),
-    notes TEXT
-);
-
--- Bank entries table
-CREATE TABLE bank_entries (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    account_type VARCHAR(50) NOT NULL, -- 'mobile' or 'bank'
-    description VARCHAR(255) NOT NULL,
-    amount DECIMAL(10,2) NOT NULL, -- positive for credit, negative for debit
-    entry_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id),
-    notes TEXT
-);
-
--- Stock logs table (for tracking changes)
-CREATE TABLE stock_logs (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
-    action VARCHAR(50) NOT NULL, -- 'purchase', 'sale', 'adjustment', 'price_change'
-    quantity_before INTEGER,
-    quantity_after INTEGER,
-    price_before DECIMAL(10,2),
-    price_after DECIMAL(10,2),
-    reference_id UUID, -- ID of the related sale/purchase
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id),
-    notes TEXT
-);
-
--- Enable RLS on all tables
-ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own products." ON products FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create products." ON products FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own products." ON products FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own products." ON products FOR DELETE USING (auth.uid() = user_id);
+
+-- Create clients table
+CREATE TABLE clients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  name TEXT NOT NULL,
+  contact TEXT NOT NULL,
+  email TEXT,
+  address TEXT
+);
+
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own clients." ON clients FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create clients." ON clients FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own clients." ON clients FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own clients." ON clients FOR DELETE USING (auth.uid() = user_id);
+
+-- Create suppliers table
+CREATE TABLE suppliers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  name TEXT NOT NULL,
+  contact TEXT NOT NULL,
+  email TEXT,
+  address TEXT
+);
+
 ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own suppliers." ON suppliers FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create suppliers." ON suppliers FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own suppliers." ON suppliers FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own suppliers." ON suppliers FOR DELETE USING (auth.uid() = user_id);
+
+-- Create sales table
+CREATE TABLE sales (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+  quantity_sold INT NOT NULL,
+  unit_price NUMERIC(10, 2) NOT NULL,
+  total_amount NUMERIC(10, 2) NOT NULL,
+  sale_date DATE NOT NULL,
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE NOT NULL
+);
+
 ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own sales." ON sales FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create sales." ON sales FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own sales." ON sales FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own sales." ON sales FOR DELETE USING (auth.uid() = user_id);
+
+-- Create purchases table
+CREATE TABLE purchases (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+  quantity INT NOT NULL,
+  unit_price NUMERIC(10, 2) NOT NULL,
+  total_amount NUMERIC(10, 2) NOT NULL,
+  purchase_date DATE NOT NULL,
+  supplier_id UUID REFERENCES suppliers(id) ON DELETE CASCADE NOT NULL
+);
+
 ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own purchases." ON purchases FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create purchases." ON purchases FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own purchases." ON purchases FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own purchases." ON purchases FOR DELETE USING (auth.uid() = user_id);
+
+-- Create expenses table
+CREATE TABLE expenses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expense_date DATE NOT NULL,
+  amount NUMERIC(10, 2) NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT,
+  notes TEXT
+);
+
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own expenses." ON expenses FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create expenses." ON expenses FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own expenses." ON expenses FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own expenses." ON expenses FOR DELETE USING (auth.uid() = user_id);
+
+-- Create bank_entries table
+CREATE TABLE bank_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  date DATE NOT NULL,
+  type TEXT NOT NULL, -- 'Dépôt' or 'Retrait'
+  amount NUMERIC(10, 2) NOT NULL,
+  description TEXT NOT NULL
+);
+
 ALTER TABLE bank_entries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE stock_logs ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
--- User roles policies
-CREATE POLICY "Users can view their own roles" ON user_roles
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can manage all user roles" ON user_roles
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM user_roles ur 
-            WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
-        )
-    );
-
--- Products policies
-CREATE POLICY "All authenticated users can view products" ON products
-    FOR SELECT USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Stock managers and admins can manage products" ON products
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM user_roles ur 
-            WHERE ur.user_id = auth.uid() 
-            AND ur.role IN ('admin', 'stock_manager')
-        )
-    );
-
--- Sales policies
-CREATE POLICY "Users can view sales based on role" ON sales
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM user_roles ur 
-            WHERE ur.user_id = auth.uid() 
-            AND ur.role IN ('admin', 'commercial', 'seller', 'visitor')
-        )
-    );
-
-CREATE POLICY "Commercial and sellers can create sales" ON sales
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM user_roles ur 
-            WHERE ur.user_id = auth.uid() 
-            AND ur.role IN ('admin', 'commercial', 'seller')
-        )
-    );
-
--- Similar policies for other tables...
--- (Additional policies would be added for purchases, expenses, etc.)
-
--- Create indexes for better performance
-CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
-CREATE INDEX idx_products_name ON products(name);
-CREATE INDEX idx_sales_date ON sales(sale_date);
-CREATE INDEX idx_purchases_date ON purchases(purchase_date);
-CREATE INDEX idx_expenses_date ON expenses(expense_date);
-CREATE INDEX idx_stock_logs_product_id ON stock_logs(product_id);
-
--- Insert default admin user role (replace with actual user ID after first login)
--- INSERT INTO user_roles (user_id, role) VALUES ('your-admin-user-id', 'admin');
+CREATE POLICY "Users can view their own bank entries." ON bank_entries FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create bank entries." ON bank_entries FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own bank entries." ON bank_entries FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own bank entries." ON bank_entries FOR DELETE USING (auth.uid() = user_id);

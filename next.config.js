@@ -10,11 +10,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
+        hostname: "example.com",
       },
       {
         protocol: "https",
@@ -26,7 +22,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "source.unsplash.com",
+        hostname: "plus.unsplash.com",
       },
       {
         protocol: "https",
@@ -34,7 +30,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.supabase.co",
+        hostname: "utfs.io",
       },
     ],
     unoptimized: true,

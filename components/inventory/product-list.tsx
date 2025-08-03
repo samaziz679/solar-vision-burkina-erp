@@ -62,7 +62,7 @@ export default function ProductList({ products }: ProductListProps) {
                 {/* Add this TableCell */}
                 {product.image ? (
                   <Image
-                    src={product.image || "/placeholder.svg"}
+                    src={product.image || "/placeholder.png"}
                     alt={product.name}
                     width={40}
                     height={40}

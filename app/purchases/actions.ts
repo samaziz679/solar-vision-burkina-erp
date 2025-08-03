@@ -2,203 +2,265 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createServerClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth"
 import type { Database } from "@/lib/supabase/types"
 
-export async function addPurchase(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
+type PurchaseInsert = Database["public"]["Tables"]["purchases"]["Insert"]
+type PurchaseUpdate = Database["public"]["Tables"]["purchases"]["Update"]
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export async function createPurchase(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
   if (!user) {
-    return { error: "User not authenticated." }
+    redirect("/login")
   }
 
   const product_id = formData.get("product_id") as string
   const quantity = Number.parseInt(formData.get("quantity") as string)
-  const purchase_date = formData.get("purchase_date") as string
-  const supplier_id = formData.get("supplier_id") as string
   const unit_price = Number.parseFloat(formData.get("unit_price") as string)
+  const total = Number.parseFloat(formData.get("total") as string)
+  const supplier_id = formData.get("supplier_id") as string | null
+  const notes = formData.get("notes") as string | null
 
-  if (!product_id || isNaN(quantity) || !purchase_date || !supplier_id || isNaN(unit_price)) {
-    return { error: "Tous les champs requis doivent être remplis." }
-  }
+  const supabase = await createServerClient()
 
-  const total_amount = quantity * unit_price
-
-  const { error: purchaseError } = await supabase.from("purchases").insert({
-    user_id: user.id,
+  // 1. Create the purchase entry
+  const newPurchase: PurchaseInsert = {
     product_id,
     quantity,
-    purchase_date,
-    supplier_id,
     unit_price,
-    total_amount,
-  })
-
-  if (purchaseError) {
-    console.error("Error adding purchase:", purchaseError)
-    return { error: purchaseError.message }
+    total,
+    created_by: user.id,
+    supplier_id: supplier_id || null,
+    notes,
   }
 
-  // Update product quantity
-  const { data: product, error: fetchError } = await supabase
+  const { error: purchaseError, data: purchaseData } = await supabase
+    .from("purchases")
+    .insert(newPurchase)
+    .select("id")
+    .single()
+
+  if (purchaseError || !purchaseData) {
+    console.error("Error creating purchase:", purchaseError?.message)
+    return { success: false, error: "Échec de l'enregistrement de l'achat: " + purchaseError?.message }
+  }
+
+  // 2. Get current product quantity
+  const { data: product, error: productError } = await supabase
     .from("products")
-    .select("quantity")
+    .select("quantity, name")
     .eq("id", product_id)
     .single()
 
-  if (fetchError || !product) {
-    console.error("Error fetching product for quantity update:", fetchError)
-    return { error: fetchError?.message || "Produit introuvable pour la mise à jour du stock." }
+  if (productError || !product) {
+    console.error("Error fetching product for purchase stock update:", productError?.message || "Product not found")
+    return { success: false, error: "Produit introuvable pour la mise à jour du stock." }
   }
 
-  const newQuantity = product.quantity + quantity
-  const { error: updateError } = await supabase.from("products").update({ quantity: newQuantity }).eq("id", product_id)
+  // 3. Add quantity to product stock
+  const { error: updateError } = await supabase
+    .from("products")
+    .update({ quantity: product.quantity + quantity, updated_at: new Date().toISOString() })
+    .eq("id", product_id)
 
   if (updateError) {
-    console.error("Error updating product quantity:", updateError)
-    return { error: updateError.message }
+    console.error("Error updating product quantity after purchase:", updateError.message)
+    return { success: false, error: "Achat enregistré, mais échec de la mise à jour du stock: " + updateError.message }
+  }
+
+  // 4. Log stock change
+  const { error: logError } = await supabase.from("stock_logs").insert({
+    product_id,
+    action: "purchase",
+    quantity_before: product.quantity,
+    quantity_after: product.quantity + quantity,
+    price_before: unit_price,
+    price_after: unit_price,
+    reference_id: purchaseData.id,
+    created_by: user.id,
+    notes: `Achat de ${quantity} unités.`,
+  })
+
+  if (logError) {
+    console.warn("Warning: Failed to log stock change for purchase:", logError.message)
   }
 
   revalidatePath("/purchases")
-  revalidatePath("/inventory") // Revalidate inventory page as well
-  redirect("/purchases")
+  revalidatePath("/inventory") // Inventory also needs revalidation
+  return { success: true, message: "Achat enregistré avec succès!" }
 }
 
 export async function updatePurchase(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   if (!user) {
-    return { error: "User not authenticated." }
+    redirect("/login")
   }
 
-  const id = formData.get("id") as string
+  const purchase_id = formData.get("id") as string
   const product_id = formData.get("product_id") as string
-  const quantity = Number.parseInt(formData.get("quantity") as string)
-  const purchase_date = formData.get("purchase_date") as string
-  const supplier_id = formData.get("supplier_id") as string
+  const new_quantity = Number.parseInt(formData.get("quantity") as string)
   const unit_price = Number.parseFloat(formData.get("unit_price") as string)
-  const old_quantity = Number.parseInt(formData.get("old_quantity") as string) // Get old quantity for stock adjustment
+  const total = Number.parseFloat(formData.get("total") as string)
+  const supplier_id = formData.get("supplier_id") as string | null
+  const notes = formData.get("notes") as string | null
 
-  if (!id || !product_id || isNaN(quantity) || !purchase_date || !supplier_id || isNaN(unit_price)) {
-    return { error: "Tous les champs requis doivent être remplis." }
+  const supabase = await createServerClient()
+
+  // 1. Get current purchase details and product quantity before update
+  const { data: currentPurchase, error: currentPurchaseError } = await supabase
+    .from("purchases")
+    .select("quantity, product_id")
+    .eq("id", purchase_id)
+    .single()
+
+  if (currentPurchaseError || !currentPurchase) {
+    console.error("Error fetching current purchase for update:", currentPurchaseError?.message || "Purchase not found")
+    return { success: false, error: "Achat introuvable." }
   }
 
-  const total_amount = quantity * unit_price
-
-  // First, get the current product quantity to adjust it
-  const { data: product, error: fetchError } = await supabase
+  const { data: product, error: productError } = await supabase
     .from("products")
-    .select("quantity")
+    .select("quantity, name")
     .eq("id", product_id)
     .single()
 
-  if (fetchError || !product) {
-    console.error("Error fetching product for quantity adjustment:", fetchError)
-    return { error: fetchError?.message || "Produit introuvable pour l'ajustement du stock." }
+  if (productError || !product) {
+    console.error("Error fetching product for purchase update:", productError?.message || "Product not found")
+    return { success: false, error: "Produit introuvable ou erreur de stock." }
   }
 
-  // Calculate the difference in quantity and adjust stock
-  const quantityDifference = quantity - old_quantity
-  const newQuantity = product.quantity + quantityDifference
+  const old_quantity = currentPurchase.quantity
+  const quantity_difference = new_quantity - old_quantity // Positive if quantity increased, negative if decreased
 
-  const { error: updateProductError } = await supabase
+  // 2. Update the purchase entry
+  const updatedPurchase: PurchaseUpdate = {
+    product_id,
+    quantity: new_quantity,
+    unit_price,
+    total,
+    supplier_id: supplier_id || null,
+    notes,
+  }
+
+  const { error: purchaseUpdateError } = await supabase.from("purchases").update(updatedPurchase).eq("id", purchase_id)
+
+  if (purchaseUpdateError) {
+    console.error("Error updating purchase:", purchaseUpdateError.message)
+    return { success: false, error: "Échec de la mise à jour de l'achat: " + purchaseUpdateError.message }
+  }
+
+  // 3. Adjust product quantity based on the difference
+  const { error: productUpdateError } = await supabase
     .from("products")
-    .update({ quantity: newQuantity })
+    .update({ quantity: product.quantity + quantity_difference, updated_at: new Date().toISOString() })
     .eq("id", product_id)
 
-  if (updateProductError) {
-    console.error("Error updating product quantity:", updateProductError)
-    return { error: updateProductError.message }
+  if (productUpdateError) {
+    console.error("Error adjusting product quantity after purchase update:", productUpdateError.message)
+    return {
+      success: false,
+      error: "Achat mis à jour, mais échec de l'ajustement du stock: " + productUpdateError.message,
+    }
   }
 
-  // Then, update the purchase record
-  const { error: purchaseError } = await supabase
-    .from("purchases")
-    .update({
-      product_id,
-      quantity,
-      purchase_date,
-      supplier_id,
-      unit_price,
-      total_amount,
-    })
-    .eq("id", id)
-    .eq("user_id", user.id)
+  // 4. Log stock change
+  const { error: logError } = await supabase.from("stock_logs").insert({
+    product_id,
+    action: "purchase_update",
+    quantity_before: product.quantity - quantity_difference, // Quantity before this specific adjustment
+    quantity_after: product.quantity,
+    price_before: unit_price,
+    price_after: unit_price,
+    reference_id: purchase_id,
+    created_by: user.id,
+    notes: `Mise à jour de l'achat (quantité modifiée de ${old_quantity} à ${new_quantity}).`,
+  })
 
-  if (purchaseError) {
-    console.error("Error updating purchase:", purchaseError)
-    return { error: purchaseError.message }
+  if (logError) {
+    console.warn("Warning: Failed to log stock change for purchase update:", logError.message)
   }
 
   revalidatePath("/purchases")
-  revalidatePath("/inventory") // Revalidate inventory page as well
-  redirect("/purchases")
+  revalidatePath(`/purchases/${purchase_id}/edit`)
+  revalidatePath("/inventory") // Inventory also needs revalidation
+  return { success: true, message: "Achat mis à jour avec succès!" }
 }
 
-export async function deletePurchase(id: string) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export async function deletePurchase(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
   if (!user) {
-    return { success: false, error: "User not authenticated." }
+    redirect("/login")
   }
 
-  // Get purchase details to revert stock
-  const { data: purchase, error: fetchPurchaseError } = await supabase
+  const purchase_id = formData.get("id") as string
+
+  const supabase = await createServerClient()
+
+  // 1. Get purchase details to deduct quantity from stock
+  const { data: purchaseToDelete, error: fetchError } = await supabase
     .from("purchases")
     .select("product_id, quantity")
-    .eq("id", id)
+    .eq("id", purchase_id)
     .single()
 
-  if (fetchPurchaseError || !purchase) {
-    console.error("Error fetching purchase for deletion:", fetchPurchaseError)
-    return { success: false, error: fetchPurchaseError?.message || "Achat introuvable." }
+  if (fetchError || !purchaseToDelete) {
+    console.error("Error fetching purchase to delete:", fetchError?.message || "Purchase not found")
+    return { success: false, error: "Achat introuvable pour suppression." }
   }
 
-  // Revert product quantity
-  const { data: product, error: fetchProductError } = await supabase
-    .from("products")
-    .select("quantity")
-    .eq("id", purchase.product_id)
-    .single()
-
-  if (fetchProductError || !product) {
-    console.error("Error fetching product for quantity revert:", fetchProductError)
-    return { success: false, error: fetchProductError?.message || "Produit introuvable pour la mise à jour du stock." }
-  }
-
-  const newQuantity = product.quantity - purchase.quantity
-  const { error: updateProductError } = await supabase
-    .from("products")
-    .update({ quantity: newQuantity })
-    .eq("id", purchase.product_id)
-
-  if (updateProductError) {
-    console.error("Error reverting product quantity:", updateProductError)
-    return { success: false, error: updateProductError.message }
-  }
-
-  // Delete the purchase record
-  const { error: deleteError } = await supabase.from("purchases").delete().eq("id", id).eq("user_id", user.id)
+  // 2. Delete the purchase entry
+  const { error: deleteError } = await supabase.from("purchases").delete().eq("id", purchase_id)
 
   if (deleteError) {
-    console.error("Error deleting purchase:", deleteError)
-    return { success: false, error: deleteError.message }
+    console.error("Error deleting purchase:", deleteError.message)
+    return { success: false, error: "Échec de la suppression de l'achat: " + deleteError.message }
+  }
+
+  // 3. Deduct quantity from product stock
+  const { data: product, error: productError } = await supabase
+    .from("products")
+    .select("quantity, name")
+    .eq("id", purchaseToDelete.product_id)
+    .single()
+
+  if (productError || !product) {
+    console.error(
+      "Error fetching product for stock deduction after purchase deletion:",
+      productError?.message || "Product not found for stock deduction",
+    )
+    // Even if product not found, we proceed as purchase is already deleted.
+  } else {
+    // Ensure we don't go below zero quantity
+    const newQuantity = Math.max(0, product.quantity - purchaseToDelete.quantity)
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
+      .eq("id", purchaseToDelete.product_id)
+
+    if (updateError) {
+      console.error("Error deducting quantity from product stock after purchase deletion:", updateError.message)
+      // This is a critical error, might need manual intervention
+    } else {
+      // Log stock change
+      const { error: logError } = await supabase.from("stock_logs").insert({
+        product_id: purchaseToDelete.product_id,
+        action: "purchase_deletion",
+        quantity_before: product.quantity,
+        quantity_after: newQuantity,
+        price_before: 0, // Price not directly relevant for deletion log
+        price_after: 0,
+        reference_id: purchase_id,
+        created_by: user.id,
+        notes: `Suppression de l'achat (quantité ${purchaseToDelete.quantity} déduite du stock).`,
+      })
+      if (logError) {
+        console.warn("Warning: Failed to log stock change for purchase deletion:", logError.message)
+      }
+    }
   }
 
   revalidatePath("/purchases")
-  revalidatePath("/inventory") // Revalidate inventory page as well
-  return { success: true }
+  revalidatePath("/inventory") // Inventory also needs revalidation
+  return { success: true, message: "Achat supprimé avec succès!" }
 }

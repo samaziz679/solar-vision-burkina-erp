@@ -1,206 +1,133 @@
-import type React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getProducts } from "@/lib/data/products"
-import { getSales } from "@/lib/data/sales"
-import { getPurchases } from "@/lib/data/purchases"
-import { getExpenses } from "@/lib/data/expenses"
-import { getBankEntries } from "@/lib/data/banking"
+import { getCurrentUser, getUserRoles } from "@/lib/auth"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { LayoutDashboard, Package, ShoppingCart, AlertTriangle, DollarSign } from "lucide-react"
 
 export default async function DashboardPage() {
-  const products = await getProducts()
-  const sales = await getSales()
-  const purchases = await getPurchases()
-  const expenses = await getExpenses()
-  const bankEntries = await getBankEntries()
+  const user = await getCurrentUser()
+  const userRoles = await getUserRoles(user!.id)
 
-  // Calculate total stock value
-  const totalStockValue = products.reduce((sum, product) => {
-    return sum + product.quantity * product.prix_achat
-  }, 0)
-
-  // Calculate total sales amount
-  const totalSalesAmount = sales.reduce((sum, sale) => sum + sale.total_amount, 0)
-
-  // Calculate total purchases amount
-  const totalPurchasesAmount = purchases.reduce((sum, purchase) => sum + purchase.total_amount, 0)
-
-  // Calculate total expenses amount
-  const totalExpensesAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-
-  // Calculate current bank balance
-  const bankBalance = bankEntries.reduce((balance, entry) => {
-    if (entry.type === "Dépôt") {
-      return balance + entry.amount
-    } else if (entry.type === "Retrait") {
-      return balance - entry.amount
-    }
-    return balance
-  }, 0)
+  const stats = [
+    {
+      title: "Chiffre d'affaires",
+      value: "0 FCFA",
+      description: "Ce mois",
+      icon: DollarSign,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+    },
+    {
+      title: "Ventes",
+      value: "0",
+      description: "Aujourd'hui",
+      icon: ShoppingCart,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+    },
+    {
+      title: "Produits",
+      value: "0",
+      description: "En stock",
+      icon: Package,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+    },
+    {
+      title: "Stock faible",
+      value: "0",
+      description: "Alertes",
+      icon: AlertTriangle,
+      color: "text-red-600",
+      bgColor: "bg-red-100",
+    },
+  ]
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Valeur Totale du Stock</CardTitle>
-          <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {totalStockValue.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-          </div>
-          <p className="text-xs text-muted-foreground">Basé sur le prix d'achat actuel</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Ventes Totales</CardTitle>
-          <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {totalSalesAmount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-          </div>
-          <p className="text-xs text-muted-foreground">Montant total des ventes enregistrées</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Achats Totaux</CardTitle>
-          <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {totalPurchasesAmount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-          </div>
-          <p className="text-xs text-muted-foreground">Montant total des achats enregistrés</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Dépenses Totales</CardTitle>
-          <ActivityIcon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {totalExpensesAmount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-          </div>
-          <p className="text-xs text-muted-foreground">Total des dépenses enregistrées</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Solde Bancaire Actuel</CardTitle>
-          <BanknoteIcon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {bankBalance.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-          </div>
-          <p className="text-xs text-muted-foreground">Solde net des opérations bancaires</p>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
+          <p className="text-gray-600 mt-1">Bienvenue, {user?.email}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {userRoles.map((role) => (
+            <Badge key={role} variant="secondary">
+              {role.replace("_", " ")}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <Card key={stat.title}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-gray-600 mt-1">{stat.description}</p>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Actions rapides</CardTitle>
+            <CardDescription>Accès rapide aux fonctionnalités principales</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {userRoles.includes("seller") || userRoles.includes("commercial") || userRoles.includes("admin") ? (
+              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                <div className="flex items-center space-x-3">
+                  <ShoppingCart className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <h3 className="font-medium">Nouvelle vente</h3>
+                    <p className="text-sm text-gray-600">Enregistrer une vente</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {userRoles.includes("stock_manager") || userRoles.includes("admin") ? (
+              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                <div className="flex items-center space-x-3">
+                  <Package className="h-5 w-5 text-purple-600" />
+                  <div>
+                    <h3 className="font-medium">Gérer l'inventaire</h3>
+                    <p className="text-sm text-gray-600">Ajouter ou modifier des produits</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Activité récente</CardTitle>
+            <CardDescription>Dernières actions dans le système</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-gray-500">
+              <LayoutDashboard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Aucune activité récente</p>
+              <p className="text-sm mt-1">Les actions apparaîtront ici</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  )
-}
-
-function ActivityIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-    </svg>
-  )
-}
-
-function BanknoteIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="12" x="2" y="6" rx="2" />
-      <circle cx="12" cy="12" r="3" />
-      <path d="M6 12h.01" />
-      <path d="M18 12h.01" />
-    </svg>
-  )
-}
-
-function CreditCardIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="14" x="2" y="5" rx="2" />
-      <line x1="2" x2="22" y1="10" y2="10" />
-    </svg>
-  )
-}
-
-function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="12" x2="12" y1="2" y2="22" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  )
-}
-
-function ShoppingCartIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="8" cy="21" r="1" />
-      <circle cx="19" cy="21" r="1" />
-      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-    </svg>
   )
 }

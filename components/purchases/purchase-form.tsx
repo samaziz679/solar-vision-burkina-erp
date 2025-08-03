@@ -1,101 +1,106 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useActionState } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Purchase, Product, Supplier } from "@/lib/supabase/types"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { addPurchase, updatePurchase } from "@/app/purchases/actions"
+import type { Tables } from "@/lib/supabase/types"
+import { toast } from "sonner"
+
+type Purchase = Tables<"purchases">
+type Product = Tables<"products">
+type Supplier = Tables<"suppliers">
 
 interface PurchaseFormProps {
-  action: FormAction
   initialData?: Purchase
   products: Product[]
   suppliers: Supplier[]
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer l'achat"}
-    </Button>
-  )
-}
+export function PurchaseForm({ initialData, products, suppliers }: PurchaseFormProps) {
+  const router = useRouter()
+  const [state, formAction, isPending] = useActionState(initialData ? updatePurchase : addPurchase, {
+    success: false,
+    message: "",
+    errors: undefined,
+  })
 
-export default function PurchaseForm({ action, initialData, products, suppliers }: PurchaseFormProps) {
-  const [state, formAction] = useFormState(action, {})
+  const handleSubmit = async (formData: FormData) => {
+    const result = await formAction(formData)
+    if (result.success) {
+      toast.success(result.message)
+      router.push("/purchases")
+    } else {
+      toast.error(result.message)
+    }
+  }
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid gap-2">
-        <Label htmlFor="product_id">Produit</Label>
-        <Select name="product_id" defaultValue={initialData?.product_id || ""} required>
-          <SelectTrigger id="product_id">
-            <SelectValue placeholder="Sélectionner un produit" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="quantity">Quantité</Label>
-        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Prix Unitaire</Label>
-        <Input
-          id="unit_price"
-          name="unit_price"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.unit_price || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="purchase_date">Date d'achat</Label>
-        <Input
-          id="purchase_date"
-          name="purchase_date"
-          type="date"
-          defaultValue={initialData?.purchase_date || new Date().toISOString().split("T")[0]}
-          required
-        />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="supplier_id">Fournisseur</Label>
-        <Select name="supplier_id" defaultValue={initialData?.supplier_id || ""} required>
-          <SelectTrigger id="supplier_id">
-            <SelectValue placeholder="Sélectionner un fournisseur" />
-          </SelectTrigger>
-          <SelectContent>
-            {suppliers.map((supplier) => (
-              <SelectItem key={supplier.id} value={supplier.id}>
-                {supplier.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {state?.error && (
-        <Alert variant="destructive" className="md:col-span-2">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="md:col-span-2 flex justify-end">
-        <SubmitButton />
-      </div>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>{initialData ? "Edit Purchase" : "Add New Purchase"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={handleSubmit} className="grid gap-4">
+          {initialData && <input type="hidden" name="id" value={initialData.id} />}
+          <div>
+            <Label htmlFor="product_id">Product</Label>
+            <Select name="product_id" defaultValue={initialData?.product_id || ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a product" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state?.errors?.product_id && <p className="text-red-500 text-sm">{state.errors.product_id}</p>}
+          </div>
+          <div>
+            <Label htmlFor="supplier_id">Supplier</Label>
+            <Select name="supplier_id" defaultValue={initialData?.supplier_id || ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a supplier" />
+              </SelectTrigger>
+              <SelectContent>
+                {suppliers.map((supplier) => (
+                  <SelectItem key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state?.errors?.supplier_id && <p className="text-red-500 text-sm">{state.errors.supplier_id}</p>}
+          </div>
+          <div>
+            <Label htmlFor="quantity">Quantity</Label>
+            <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
+            {state?.errors?.quantity && <p className="text-red-500 text-sm">{state.errors.quantity}</p>}
+          </div>
+          <div>
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              name="amount"
+              type="number"
+              step="0.01"
+              defaultValue={initialData?.amount || ""}
+              required
+            />
+            {state?.errors?.amount && <p className="text-red-500 text-sm">{state.errors.amount}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Saving..." : initialData ? "Save Changes" : "Add Purchase"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

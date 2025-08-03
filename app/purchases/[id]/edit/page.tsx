@@ -1,33 +1,32 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { PurchaseForm } from "@/components/purchases/purchase-form"
 import { getPurchaseById } from "@/lib/data/purchases"
-import { updatePurchase } from "@/app/purchases/actions"
 import { getProducts } from "@/lib/data/products"
 import { getSuppliers } from "@/lib/data/suppliers"
-import { notFound } from "next/navigation"
-
-export const dynamic = "force-dynamic"
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
-  const purchase = await getPurchaseById(params.id)
-  const products = await getProducts()
-  const suppliers = await getSuppliers()
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
+  const purchase = await getPurchaseById(params.id, data.user.id)
+  const products = await getProducts(data.user.id)
+  const suppliers = await getSuppliers(data.user.id)
 
   if (!purchase) {
-    notFound()
+    redirect("/purchases")
   }
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Modifier l'achat</CardTitle>
-          <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} action={updatePurchase} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+      <div className="w-full max-w-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-center">Edit Purchase</h1>
+        <PurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
+      </div>
     </div>
   )
 }

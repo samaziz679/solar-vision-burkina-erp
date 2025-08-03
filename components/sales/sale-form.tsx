@@ -1,107 +1,106 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useActionState } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Sale, Product, Client } from "@/lib/supabase/types"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { addSale, updateSale } from "@/app/sales/actions"
+import type { Tables } from "@/lib/supabase/types"
+import { toast } from "sonner"
+
+type Sale = Tables<"sales">
+type Product = Tables<"products">
+type Client = Tables<"clients">
 
 interface SaleFormProps {
-  action: FormAction
   initialData?: Sale
   products: Product[]
   clients: Client[]
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer la vente"}
-    </Button>
-  )
-}
+export function SaleForm({ initialData, products, clients }: SaleFormProps) {
+  const router = useRouter()
+  const [state, formAction, isPending] = useActionState(initialData ? updateSale : addSale, {
+    success: false,
+    message: "",
+    errors: undefined,
+  })
 
-export default function SaleForm({ action, initialData, products, clients }: SaleFormProps) {
-  const [state, formAction] = useFormState(action, {})
+  const handleSubmit = async (formData: FormData) => {
+    const result = await formAction(formData)
+    if (result.success) {
+      toast.success(result.message)
+      router.push("/sales")
+    } else {
+      toast.error(result.message)
+    }
+  }
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid gap-2">
-        <Label htmlFor="product_id">Produit</Label>
-        <Select name="product_id" defaultValue={initialData?.product_id || ""} required>
-          <SelectTrigger id="product_id">
-            <SelectValue placeholder="Sélectionner un produit" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="quantity_sold">Quantité Vendue</Label>
-        <Input
-          id="quantity_sold"
-          name="quantity_sold"
-          type="number"
-          defaultValue={initialData?.quantity_sold || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Prix Unitaire</Label>
-        <Input
-          id="unit_price"
-          name="unit_price"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.unit_price || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="sale_date">Date de Vente</Label>
-        <Input
-          id="sale_date"
-          name="sale_date"
-          type="date"
-          defaultValue={initialData?.sale_date || new Date().toISOString().split("T")[0]}
-          required
-        />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Select name="client_id" defaultValue={initialData?.client_id || ""} required>
-          <SelectTrigger id="client_id">
-            <SelectValue placeholder="Sélectionner un client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {state?.error && (
-        <Alert variant="destructive" className="md:col-span-2">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="md:col-span-2 flex justify-end">
-        <SubmitButton />
-      </div>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>{initialData ? "Edit Sale" : "Add New Sale"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={handleSubmit} className="grid gap-4">
+          {initialData && <input type="hidden" name="id" value={initialData.id} />}
+          <div>
+            <Label htmlFor="product_id">Product</Label>
+            <Select name="product_id" defaultValue={initialData?.product_id || ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a product" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state?.errors?.product_id && <p className="text-red-500 text-sm">{state.errors.product_id}</p>}
+          </div>
+          <div>
+            <Label htmlFor="client_id">Client</Label>
+            <Select name="client_id" defaultValue={initialData?.client_id || ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a client" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state?.errors?.client_id && <p className="text-red-500 text-sm">{state.errors.client_id}</p>}
+          </div>
+          <div>
+            <Label htmlFor="quantity">Quantity</Label>
+            <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
+            {state?.errors?.quantity && <p className="text-red-500 text-sm">{state.errors.quantity}</p>}
+          </div>
+          <div>
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              name="amount"
+              type="number"
+              step="0.01"
+              defaultValue={initialData?.amount || ""}
+              required
+            />
+            {state?.errors?.amount && <p className="text-red-500 text-sm">{state.errors.amount}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Saving..." : initialData ? "Save Changes" : "Add Sale"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

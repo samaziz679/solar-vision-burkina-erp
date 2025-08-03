@@ -1,44 +1,38 @@
-import { createMiddlewareClient } from "@supabase/ssr"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
+import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
-  const supabase = createMiddlewareClient({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        request.cookies.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        request.cookies.set({ name, value: "", ...options })
-      },
-    },
-  })
+  try {
+    // This `try/catch` block is only for logging errors in `middleware.ts`
+    // in a Next.js app. In Next.js 13.5, it's a better practice to use
+    // Route Handlers and Server Actions (working with Supabase client
+    // in Server Components) instead.
+    const { supabase, response } = createClient(request)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    // Refresh session if expired - required for Server Components
+    // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
+    await supabase.auth.getSession()
 
-  // If user is not logged in and trying to access a protected route, redirect to login
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-    const loginUrl = new URL("/login", request.url)
-    return NextResponse.redirect(loginUrl)
+    return response
+  } catch (e) {
+    console.error("Middleware error:", e)
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
   }
-
-  // If user is logged in and trying to access login page, redirect to dashboard
-  if (user && request.nextUrl.pathname === "/login") {
-    const dashboardUrl = new URL("/dashboard", request.url)
-    return NextResponse.redirect(dashboardUrl)
-  }
-
-  return response
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|auth/callback).*)"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 }

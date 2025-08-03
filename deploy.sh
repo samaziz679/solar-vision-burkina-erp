@@ -3,7 +3,11 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-echo "Starting Vercel deployment..."
+echo "Starting Vercel deployment script..."
+
+# Install dependencies
+echo "Installing dependencies..."
+npm install
 
 # Link the project to Vercel (if not already linked)
 # This command will prompt you to select an existing project or create a new one.
@@ -16,9 +20,8 @@ vercel link --yes
 echo "Pulling environment variables from Vercel..."
 vercel env pull .env.local
 
-# Build the Next.js application
-# This command runs the 'build' script defined in package.json.
-echo "Building the Next.js application..."
+# Run the build command
+echo "Running build command..."
 npm run build
 
 # Deploy the application to Vercel
@@ -27,4 +30,4 @@ npm run build
 echo "Deploying to Vercel production..."
 vercel --prod --prebuilt
 
-echo "Deployment complete!"
+echo "Deployment script finished!"

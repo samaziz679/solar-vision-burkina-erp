@@ -1,29 +1,28 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import EditExpenseForm from "@/components/expenses/edit-expense-form"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { ExpenseForm } from "@/components/expenses/expense-form"
 import { getExpenseById } from "@/lib/data/expenses"
-import { updateExpense } from "@/app/expenses/actions"
-import { notFound } from "next/navigation"
-
-export const dynamic = "force-dynamic"
 
 export default async function EditExpensePage({ params }: { params: { id: string } }) {
-  const expense = await getExpenseById(params.id)
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
+  const expense = await getExpenseById(params.id, data.user.id)
 
   if (!expense) {
-    notFound()
+    redirect("/expenses")
   }
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Modifier la dépense</CardTitle>
-          <CardDescription>Mettez à jour les détails de la dépense.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditExpenseForm initialData={expense} action={updateExpense} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+      <div className="w-full max-w-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-center">Edit Expense</h1>
+        <ExpenseForm initialData={expense} />
+      </div>
     </div>
   )
 }

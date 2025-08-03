@@ -3,23 +3,11 @@
 import React from "react"
 
 import Link from "next/link"
-import {
-  Activity,
-  CreditCard,
-  DollarSign,
-  Home,
-  Package,
-  ShoppingCart,
-  Users,
-  Package2,
-  Menu,
-  Banknote,
-  Truck,
-} from "lucide-react"
+import { DollarSign, Home, Package, ShoppingCart, Users, Package2, Menu, Banknote, Truck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePathname } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
@@ -38,18 +26,7 @@ const SidebarComponent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<H
       className={cn("fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex", className)}
       {...props}
     >
-      <SidebarHeader className="flex flex-col items-center gap-4 px-2 sm:py-5">
-        <Link
-          href="/dashboard"
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8"
-        >
-          <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-          <span className="sr-only">Solar Vision Burkina ERP</span>
-        </Link>
-      </SidebarHeader>
-      <SidebarBody className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-        {/* Links will be added here */}
-      </SidebarBody>
+      {/* SidebarHeader Component */}
     </div>
   ),
 )
@@ -94,8 +71,19 @@ const Sidebar = ({ user }: SidebarProps) => {
     }
   }
 
+  const navItems = [
+    { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/sales", icon: ShoppingCart, label: "Sales" },
+    { href: "/purchases", icon: Truck, label: "Purchases" },
+    { href: "/inventory", icon: Package, label: "Inventory" },
+    { href: "/clients", icon: Users, label: "Clients" },
+    { href: "/suppliers", icon: Truck, label: "Suppliers" },
+    { href: "/expenses", icon: DollarSign, label: "Expenses" },
+    { href: "/banking", icon: Banknote, label: "Banking" },
+  ]
+
   return (
-    <TooltipProvider>
+    <div className="flex">
       <SidebarComponent>
         <SidebarHeader>
           <Link
@@ -107,79 +95,31 @@ const Sidebar = ({ user }: SidebarProps) => {
           </Link>
         </SidebarHeader>
         <SidebarBody>
-          <Link
-            href="/dashboard"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Home className="h-5 w-5" />
-            Tableau de bord
-          </Link>
-          <Link
-            href="/inventory"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/inventory") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Package className="h-5 w-5" />
-            Inventaire
-            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">10</Badge>
-          </Link>
-          <Link
-            href="/sales"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/sales") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            Ventes
-          </Link>
-          <Link
-            href="/purchases"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/purchases") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <CreditCard className="h-5 w-5" />
-            Achats
-          </Link>
-          <Link
-            href="/expenses"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/expenses") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Activity className="h-5 w-5" />
-            Dépenses
-          </Link>
-          <Link
-            href="/banking"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/banking") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Banknote className="h-5 w-5" />
-            Banque
-          </Link>
-          <Link
-            href="/clients"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/clients") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Users className="h-5 w-5" />
-            Clients
-          </Link>
-          <Link
-            href="/suppliers"
-            className={`flex items-center gap-4 px-2.5 ${
-              pathname.startsWith("/suppliers") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Truck className="h-5 w-5" />
-            Fournisseurs
-          </Link>
+          <TooltipProvider>
+            {navItems.map((item) => (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-4 px-2.5",
+                      pathname.startsWith(item.href) && "text-foreground",
+                      !pathname.startsWith(item.href) && "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                    {item.href === "/inventory" && (
+                      <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                        10
+                      </Badge>
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            ))}
+          </TooltipProvider>
         </SidebarBody>
         <SidebarFooter>
           {user ? (
@@ -212,79 +152,31 @@ const Sidebar = ({ user }: SidebarProps) => {
                 <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
                 <span className="sr-only">Solar Vision Burkina ERP</span>
               </Link>
-              <Link
-                href="/dashboard"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Home className="h-5 w-5" />
-                Tableau de bord
-              </Link>
-              <Link
-                href="/inventory"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/inventory") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Package className="h-5 w-5" />
-                Inventaire
-                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">10</Badge>
-              </Link>
-              <Link
-                href="/sales"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/sales") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                Ventes
-              </Link>
-              <Link
-                href="/purchases"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/purchases") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <CreditCard className="h-5 w-5" />
-                Achats
-              </Link>
-              <Link
-                href="/expenses"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/expenses") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Activity className="h-5 w-5" />
-                Dépenses
-              </Link>
-              <Link
-                href="/banking"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/banking") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Banknote className="h-5 w-5" />
-                Banque
-              </Link>
-              <Link
-                href="/clients"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/clients") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Users className="h-5 w-5" />
-                Clients
-              </Link>
-              <Link
-                href="/suppliers"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/suppliers") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Truck className="h-5 w-5" />
-                Fournisseurs
-              </Link>
+              <TooltipProvider>
+                {navItems.map((item) => (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-4 px-2.5",
+                          pathname.startsWith(item.href) && "text-foreground",
+                          !pathname.startsWith(item.href) && "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                        {item.href === "/inventory" && (
+                          <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                            10
+                          </Badge>
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                  </Tooltip>
+                ))}
+              </TooltipProvider>
               {user ? (
                 <Button variant="ghost" className="flex items-center gap-4 px-2.5" onClick={handleLogout}>
                   <DollarSign className="h-5 w-5" />
@@ -303,7 +195,7 @@ const Sidebar = ({ user }: SidebarProps) => {
           </SheetContent>
         </Sheet>
       </header>
-    </TooltipProvider>
+    </div>
   )
 }
 

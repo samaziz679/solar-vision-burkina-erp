@@ -1,7 +1,6 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
@@ -26,22 +25,7 @@ export async function login(prevState: { message?: string; error?: string }, for
   }
 
   const { email, password } = validatedFields.data
-  const cookieStore = cookies()
-  const supabase = createServerClient({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        cookieStore.delete({ name, ...options })
-      },
-    },
-  })
+  const supabase = createClient()
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -57,22 +41,7 @@ export async function login(prevState: { message?: string; error?: string }, for
 }
 
 export async function logout() {
-  const cookieStore = cookies()
-  const supabase = createServerClient({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        cookieStore.delete({ name, ...options })
-      },
-    },
-  })
+  const supabase = createClient()
 
   const { error } = await supabase.auth.signOut()
 
@@ -82,4 +51,15 @@ export async function logout() {
   }
 
   redirect("/login")
+}
+
+export async function getAuthUser() {
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
+  return data.user
 }

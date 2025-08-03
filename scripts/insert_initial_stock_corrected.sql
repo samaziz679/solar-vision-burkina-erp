@@ -1,22 +1,14 @@
 -- This script inserts initial stock data into the 'products' table.
--- Ensure that the 'products' table and its RLS policies are already set up
--- by running the 'complete_supabase_schema.sql' script first.
+-- Ensure that the 'products' table and 'users' table exist and are accessible.
+-- Replace 'YOUR_USER_ID' with the actual user ID you want to associate these products with.
 
--- You need to replace 'YOUR_USER_ID' with the actual user ID from your auth.users table
--- for whom you want to insert this data.
-
-INSERT INTO public.products (id, name, description, category, price, stock_quantity, image_url, created_at, updated_at)
+INSERT INTO products (id, created_at, user_id, name, description, price, stock, category, image_url)
 VALUES
-    ('a1b2c3d4-e5f6-7890-1234-567890abcdef', 'Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 'Solar Panels', 250.00, 100, 'https://example.com/solar_panel_300w.jpg', NOW(), NOW()),
-    ('b2c3d4e5-f6a7-8901-2345-67890abcdef0', 'Inverter 5kW', 'Hybrid solar inverter with battery support', 'Inverters', 1200.00, 50, 'https://example.com/inverter_5kw.jpg', NOW(), NOW()),
-    ('c3d4e5f6-a7b8-9012-3456-7890abcdef01', 'Solar Battery 100Ah', 'Deep cycle gel battery for solar systems', 'Batteries', 300.00, 200, 'https://example.com/solar_battery_100ah.jpg', NOW(), NOW()),
-    ('d4e5f6a7-b8c9-0123-4567-890abcdef012', 'Mounting Kit', 'Universal mounting kit for pitched roofs', 'Accessories', 80.00, 150, 'https://example.com/mounting_kit.jpg', NOW(), NOW()),
-    ('e5f6a7b8-c9d0-1234-5678-90abcdef0123', 'Charge Controller 60A', 'MPPT solar charge controller', 'Controllers', 150.00, 75, 'https://example.com/charge_controller_60a.jpg', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    price = EXCLUDED.price,
-    stock_quantity = EXCLUDED.stock_quantity,
-    image_url = EXCLUDED.image_url,
-    updated_at = NOW();
+    (uuid_generate_v4(), NOW(), 'YOUR_USER_ID', 'Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 250.00, 100, 'Solar Panels', 'https://example.com/solar-panel-300w.jpg'),
+    (uuid_generate_v4(), NOW(), 'YOUR_USER_ID', 'Inverter 5KW', 'Hybrid solar inverter with battery support', 1200.00, 50, 'Inverters', 'https://example.com/inverter-5kw.jpg'),
+    (uuid_generate_v4(), NOW(), 'YOUR_USER_ID', 'Deep Cycle Battery 200Ah', 'Gel battery for solar energy storage', 300.00, 200, 'Batteries', 'https://example.com/battery-200ah.jpg'),
+    (uuid_generate_v4(), NOW(), 'YOUR_USER_ID', 'Charge Controller MPPT 60A', 'MPPT solar charge controller', 80.00, 150, 'Charge Controllers', 'https://example.com/charge-controller-60a.jpg'),
+    (uuid_generate_v4(), NOW(), 'YOUR_USER_ID', 'Mounting Kit for Pitched Roof', 'Aluminum mounting structure for solar panels', 150.00, 75, 'Mounting Systems', 'https://example.com/mounting-kit.jpg');
+
+-- Note: If you run this script multiple times, it will insert duplicate data
+-- unless you add checks for existing product names or IDs.

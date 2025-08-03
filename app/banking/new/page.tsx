@@ -1,19 +1,21 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import BankingForm from "@/components/banking/banking-form"
-import { addBankEntry } from "@/app/banking/actions"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { BankingForm } from "@/components/banking/banking-form"
 
-export default function NewBankingPage() {
+export default async function NewBankingPage() {
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Ajouter une nouvelle opération bancaire</CardTitle>
-          <CardDescription>Remplissez les détails de la nouvelle opération bancaire.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BankingForm action={addBankEntry} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+      <div className="w-full max-w-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-center">Add New Banking Transaction</h1>
+        <BankingForm />
+      </div>
     </div>
   )
 }

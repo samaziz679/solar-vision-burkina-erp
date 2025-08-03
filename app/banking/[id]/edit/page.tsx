@@ -1,29 +1,28 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import EditBankingForm from "@/components/banking/edit-banking-form"
-import { getBankEntryById } from "@/lib/data/banking"
-import { updateBankEntry } from "@/app/banking/actions"
-import { notFound } from "next/navigation"
-
-export const dynamic = "force-dynamic"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { BankingForm } from "@/components/banking/banking-form"
+import { getBankingTransactionById } from "@/lib/data/banking"
 
 export default async function EditBankingPage({ params }: { params: { id: string } }) {
-  const bankEntry = await getBankEntryById(params.id)
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
 
-  if (!bankEntry) {
-    notFound()
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
+  const transaction = await getBankingTransactionById(params.id, data.user.id)
+
+  if (!transaction) {
+    redirect("/banking")
   }
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Modifier l'opération bancaire</CardTitle>
-          <CardDescription>Mettez à jour les détails de l'opération bancaire.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditBankingForm initialData={bankEntry} action={updateBankEntry} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+      <div className="w-full max-w-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-center">Edit Banking Transaction</h1>
+        <BankingForm initialData={transaction} />
+      </div>
     </div>
   )
 }

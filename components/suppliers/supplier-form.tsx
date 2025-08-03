@@ -1,65 +1,73 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useActionState } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import type { Supplier } from "@/lib/supabase/types"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { addSupplier, updateSupplier } from "@/app/suppliers/actions"
+import type { Tables } from "@/lib/supabase/types"
+import { toast } from "sonner"
+
+type Supplier = Tables<"suppliers">
 
 interface SupplierFormProps {
-  action: FormAction
   initialData?: Supplier
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer le fournisseur"}
-    </Button>
-  )
-}
+export function SupplierForm({ initialData }: SupplierFormProps) {
+  const router = useRouter()
+  const [state, formAction, isPending] = useActionState(initialData ? updateSupplier : addSupplier, {
+    success: false,
+    message: "",
+    errors: undefined,
+  })
 
-export default function SupplierForm({ action, initialData }: SupplierFormProps) {
-  const [state, formAction] = useFormState(action, {})
+  const handleSubmit = async (formData: FormData) => {
+    const result = await formAction(formData)
+    if (result.success) {
+      toast.success(result.message)
+      router.push("/suppliers")
+    } else {
+      toast.error(result.message)
+    }
+  }
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid gap-2">
-        <Label htmlFor="name">Nom</Label>
-        <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="contact">Contact</Label>
-        <Input id="contact" name="contact" type="text" defaultValue={initialData?.contact || ""} required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="address">Adresse</Label>
-        <Textarea
-          id="address"
-          name="address"
-          placeholder="Adresse du fournisseur"
-          defaultValue={initialData?.address || ""}
-        />
-      </div>
-      {state?.error && (
-        <Alert variant="destructive" className="md:col-span-2">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="md:col-span-2 flex justify-end">
-        <SubmitButton />
-      </div>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>{initialData ? "Edit Supplier" : "Add New Supplier"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={handleSubmit} className="grid gap-4">
+          {initialData && <input type="hidden" name="id" value={initialData.id} />}
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" name="name" defaultValue={initialData?.name || ""} required />
+            {state?.errors?.name && <p className="text-red-500 text-sm">{state.errors.name}</p>}
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
+            {state?.errors?.email && <p className="text-red-500 text-sm">{state.errors.email}</p>}
+          </div>
+          <div>
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
+            {state?.errors?.phone && <p className="text-red-500 text-sm">{state.errors.phone}</p>}
+          </div>
+          <div>
+            <Label htmlFor="address">Address</Label>
+            <Textarea id="address" name="address" defaultValue={initialData?.address || ""} rows={3} />
+            {state?.errors?.address && <p className="text-red-500 text-sm">{state.errors.address}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Saving..." : initialData ? "Save Changes" : "Add Supplier"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

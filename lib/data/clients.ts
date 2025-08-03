@@ -1,59 +1,30 @@
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import type { Database } from "@/lib/supabase/types"
+import { createClient } from "@/lib/supabase/server"
+import type { Tables } from "@/lib/supabase/types"
 
-export async function fetchClients() {
-  const cookieStore = cookies()
-  const supabase = createServerClient<Database>({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        cookieStore.delete({ name, ...options })
-      },
-    },
-  })
+type Client = Tables<"clients">
 
-  const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
+export async function getClients(userId: string): Promise<Client[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("user_id", userId)
+    .order("name", { ascending: true })
 
   if (error) {
     console.error("Error fetching clients:", error)
     return []
   }
-
   return data
 }
 
-export async function fetchClientById(id: string) {
-  const cookieStore = cookies()
-  const supabase = createServerClient<Database>({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        cookieStore.delete({ name, ...options })
-      },
-    },
-  })
-
-  const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
+export async function getClientById(id: string, userId: string): Promise<Client | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("clients").select("*").eq("id", id).eq("user_id", userId).single()
 
   if (error) {
     console.error("Error fetching client by ID:", error)
     return null
   }
-
   return data
 }

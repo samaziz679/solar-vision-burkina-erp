@@ -1,19 +1,21 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import ClientForm from "@/components/clients/client-form"
-import { addClient } from "@/app/clients/actions"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { ClientForm } from "@/components/clients/client-form"
 
-export default function NewClientPage() {
+export default async function NewClientPage() {
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Ajouter un nouveau client</CardTitle>
-          <CardDescription>Remplissez les détails du nouveau client.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ClientForm action={addClient} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+      <div className="w-full max-w-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-center">Add New Client</h1>
+        <ClientForm />
+      </div>
     </div>
   )
 }

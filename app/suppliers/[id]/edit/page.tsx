@@ -1,29 +1,28 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import EditSupplierForm from "@/components/suppliers/edit-supplier-form"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { SupplierForm } from "@/components/suppliers/supplier-form"
 import { getSupplierById } from "@/lib/data/suppliers"
-import { updateSupplier } from "@/app/suppliers/actions"
-import { notFound } from "next/navigation"
-
-export const dynamic = "force-dynamic"
 
 export default async function EditSupplierPage({ params }: { params: { id: string } }) {
-  const supplier = await getSupplierById(params.id)
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error || !data?.user) {
+    redirect("/login")
+  }
+
+  const supplier = await getSupplierById(params.id, data.user.id)
 
   if (!supplier) {
-    notFound()
+    redirect("/suppliers")
   }
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Modifier le fournisseur</CardTitle>
-          <CardDescription>Mettez à jour les détails du fournisseur.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditSupplierForm initialData={supplier} action={updateSupplier} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-8">
+      <div className="w-full max-w-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-center">Edit Supplier</h1>
+        <SupplierForm initialData={supplier} />
+      </div>
     </div>
   )
 }

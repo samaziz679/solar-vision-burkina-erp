@@ -1,79 +1,97 @@
-# Solar Vision Burkina ERP Deployment Guide
+# Deployment Guide for Solar Vision Burkina ERP
 
-This guide provides instructions for deploying the Solar Vision Burkina ERP application to Vercel.
+This guide provides instructions for deploying the Solar Vision Burkina ERP application.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following:
+Before deploying, ensure you have the following:
 
-1.  **Vercel Account**: If you don't have one, sign up at [vercel.com](https://vercel.com/).
-2.  **Supabase Project**: A Supabase project with your database schema set up.
-3.  **Git Repository**: Your project code pushed to a Git repository (GitHub, GitLab, Bitbucket).
+1.  **Node.js and npm/Yarn:** Installed on your local machine.
+2.  **Git:** Installed and configured.
+3.  **Vercel Account:** A Vercel account and the Vercel CLI installed (`npm i -g vercel`).
+4.  **Supabase Project:** A Supabase project set up with the necessary database schema and Row Level Security (RLS) policies.
+    *   You can use the SQL scripts provided in the `scripts/` directory to set up your Supabase database.
+    *   Ensure you have enabled the `uuid-ossp` extension in your Supabase project (Database -> Extensions -> search for `uuid-ossp` and enable it).
 
 ## Environment Variables
 
-The application requires the following environment variables to be set in your Vercel project settings:
+The application requires the following environment variables. These should be set in your Vercel project settings.
 
 *   `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
-*   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase project's public anon key.
-*   `NEXT_PUBLIC_SITE_URL`: The public URL of your deployed Vercel application (e.g., `https://your-app.vercel.app`). This is used for Supabase authentication callbacks.
+*   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase public anon key.
+*   `NEXT_PUBLIC_SITE_URL`: The public URL of your deployed application (e.g., `https://your-app-name.vercel.app`). This is used for Supabase Auth callbacks.
 
 **How to set environment variables in Vercel:**
 
 1.  Go to your Vercel project dashboard.
-2.  Navigate to "Settings" -> "Environment Variables".
-3.  Add each variable with its corresponding value. Ensure they are available for the correct environments (e.g., "Production", "Preview", "Development").
+2.  Navigate to **Settings** -> **Environment Variables**.
+3.  Add each variable with its corresponding value.
 
 ## Deployment Steps
 
-### 1. Link Your Git Repository
+### 1. Clone the Repository
 
-If you haven't already, import your Git repository into Vercel:
+First, clone your project repository to your local machine:
 
-1.  Go to your Vercel dashboard and click "Add New..." -> "Project".
-2.  Select your Git provider and choose the repository containing your ERP project.
-3.  Click "Import".
+\`\`\`bash
+git clone <your-repository-url>
+cd solar-vision-burkina-erp
+\`\`\`
 
-### 2. Configure Project Settings
+### 2. Install Dependencies
 
-Vercel will automatically detect that this is a Next.js project. You typically don't need to change much, but double-check:
+Install the project dependencies using npm or Yarn:
 
-*   **Framework Preset**: Next.js
-*   **Root Directory**: If your project is in a monorepo or a subdirectory, ensure this is set correctly. Otherwise, leave it as default.
-*   **Build & Output Settings**: Usually, the defaults are fine.
-    *   Build Command: `next build`
-    *   Output Directory: `public`
+\`\`\`bash
+npm install
+# or
+yarn install
+\`\`\`
 
-### 3. Set Up Supabase Authentication Callback URL
+### 3. Set up Supabase Database
 
-For Supabase authentication to work correctly after deployment, you need to add your Vercel deployment URL to your Supabase project's authentication settings.
+If you haven't already, set up your Supabase database using the provided SQL scripts.
 
 1.  Go to your Supabase project dashboard.
-2.  Navigate to "Authentication" -> "URL Configuration".
-3.  Add your Vercel deployment URL (e.g., `https://your-app.vercel.app`) to the "Site URL" field.
-4.  Also, add the full callback URL to "Redirect URLs" if you are using email/OAuth providers: `https://your-app.vercel.app/auth/callback`.
+2.  Navigate to **SQL Editor**.
+3.  Open `scripts/supabase_schema.sql` (or `scripts/complete_supabase_schema.sql` for the full schema) from your cloned repository.
+4.  Paste the content into the SQL editor and run it. This will create the necessary tables and RLS policies.
+5.  (Optional) If you want to insert initial stock data, run the `scripts/insert_initial_stock.sql` script, remembering to replace `'YOUR_USER_ID'` with an actual user ID from your `auth.users` table.
 
-### 4. Deploy
+### 4. Configure Supabase Auth Redirect URL
 
-Once your environment variables are set and Supabase is configured:
+For Supabase authentication to work correctly, you need to add your Vercel deployment URL to Supabase's redirect URLs.
 
-1.  From your Vercel project dashboard, go to the "Deployments" tab.
-2.  You can trigger a new deployment by pushing changes to your linked Git branch (e.g., `main` or `master`).
-3.  Alternatively, you can manually trigger a deployment by clicking "Deploy" on the latest commit.
+1.  Go to your Supabase project dashboard.
+2.  Navigate to **Authentication** -> **URL Configuration**.
+3.  Add your Vercel deployment URL (e.g., `https://your-app-name.vercel.app`) to the **Redirect URLs** list.
+    *   Also add `http://localhost:3000` for local development.
 
-Vercel will build and deploy your application. You can monitor the build logs in the Vercel dashboard.
+### 5. Deploy to Vercel
 
-## Post-Deployment
+You can deploy your application to Vercel using the Vercel CLI or by connecting your Git repository directly to Vercel.
 
-*   **Verify Deployment**: Once deployed, visit your application's URL to ensure everything is working as expected.
-*   **Test Forms**: Thoroughly test all forms (Inventory, Sales, Purchases, Expenses, Clients, Suppliers, Banking) to ensure data submission and updates work correctly with Supabase.
-*   **Check Logs**: If you encounter any issues, check the Vercel deployment logs and runtime logs for errors.
+#### Option A: Deploy using Vercel CLI
 
-## Troubleshooting
+\`\`\`bash
+vercel
+\`\`\`
 
-*   **`TypeError: useFormState is not a function`**: Ensure your `react` and `react-dom` versions are compatible with `useActionState` (React 19+). If you're on an older version, you might need to stick with `useFormState` or upgrade React. This project uses `useActionState`.
-*   **Supabase Connection Errors**: Double-check your `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` environment variables in Vercel. Ensure they are correct and accessible.
-*   **Authentication Redirect Issues**: Verify that your "Site URL" and "Redirect URLs" in Supabase Authentication settings match your Vercel deployment URL.
-*   **Build Failures**: Review the build logs in Vercel for specific error messages. These often point to missing dependencies, syntax errors, or configuration issues.
+Follow the prompts. Vercel will detect it's a Next.js project and build it.
 
-If you need further assistance, refer to the Vercel documentation or Supabase documentation.
+#### Option B: Deploy via Git Integration (Recommended)
+
+1.  Push your code to a Git repository (e.g., GitHub, GitLab, Bitbucket).
+2.  Go to your Vercel dashboard and click "Add New Project".
+3.  Import your Git repository.
+4.  Vercel will automatically detect the Next.js framework and configure the build settings.
+5.  Ensure your environment variables are set in the Vercel project settings as described above.
+6.  Vercel will automatically deploy your application on every push to the connected branch.
+
+### 6. Post-Deployment
+
+After a successful deployment, your application will be live at the URL provided by Vercel.
+
+*   **Troubleshooting Builds:** If your build fails, check the build logs in your Vercel dashboard (Project -> Deployments -> select failed deployment -> Build Logs). Common issues include missing environment variables, incorrect `package.json` dependencies, or build command errors.
+
+If you encounter any issues, refer to the Vercel documentation or seek support.

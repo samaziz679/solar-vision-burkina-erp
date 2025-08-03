@@ -10,49 +10,67 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Save } from "lucide-react"
-import type { Product, Supplier } from "@/lib/supabase/types"
-import { updatePurchase } from "@/app/purchases/actions"
-import type { PurchaseWithDetails } from "@/lib/data/purchases"
+import type { Product, Client } from "@/lib/supabase/types"
+import { updateSale } from "@/app/sales/actions"
+import type { SaleWithDetails } from "@/lib/data/sales" // Import the extended type
 
-interface EditPurchaseFormProps {
-  purchase: PurchaseWithDetails
+interface EditSaleFormProps {
+  sale: SaleWithDetails
   products: Product[]
-  suppliers: Supplier[]
+  clients: Client[] // Clients will be added later
 }
 
-export default function EditPurchaseForm({ purchase, products, suppliers }: EditPurchaseFormProps) {
+export default function EditSaleForm({ sale, products, clients }: EditSaleFormProps) {
   const router = useRouter()
-  const [state, formAction, isPending] = useFormState(updatePurchase, { error: null, success: false })
+  const [state, formAction, isPending] = useFormState(updateSale, { error: null, success: false })
 
-  const [selectedProductId, setSelectedProductId] = useState<string>(purchase.product_id)
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | undefined>(purchase.supplier_id || undefined)
-  const [quantity, setQuantity] = useState<number>(purchase.quantity)
-  const [unitPrice, setUnitPrice] = useState<number>(purchase.unit_price)
-  const [totalPrice, setTotalPrice] = useState<number>(purchase.total)
-  const [notes, setNotes] = useState<string>(purchase.notes || "")
+  const [selectedProductId, setSelectedProductId] = useState<string>(sale.product_id)
+  const [quantity, setQuantity] = useState<number>(sale.quantity)
+  const [pricePlan, setPricePlan] = useState<"detail_1" | "detail_2" | "gros">(sale.price_plan)
+  const [unitPrice, setUnitPrice] = useState<number>(sale.unit_price)
+  const [totalPrice, setTotalPrice] = useState<number>(sale.total)
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(sale.client_id || undefined)
+  const [notes, setNotes] = useState<string>(sale.notes || "")
 
   const currentProduct = products.find((p) => p.id === selectedProductId)
 
   useEffect(() => {
-    // Recalculate total price based on quantity and unit price
-    setTotalPrice(unitPrice * quantity)
-  }, [quantity, unitPrice])
+    if (currentProduct) {
+      let price = 0
+      switch (pricePlan) {
+        case "detail_1":
+          price = currentProduct.prix_vente_detail_1
+          break
+        case "detail_2":
+          price = currentProduct.prix_vente_detail_2
+          break
+        case "gros":
+          price = currentProduct.prix_vente_gros
+          break
+      }
+      setUnitPrice(price)
+      setTotalPrice(price * quantity)
+    } else {
+      setUnitPrice(0)
+      setTotalPrice(0)
+    }
+  }, [selectedProductId, quantity, pricePlan, currentProduct])
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/purchases") // Redirect to purchases list on success
+      router.push("/sales") // Redirect to sales list on success
     }
   }, [state, router])
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Modifier l'achat</CardTitle>
-        <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
+        <CardTitle>Modifier la vente</CardTitle>
+        <CardDescription>Mettez à jour les détails de la vente.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
-          <input type="hidden" name="id" value={purchase.id} />
+          <input type="hidden" name="id" value={sale.id} />
 
           {/* Product Selection */}
           <div>
@@ -77,7 +95,7 @@ export default function EditPurchaseForm({ purchase, products, suppliers }: Edit
             </Select>
           </div>
 
-          {/* Quantity and Unit Price */}
+          {/* Quantity and Price Plan */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="quantity">Quantité</Label>
@@ -93,45 +111,57 @@ export default function EditPurchaseForm({ purchase, products, suppliers }: Edit
               />
             </div>
             <div>
-              <Label htmlFor="unit_price">Prix Unitaire (FCFA)</Label>
-              <Input
-                id="unit_price"
-                name="unit_price"
-                type="number"
-                step="0.01"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(Number(e.target.value))}
-                min={0}
-                required
+              <Label htmlFor="price_plan">Plan de prix</Label>
+              <Select
+                name="price_plan"
+                value={pricePlan}
+                onValueChange={(value: "detail_1" | "detail_2" | "gros") => setPricePlan(value)}
                 disabled={isPending}
-              />
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un plan de prix" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="detail_1">Détail 1</SelectItem>
+                  <SelectItem value="detail_2">Détail 2</SelectItem>
+                  <SelectItem value="gros">Gros</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Total Price (Display Only) */}
-          <div>
-            <Label>Total (FCFA)</Label>
-            <Input type="text" value={totalPrice.toLocaleString("fr-FR")} readOnly disabled />
-            <input type="hidden" name="total" value={totalPrice} />
+          {/* Unit Price and Total Price (Display Only) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Prix Unitaire (FCFA)</Label>
+              <Input type="text" value={unitPrice.toLocaleString("fr-FR")} readOnly disabled />
+              <input type="hidden" name="unit_price" value={unitPrice} />
+            </div>
+            <div>
+              <Label>Total (FCFA)</Label>
+              <Input type="text" value={totalPrice.toLocaleString("fr-FR")} readOnly disabled />
+              <input type="hidden" name="total" value={totalPrice} />
+            </div>
           </div>
 
-          {/* Supplier Selection */}
+          {/* Client Selection (Placeholder for now) */}
           <div>
-            <Label htmlFor="supplier_id">Fournisseur</Label>
+            <Label htmlFor="client_id">Client</Label>
             <Select
-              name="supplier_id"
-              value={selectedSupplierId}
-              onValueChange={(value) => setSelectedSupplierId(value === "none" ? undefined : value)}
+              name="client_id"
+              value={selectedClientId}
+              onValueChange={(value) => setSelectedClientId(value === "none" ? undefined : value)}
               disabled={isPending}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un fournisseur (optionnel)" />
+                <SelectValue placeholder="Sélectionner un client (optionnel)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Aucun fournisseur</SelectItem>
-                {suppliers?.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
+                <SelectItem value="none">Aucun client</SelectItem> {/* Option for no client */}
+                {clients?.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -162,11 +192,7 @@ export default function EditPurchaseForm({ purchase, products, suppliers }: Edit
             </Alert>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isPending || !selectedProductId || quantity <= 0 || unitPrice < 0}
-          >
+          <Button type="submit" className="w-full" disabled={isPending || !selectedProductId || quantity <= 0}>
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -175,7 +201,7 @@ export default function EditPurchaseForm({ purchase, products, suppliers }: Edit
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Mettre à jour l'achat
+                Mettre à jour la vente
               </>
             )}
           </Button>

@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteBankEntry } from "@/app/banking/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
-interface DeleteBankingDialogProps {
+interface DeleteBankEntryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   bankEntryId: string
-  onClose: () => void
 }
 
-export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, onClose }: DeleteBankingDialogProps) {
+export default function DeleteBankEntryDialog({ open, onOpenChange, bankEntryId }: DeleteBankEntryDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteBankEntry(bankEntryId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Opération supprimée",
+        description: "L'opération bancaire a été supprimée avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "L'entrée bancaire a été supprimée.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression de l'opération bancaire.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,8 +48,8 @@ export default function DeleteBankingDialog({ open, onOpenChange, bankEntryId, o
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette entrée bancaire de votre base de
-            données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cette opération bancaire de nos
+            serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -2,40 +2,26 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import type { Purchase } from "@/lib/supabase/types"
 
 export async function createPurchase(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
-  const purchase_date = formData.get("purchase_date") as string
-  const product_id = formData.get("product_id") as string
   const supplier_id = formData.get("supplier_id") as string
-  const quantity_purchased = Number.parseInt(formData.get("quantity_purchased") as string)
-  const unit_cost = Number.parseFloat(formData.get("unit_cost") as string)
-  const total_cost = Number.parseFloat(formData.get("total_cost") as string)
+  const purchase_date = formData.get("purchase_date") as string
+  const total_amount = Number.parseFloat(formData.get("total_amount") as string)
   const payment_status = formData.get("payment_status") as Purchase["payment_status"]
   const notes = formData.get("notes") as string
 
-  if (
-    !purchase_date ||
-    !product_id ||
-    !supplier_id ||
-    isNaN(quantity_purchased) ||
-    isNaN(unit_cost) ||
-    isNaN(total_cost) ||
-    !payment_status
-  ) {
+  if (!purchase_date || isNaN(total_amount) || !payment_status) {
     return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase.from("purchases").insert({
+    supplier_id: supplier_id || null,
     purchase_date,
-    product_id,
-    supplier_id,
-    quantity_purchased,
-    unit_cost,
-    total_cost,
+    total_amount,
     payment_status,
     notes,
   })
@@ -50,40 +36,25 @@ export async function createPurchase(prevState: any, formData: FormData) {
 }
 
 export async function updatePurchase(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const id = formData.get("id") as string
-  const purchase_date = formData.get("purchase_date") as string
-  const product_id = formData.get("product_id") as string
   const supplier_id = formData.get("supplier_id") as string
-  const quantity_purchased = Number.parseInt(formData.get("quantity_purchased") as string)
-  const unit_cost = Number.parseFloat(formData.get("unit_cost") as string)
-  const total_cost = Number.parseFloat(formData.get("total_cost") as string)
+  const purchase_date = formData.get("purchase_date") as string
+  const total_amount = Number.parseFloat(formData.get("total_amount") as string)
   const payment_status = formData.get("payment_status") as Purchase["payment_status"]
   const notes = formData.get("notes") as string
 
-  if (
-    !id ||
-    !purchase_date ||
-    !product_id ||
-    !supplier_id ||
-    isNaN(quantity_purchased) ||
-    isNaN(unit_cost) ||
-    isNaN(total_cost) ||
-    !payment_status
-  ) {
+  if (!id || !purchase_date || isNaN(total_amount) || !payment_status) {
     return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase
     .from("purchases")
     .update({
+      supplier_id: supplier_id || null,
       purchase_date,
-      product_id,
-      supplier_id,
-      quantity_purchased,
-      unit_cost,
-      total_cost,
+      total_amount,
       payment_status,
       notes,
     })
@@ -99,7 +70,7 @@ export async function updatePurchase(prevState: any, formData: FormData) {
 }
 
 export async function deletePurchase(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.from("purchases").delete().eq("id", id)
 

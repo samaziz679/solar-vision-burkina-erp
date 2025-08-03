@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import type { Product } from "@/lib/supabase/types"
 
 export async function createProduct(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const name = formData.get("name") as string
   const description = formData.get("description") as string
@@ -17,6 +17,7 @@ export async function createProduct(prevState: any, formData: FormData) {
   const prix_vente_detail_2 = Number.parseFloat(formData.get("prix_vente_detail_2") as string)
   const prix_vente_gros = Number.parseFloat(formData.get("prix_vente_gros") as string)
   const type = formData.get("type") as Product["type"]
+  const image = formData.get("image") as string
 
   if (
     !name ||
@@ -41,6 +42,7 @@ export async function createProduct(prevState: any, formData: FormData) {
     prix_vente_detail_2,
     prix_vente_gros,
     type,
+    image,
   })
 
   if (error) {
@@ -53,7 +55,7 @@ export async function createProduct(prevState: any, formData: FormData) {
 }
 
 export async function updateProduct(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const id = formData.get("id") as string
   const name = formData.get("name") as string
@@ -65,6 +67,7 @@ export async function updateProduct(prevState: any, formData: FormData) {
   const prix_vente_detail_2 = Number.parseFloat(formData.get("prix_vente_detail_2") as string)
   const prix_vente_gros = Number.parseFloat(formData.get("prix_vente_gros") as string)
   const type = formData.get("type") as Product["type"]
+  const image = formData.get("image") as string
 
   if (
     !id ||
@@ -92,6 +95,7 @@ export async function updateProduct(prevState: any, formData: FormData) {
       prix_vente_detail_2,
       prix_vente_gros,
       type,
+      image,
     })
     .eq("id", id)
 
@@ -105,7 +109,7 @@ export async function updateProduct(prevState: any, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.from("products").delete().eq("id", id)
 

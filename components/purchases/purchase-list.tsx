@@ -1,18 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
-import { Edit, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import type { PurchaseWithDetails } from "@/lib/data/purchases"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontalIcon } from "lucide-react"
+import Link from "next/link"
 import DeletePurchaseDialog from "./delete-purchase-dialog"
+import type { Purchase } from "@/lib/supabase/types"
+import { format } from "date-fns"
 
 interface PurchaseListProps {
-  purchases: PurchaseWithDetails[]
+  purchases: Purchase[]
 }
 
 export default function PurchaseList({ purchases }: PurchaseListProps) {
@@ -24,70 +23,42 @@ export default function PurchaseList({ purchases }: PurchaseListProps) {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleCloseDialog = () => {
-    setIsDeleteDialogOpen(false)
-    setSelectedPurchaseId(null)
-  }
-
-  if (!purchases || purchases.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <p>Aucun achat trouvé.</p>
-        <p className="text-sm mt-1">Ajoutez votre premier achat pour commencer.</p>
-      </div>
-    )
-  }
-
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Produit</TableHead>
+            <TableHead>Date d'achat</TableHead>
             <TableHead>Fournisseur</TableHead>
-            <TableHead>Quantité</TableHead>
-            <TableHead>Coût Unitaire</TableHead>
-            <TableHead>Coût Total</TableHead>
-            <TableHead>Statut Paiement</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Montant Total</TableHead>
+            <TableHead>Statut de Paiement</TableHead>
+            <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {purchases.map((purchase) => (
             <TableRow key={purchase.id}>
-              <TableCell>{format(new Date(purchase.purchase_date), "dd MMMM yyyy", { locale: fr })}</TableCell>
-              <TableCell>{purchase.products?.name || "N/A"}</TableCell>
-              <TableCell>{purchase.suppliers?.name || "N/A"}</TableCell>
-              <TableCell>{purchase.quantity_purchased}</TableCell>
+              <TableCell>{format(new Date(purchase.purchase_date), "dd/MM/yyyy")}</TableCell>
+              <TableCell>{purchase.supplier_id || "N/A"}</TableCell> {/* Replace with actual supplier name */}
               <TableCell>
-                {purchase.unit_cost.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
+                {purchase.total_amount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
               </TableCell>
-              <TableCell>
-                {purchase.total_cost.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-              </TableCell>
-              <TableCell>
-                <Badge variant={purchase.payment_status === "paid" ? "default" : "secondary"}>
-                  {purchase.payment_status === "paid"
-                    ? "Payé"
-                    : purchase.payment_status === "pending"
-                      ? "En attente"
-                      : "Partiellement payé"}
-                </Badge>
-              </TableCell>
+              <TableCell>{purchase.payment_status}</TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="icon" asChild>
-                    <Link href={`/purchases/${purchase.id}/edit`}>
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Modifier</span>
-                    </Link>
-                  </Button>
-                  <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(purchase.id)}>
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Supprimer</span>
-                  </Button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontalIcon className="h-4 w-4" />
+                      <span className="sr-only">Actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/purchases/${purchase.id}/edit`}>Modifier</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(purchase.id)}>Supprimer</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
@@ -98,38 +69,8 @@ export default function PurchaseList({ purchases }: PurchaseListProps) {
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           purchaseId={selectedPurchaseId}
-          onClose={handleCloseDialog}
         />
       )}
     </>
-  )
-}
-
-export function PurchaseListSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-8 gap-4">
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-      </div>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="grid grid-cols-8 gap-4">
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-        </div>
-      ))}
-    </div>
   )
 }

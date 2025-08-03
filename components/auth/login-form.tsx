@@ -1,67 +1,79 @@
 "use client"
-import { useFormState, useFormStatus } from "react-dom"
+
+import type React from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 import { createClient } from "@/lib/supabase/client"
-
-async function signInWithEmail(prevState: any, formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-  const supabase = createClient()
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-
-  if (error) {
-    console.error("Sign-in error:", error.message)
-    return { error: error.message }
-  }
-
-  return { success: true }
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Connexion..." : "Se connecter"}
-    </Button>
-  )
-}
+import { toast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
 
 export default function LoginForm() {
-  const [state, formAction] = useFormState(signInWithEmail, {})
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      toast({
+        title: "Erreur de connexion",
+        description: error.message,
+        variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Connexion réussie",
+        description: "Vous êtes maintenant connecté.",
+      })
+      router.push("/dashboard")
+    }
+    setLoading(false)
+  }
 
   return (
     <Card className="w-full max-w-sm">
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">Connexion</CardTitle>
-        <CardDescription>Entrez votre email et mot de passe pour vous connecter à votre compte.</CardDescription>
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Connexion</CardTitle>
+        <CardDescription>Entrez vos identifiants pour accéder à votre compte.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="grid gap-4">
+        <form onSubmit={handleLogin} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="m@example.com" required />
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Mot de passe</Label>
-            <Input id="password" name="password" type="password" required />
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
-          {state?.error && (
-            <Alert variant="destructive">
-              <ExclamationTriangleIcon className="h-4 w-4" />
-              <AlertTitle>Erreur de connexion</AlertTitle>
-              <AlertDescription>{state.error}</AlertDescription>
-            </Alert>
-          )}
-          <SubmitButton />
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Connexion..." : "Se connecter"}
+          </Button>
         </form>
       </CardContent>
     </Card>

@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteProduct } from "@/app/inventory/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeleteProductDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   productId: string
-  onClose: () => void
 }
 
-export default function DeleteProductDialog({ open, onOpenChange, productId, onClose }: DeleteProductDialogProps) {
+export default function DeleteProductDialog({ open, onOpenChange, productId }: DeleteProductDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteProduct(productId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Produit supprimé",
+        description: "Le produit a été supprimé avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "Le produit a été supprimé.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression du produit.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,7 +48,7 @@ export default function DeleteProductDialog({ open, onOpenChange, productId, onC
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce produit de votre inventaire.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement ce produit de nos serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

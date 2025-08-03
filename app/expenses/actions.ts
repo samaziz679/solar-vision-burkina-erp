@@ -2,26 +2,25 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import type { Expense } from "@/lib/supabase/types"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function createExpense(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const expense_date = formData.get("expense_date") as string
-  const description = formData.get("description") as string
   const amount = Number.parseFloat(formData.get("amount") as string)
-  const category = formData.get("category") as Expense["category"]
+  const description = formData.get("description") as string
+  const category = formData.get("category") as string
   const notes = formData.get("notes") as string
 
-  if (!expense_date || !description || isNaN(amount)) {
-    return { error: "La date, la description et le montant sont requis." }
+  if (!expense_date || isNaN(amount) || !description) {
+    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase.from("expenses").insert({
     expense_date,
-    description,
     amount,
+    description,
     category,
     notes,
   })
@@ -36,25 +35,25 @@ export async function createExpense(prevState: any, formData: FormData) {
 }
 
 export async function updateExpense(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const id = formData.get("id") as string
   const expense_date = formData.get("expense_date") as string
-  const description = formData.get("description") as string
   const amount = Number.parseFloat(formData.get("amount") as string)
-  const category = formData.get("category") as Expense["category"]
+  const description = formData.get("description") as string
+  const category = formData.get("category") as string
   const notes = formData.get("notes") as string
 
-  if (!id || !expense_date || !description || isNaN(amount)) {
-    return { error: "La date, la description et le montant sont requis." }
+  if (!id || !expense_date || isNaN(amount) || !description) {
+    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase
     .from("expenses")
     .update({
       expense_date,
-      description,
       amount,
+      description,
       category,
       notes,
     })
@@ -70,7 +69,7 @@ export async function updateExpense(prevState: any, formData: FormData) {
 }
 
 export async function deleteExpense(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.from("expenses").delete().eq("id", id)
 

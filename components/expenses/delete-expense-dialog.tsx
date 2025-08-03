@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteExpense } from "@/app/expenses/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeleteExpenseDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   expenseId: string
-  onClose: () => void
 }
 
-export default function DeleteExpenseDialog({ open, onOpenChange, expenseId, onClose }: DeleteExpenseDialogProps) {
+export default function DeleteExpenseDialog({ open, onOpenChange, expenseId }: DeleteExpenseDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteExpense(expenseId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Dépense supprimée",
+        description: "La dépense a été supprimée avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "La dépense a été supprimée.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression de la dépense.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,8 +48,7 @@ export default function DeleteExpenseDialog({ open, onOpenChange, expenseId, onC
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette dépense de votre base de
-            données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cette dépense de nos serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

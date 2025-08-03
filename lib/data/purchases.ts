@@ -1,55 +1,39 @@
 import { createServerClient } from "@/lib/supabase/server"
+import { unstable_cache } from "next/cache"
 import type { Purchase } from "@/lib/supabase/types"
 
-// Extend Purchase type to include joined product and supplier names for display
-export type PurchaseWithDetails = Purchase & {
-  products: {
-    id: string
-    name: string
-    type: string | null
-  } | null
-  suppliers: { id: string; name: string } | null
-}
+export const getPurchases = unstable_cache(
+  async () => {
+    const supabase = await createServerClient()
+    const { data, error } = await supabase.from("purchases").select("*").order("purchase_date", { ascending: false })
 
-export async function getPurchases(): Promise<PurchaseWithDetails[]> {
-  const supabase = await createServerClient()
-  const { data, error } = await supabase
-    .from("purchases")
-    .select(
-      `
-      *,
-      products (name, type),
-      suppliers (name)
-    `,
-    )
-    .order("purchase_date", { ascending: false })
+    if (error) {
+      console.error("Error fetching purchases:", error)
+      return []
+    }
 
-  if (error) {
-    console.error("Error fetching purchases:", error.message)
-    return []
-  }
+    return data as Purchase[]
+  },
+  ["purchases"],
+  {
+    tags: ["purchases"],
+  },
+)
 
-  return data as PurchaseWithDetails[]
-}
+export const getPurchaseById = unstable_cache(
+  async (id: string) => {
+    const supabase = await createServerClient()
+    const { data, error } = await supabase.from("purchases").select("*").eq("id", id).single()
 
-export async function getPurchaseById(id: string): Promise<PurchaseWithDetails | null> {
-  const supabase = await createServerClient()
-  const { data, error } = await supabase
-    .from("purchases")
-    .select(
-      `
-      *,
-      products (id, name, type),
-      suppliers (id, name)
-    `,
-    )
-    .eq("id", id)
-    .single()
+    if (error) {
+      console.error("Error fetching purchase:", error)
+      return null
+    }
 
-  if (error) {
-    console.error(`Error fetching purchase with ID ${id}:`, error.message)
-    return null
-  }
-
-  return data as PurchaseWithDetails
-}
+    return data as Purchase
+  },
+  ["purchase"],
+  {
+    tags: ["purchase"],
+  },
+)

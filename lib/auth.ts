@@ -1,27 +1,15 @@
-import { createServerClient } from "./supabase/server"
-import type { UserRole } from "./supabase/types"
+import { redirect } from "next/navigation"
+import { createServerClient } from "@/lib/supabase/server"
 
-export async function getCurrentUser() {
+export async function getAuthUser() {
   const supabase = await createServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
   return user
-}
-
-export async function getUserRoles(userId: string): Promise<UserRole[]> {
-  const supabase = await createServerClient()
-  const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId)
-
-  return roles?.map((r) => r.role) || []
-}
-
-export async function hasRole(userId: string, role: UserRole): Promise<boolean> {
-  const roles = await getUserRoles(userId)
-  return roles.includes(role)
-}
-
-export async function hasAnyRole(userId: string, roles: UserRole[]): Promise<boolean> {
-  const userRoles = await getUserRoles(userId)
-  return roles.some((role) => userRoles.includes(role))
 }

@@ -1,11 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import SaleForm from "@/components/sales/sale-form"
+import dynamic from "next/dynamic"
+
+const SaleForm = dynamic(() => import("@/components/sales/sale-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
 import { createSale } from "@/app/sales/actions"
-import { getProducts } from "@/lib/data/products"
 import { getClients } from "@/lib/data/clients"
 
 export default async function NewSalePage() {
-  const products = await getProducts()
   const clients = await getClients()
 
   return (
@@ -16,7 +20,7 @@ export default async function NewSalePage() {
           <CardDescription>Remplissez les détails de la nouvelle vente.</CardDescription>
         </CardHeader>
         <CardContent>
-          <SaleForm action={createSale} products={products} clients={clients} />
+          <SaleForm action={createSale} clients={clients} />
         </CardContent>
       </Card>
     </div>

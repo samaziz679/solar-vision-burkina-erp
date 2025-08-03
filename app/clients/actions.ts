@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient as createSupabaseClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function createClient(prevState: any, formData: FormData) {
-  const supabase = await createSupabaseClient()
+  const supabase = await createServerClient()
 
   const name = formData.get("name") as string
+  const contact_person = formData.get("contact_person") as string
   const email = formData.get("email") as string
   const phone = formData.get("phone") as string
   const address = formData.get("address") as string
@@ -18,6 +19,7 @@ export async function createClient(prevState: any, formData: FormData) {
 
   const { error } = await supabase.from("clients").insert({
     name,
+    contact_person,
     email,
     phone,
     address,
@@ -33,10 +35,11 @@ export async function createClient(prevState: any, formData: FormData) {
 }
 
 export async function updateClient(prevState: any, formData: FormData) {
-  const supabase = await createSupabaseClient()
+  const supabase = await createServerClient()
 
   const id = formData.get("id") as string
   const name = formData.get("name") as string
+  const contact_person = formData.get("contact_person") as string
   const email = formData.get("email") as string
   const phone = formData.get("phone") as string
   const address = formData.get("address") as string
@@ -49,6 +52,7 @@ export async function updateClient(prevState: any, formData: FormData) {
     .from("clients")
     .update({
       name,
+      contact_person,
       email,
       phone,
       address,
@@ -65,7 +69,7 @@ export async function updateClient(prevState: any, formData: FormData) {
 }
 
 export async function deleteClient(id: string) {
-  const supabase = await createSupabaseClient()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.from("clients").delete().eq("id", id)
 

@@ -1,11 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import PurchaseForm from "@/components/purchases/purchase-form"
+import dynamic from "next/dynamic"
+
+const PurchaseForm = dynamic(() => import("@/components/purchases/purchase-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
 import { createPurchase } from "@/app/purchases/actions"
-import { getProducts } from "@/lib/data/products"
 import { getSuppliers } from "@/lib/data/suppliers"
 
 export default async function NewPurchasePage() {
-  const products = await getProducts()
   const suppliers = await getSuppliers()
 
   return (
@@ -16,7 +20,7 @@ export default async function NewPurchasePage() {
           <CardDescription>Remplissez les détails du nouvel achat.</CardDescription>
         </CardHeader>
         <CardContent>
-          <PurchaseForm action={createPurchase} products={products} suppliers={suppliers} />
+          <PurchaseForm action={createPurchase} suppliers={suppliers} />
         </CardContent>
       </Card>
     </div>

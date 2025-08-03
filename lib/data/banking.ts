@@ -1,27 +1,39 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
+import { unstable_cache } from "next/cache"
 import type { BankEntry } from "@/lib/supabase/types"
 
-export async function fetchBankEntries(): Promise<BankEntry[]> {
-  noStore() // Opt-out of static rendering for this data fetch
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("bank_entries").select("*").order("date", { ascending: false })
+export const getBankEntries = unstable_cache(
+  async () => {
+    const supabase = await createServerClient()
+    const { data, error } = await supabase.from("bank_entries").select("*").order("date", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching bank entries:", error.message)
-    return []
-  }
-  return data as BankEntry[]
-}
+    if (error) {
+      console.error("Error fetching bank entries:", error)
+      return []
+    }
 
-export async function getBankEntryById(id: string): Promise<BankEntry | null> {
-  noStore() // Opt-out of static rendering for this data fetch
-  const supabase = await createServerClient()
-  const { data, error } = await supabase.from("bank_entries").select("*").eq("id", id).single()
+    return data as BankEntry[]
+  },
+  ["bank_entries"],
+  {
+    tags: ["bank_entries"],
+  },
+)
 
-  if (error) {
-    console.error(`Error fetching bank entry with ID ${id}:`, error.message)
-    return null
-  }
-  return data as BankEntry
-}
+export const getBankEntryById = unstable_cache(
+  async (id: string) => {
+    const supabase = await createServerClient()
+    const { data, error } = await supabase.from("bank_entries").select("*").eq("id", id).single()
+
+    if (error) {
+      console.error("Error fetching bank entry:", error)
+      return null
+    }
+
+    return data as BankEntry
+  },
+  ["bank_entry"],
+  {
+    tags: ["bank_entry"],
+  },
+)

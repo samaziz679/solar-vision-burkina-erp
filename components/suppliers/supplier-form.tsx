@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Supplier } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { useState, useEffect } from "react"
 
 interface SupplierFormProps {
-  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
+  action: FormAction
   initialData?: Supplier
 }
 
@@ -25,6 +26,15 @@ function SubmitButton() {
 
 export default function SupplierForm({ action, initialData }: SupplierFormProps) {
   const [state, formAction] = useFormState(action, {})
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

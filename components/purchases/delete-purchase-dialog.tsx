@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deletePurchase } from "@/app/purchases/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeletePurchaseDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   purchaseId: string
-  onClose: () => void
 }
 
-export default function DeletePurchaseDialog({ open, onOpenChange, purchaseId, onClose }: DeletePurchaseDialogProps) {
+export default function DeletePurchaseDialog({ open, onOpenChange, purchaseId }: DeletePurchaseDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deletePurchase(purchaseId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Achat supprimé",
+        description: "L'achat a été supprimé avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "L'achat a été supprimé.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression de l'achat.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,7 +48,7 @@ export default function DeletePurchaseDialog({ open, onOpenChange, purchaseId, o
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cet achat de votre base de données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cet achat de nos serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

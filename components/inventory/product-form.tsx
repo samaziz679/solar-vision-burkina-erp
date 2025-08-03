@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { useState, useEffect } from "react"
 
 interface ProductFormProps {
-  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
+  action: FormAction
   initialData?: Product
 }
 
@@ -26,9 +27,19 @@ function SubmitButton() {
 
 export default function ProductForm({ action, initialData }: ProductFormProps) {
   const [state, formAction] = useFormState(action, {})
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="name">Nom</Label>
         <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
@@ -103,6 +114,16 @@ export default function ProductForm({ action, initialData }: ProductFormProps) {
           name="description"
           placeholder="Description du produit"
           defaultValue={initialData?.description || ""}
+        />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="image">URL de l'image</Label>
+        <Input
+          id="image"
+          name="image"
+          type="url"
+          placeholder="https://example.com/image.jpg"
+          defaultValue={initialData?.image || ""}
         />
       </div>
       {state?.error && (

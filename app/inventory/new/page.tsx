@@ -1,5 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import ProductForm from "@/components/inventory/product-form"
+import dynamic from "next/dynamic"
+
+const ProductForm = dynamic(() => import("@/components/inventory/product-form"), {
+  ssr: false,
+  loading: () => <div>Chargement du formulaire...</div>,
+})
+
 import { createProduct } from "@/app/inventory/actions"
 
 export default function NewProductPage() {

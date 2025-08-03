@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteSale } from "@/app/sales/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeleteSaleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   saleId: string
-  onClose: () => void
 }
 
-export default function DeleteSaleDialog({ open, onOpenChange, saleId, onClose }: DeleteSaleDialogProps) {
+export default function DeleteSaleDialog({ open, onOpenChange, saleId }: DeleteSaleDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteSale(saleId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Vente supprimée",
+        description: "La vente a été supprimée avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "La vente a été supprimée.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression de la vente.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,7 +48,7 @@ export default function DeleteSaleDialog({ open, onOpenChange, saleId, onClose }
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette vente de votre base de données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cette vente de nos serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

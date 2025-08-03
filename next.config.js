@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: true,
-  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -10,6 +7,16 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "example.com", // Allow images from example.com
+      },
+      {
+        protocol: "https",
+        hostname: "**.supabase.co", // Allow images from Supabase storage
+      },
+    ],
     unoptimized: true,
   },
 }

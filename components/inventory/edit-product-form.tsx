@@ -9,42 +9,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { updateProduct } from "@/app/inventory/actions"
+import { useState, useEffect } from "react"
 
-interface EditProductFormProps {
-  initialData: Product
+interface ProductFormProps {
+  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
+  initialData?: Product
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Mise à jour..." : "Mettre à jour le produit"}
+      {pending ? "Enregistrement..." : "Enregistrer le produit"}
     </Button>
   )
 }
 
-export default function EditProductForm({ initialData }: EditProductFormProps) {
-  const [state, formAction] = useFormState(updateProduct, {})
+export default function ProductForm({ action, initialData }: ProductFormProps) {
+  const [state, formAction] = useFormState(action, {})
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      <input type="hidden" name="id" value={initialData.id} />
+      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="name">Nom</Label>
-        <Input id="name" name="name" type="text" defaultValue={initialData.name} required />
+        <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantité</Label>
-        <Input id="quantity" name="quantity" type="number" defaultValue={initialData.quantity} required />
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="unit">Unité</Label>
-        <Input id="unit" name="unit" type="text" defaultValue={initialData.unit || ""} />
+        <Input id="unit" name="unit" type="text" defaultValue={initialData?.unit || ""} />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="type">Type</Label>
-        <Select name="type" defaultValue={initialData.type || ""}>
+        <Select name="type" defaultValue={initialData?.type || ""}>
           <SelectTrigger id="type">
             <SelectValue placeholder="Sélectionner le type" />
           </SelectTrigger>
@@ -64,7 +74,7 @@ export default function EditProductForm({ initialData }: EditProductFormProps) {
           name="prix_achat"
           type="number"
           step="0.01"
-          defaultValue={initialData.prix_achat || ""}
+          defaultValue={initialData?.prix_achat || ""}
         />
       </div>
       <div className="grid gap-2">
@@ -74,7 +84,7 @@ export default function EditProductForm({ initialData }: EditProductFormProps) {
           name="prix_vente_detail_1"
           type="number"
           step="0.01"
-          defaultValue={initialData.prix_vente_detail_1 || ""}
+          defaultValue={initialData?.prix_vente_detail_1 || ""}
         />
       </div>
       <div className="grid gap-2">
@@ -84,7 +94,7 @@ export default function EditProductForm({ initialData }: EditProductFormProps) {
           name="prix_vente_detail_2"
           type="number"
           step="0.01"
-          defaultValue={initialData.prix_vente_detail_2 || ""}
+          defaultValue={initialData?.prix_vente_detail_2 || ""}
         />
       </div>
       <div className="grid gap-2">
@@ -94,7 +104,7 @@ export default function EditProductForm({ initialData }: EditProductFormProps) {
           name="prix_vente_gros"
           type="number"
           step="0.01"
-          defaultValue={initialData.prix_vente_gros || ""}
+          defaultValue={initialData?.prix_vente_gros || ""}
         />
       </div>
       <div className="grid gap-2 md:col-span-2">
@@ -103,7 +113,17 @@ export default function EditProductForm({ initialData }: EditProductFormProps) {
           id="description"
           name="description"
           placeholder="Description du produit"
-          defaultValue={initialData.description || ""}
+          defaultValue={initialData?.description || ""}
+        />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="image">URL de l'image</Label>
+        <Input
+          id="image"
+          name="image"
+          type="url"
+          placeholder="https://example.com/image.jpg"
+          defaultValue={initialData?.image || ""}
         />
       </div>
       {state?.error && (

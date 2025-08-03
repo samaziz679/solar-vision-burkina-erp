@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteSupplier } from "@/app/suppliers/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeleteSupplierDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   supplierId: string
-  onClose: () => void
 }
 
-export default function DeleteSupplierDialog({ open, onOpenChange, supplierId, onClose }: DeleteSupplierDialogProps) {
+export default function DeleteSupplierDialog({ open, onOpenChange, supplierId }: DeleteSupplierDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteSupplier(supplierId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Fournisseur supprimé",
+        description: "Le fournisseur a été supprimé avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "Le fournisseur a été supprimé.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression du fournisseur.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,8 +48,7 @@ export default function DeleteSupplierDialog({ open, onOpenChange, supplierId, o
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce fournisseur de votre base de
-            données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement ce fournisseur de nos serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -1,10 +1,9 @@
-import { Suspense } from "react"
-import Link from "next/link"
-import { PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import ProductList, { ProductListSkeleton } from "@/components/inventory/product-list"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon } from "lucide-react"
+import Link from "next/link"
 import { getProducts } from "@/lib/data/products"
+import ProductList from "@/components/inventory/product-list"
 
 export default async function InventoryPage() {
   const products = await getProducts()
@@ -12,11 +11,11 @@ export default async function InventoryPage() {
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Inventaire</h1>
+        <h1 className="font-semibold text-lg md:text-2xl">Inventaire</h1>
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" asChild>
             <Link href="/inventory/new">
-              <PlusCircle className="h-4 w-4 mr-2" />
+              <PlusIcon className="h-4 w-4 mr-2" />
               Ajouter un produit
             </Link>
           </Button>
@@ -25,11 +24,10 @@ export default async function InventoryPage() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des Produits</CardTitle>
+          <CardDescription>Gérez vos produits et leur stock.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Suspense fallback={<ProductListSkeleton />}>
-            <ProductList products={products} />
-          </Suspense>
+          <ProductList products={products} />
         </CardContent>
       </Card>
     </div>

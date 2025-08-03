@@ -2,40 +2,26 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import type { Sale } from "@/lib/supabase/types"
 
 export async function createSale(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
-  const sale_date = formData.get("sale_date") as string
-  const product_id = formData.get("product_id") as string
   const client_id = formData.get("client_id") as string
-  const quantity_sold = Number.parseInt(formData.get("quantity_sold") as string)
-  const unit_price = Number.parseFloat(formData.get("unit_price") as string)
-  const total_price = Number.parseFloat(formData.get("total_price") as string)
+  const sale_date = formData.get("sale_date") as string
+  const total_amount = Number.parseFloat(formData.get("total_amount") as string)
   const payment_status = formData.get("payment_status") as Sale["payment_status"]
   const notes = formData.get("notes") as string
 
-  if (
-    !sale_date ||
-    !product_id ||
-    !client_id ||
-    isNaN(quantity_sold) ||
-    isNaN(unit_price) ||
-    isNaN(total_price) ||
-    !payment_status
-  ) {
+  if (!sale_date || isNaN(total_amount) || !payment_status) {
     return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase.from("sales").insert({
+    client_id: client_id || null,
     sale_date,
-    product_id,
-    client_id,
-    quantity_sold,
-    unit_price,
-    total_price,
+    total_amount,
     payment_status,
     notes,
   })
@@ -50,40 +36,25 @@ export async function createSale(prevState: any, formData: FormData) {
 }
 
 export async function updateSale(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const id = formData.get("id") as string
-  const sale_date = formData.get("sale_date") as string
-  const product_id = formData.get("product_id") as string
   const client_id = formData.get("client_id") as string
-  const quantity_sold = Number.parseInt(formData.get("quantity_sold") as string)
-  const unit_price = Number.parseFloat(formData.get("unit_price") as string)
-  const total_price = Number.parseFloat(formData.get("total_price") as string)
+  const sale_date = formData.get("sale_date") as string
+  const total_amount = Number.parseFloat(formData.get("total_amount") as string)
   const payment_status = formData.get("payment_status") as Sale["payment_status"]
   const notes = formData.get("notes") as string
 
-  if (
-    !id ||
-    !sale_date ||
-    !product_id ||
-    !client_id ||
-    isNaN(quantity_sold) ||
-    isNaN(unit_price) ||
-    isNaN(total_price) ||
-    !payment_status
-  ) {
+  if (!id || !sale_date || isNaN(total_amount) || !payment_status) {
     return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
   }
 
   const { error } = await supabase
     .from("sales")
     .update({
+      client_id: client_id || null,
       sale_date,
-      product_id,
-      client_id,
-      quantity_sold,
-      unit_price,
-      total_price,
+      total_amount,
       payment_status,
       notes,
     })
@@ -99,7 +70,7 @@ export async function updateSale(prevState: any, formData: FormData) {
 }
 
 export async function deleteSale(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.from("sales").delete().eq("id", id)
 

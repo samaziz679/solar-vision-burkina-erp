@@ -28,3 +28,16 @@ yarn-error.log*
 
 # Supabase generated types
 lib/supabase/types.ts # If you generate types, you might want to ignore this and regenerate on build
+
+# dependencies
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+*.pem

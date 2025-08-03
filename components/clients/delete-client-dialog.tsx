@@ -12,36 +12,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteClient } from "@/app/clients/actions"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 interface DeleteClientDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   clientId: string
-  onClose: () => void
 }
 
-export default function DeleteClientDialog({ open, onOpenChange, clientId, onClose }: DeleteClientDialogProps) {
+export default function DeleteClientDialog({ open, onOpenChange, clientId }: DeleteClientDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsDeleting(true)
     const result = await deleteClient(clientId)
-    if (result?.error) {
+    if (result.success) {
       toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
+        title: "Client supprimé",
+        description: "Le client a été supprimé avec succès.",
       })
+      onOpenChange(false)
     } else {
       toast({
-        title: "Succès",
-        description: "Le client a été supprimé.",
+        title: "Erreur",
+        description: result.error || "Échec de la suppression du client.",
+        variant: "destructive",
       })
     }
     setIsDeleting(false)
-    onClose()
   }
 
   return (
@@ -50,7 +48,7 @@ export default function DeleteClientDialog({ open, onOpenChange, clientId, onClo
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce client de votre base de données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement ce client de nos serveurs.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

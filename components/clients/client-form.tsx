@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 
 interface ClientFormProps {
-  action: FormAction
+  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
   initialData?: Client
 }
 
@@ -34,14 +34,14 @@ export default function ClientForm({ action, initialData }: ClientFormProps) {
         <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="contact">Contact</Label>
-        <Input id="contact" name="contact" type="text" defaultValue={initialData?.contact || ""} required />
-      </div>
-      <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
       </div>
-      <div className="grid gap-2 md:col-span-2">
+      <div className="grid gap-2">
+        <Label htmlFor="phone">Téléphone</Label>
+        <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
+      </div>
+      <div className="grid gap-2">
         <Label htmlFor="address">Adresse</Label>
         <Textarea
           id="address"

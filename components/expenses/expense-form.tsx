@@ -1,90 +1,175 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
+import { useState, useEffect } from "react"
+import { useFormState } from "react-dom"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Loader2, Save } from "lucide-react"
 import type { Expense } from "@/lib/supabase/types"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { createExpense, updateExpense } from "@/app/expenses/actions"
 
 interface ExpenseFormProps {
-  action: FormAction
-  initialData?: Expense
+  expense?: Expense // Optional prop for editing existing expenses
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer la dépense"}
-    </Button>
+const expenseCategories = [
+  "salaire",
+  "loyer",
+  "emprunt",
+  "electricite",
+  "eau",
+  "internet",
+  "carburant",
+  "maintenance",
+  "autre",
+] as const
+
+export default function ExpenseForm({ expense }: ExpenseFormProps) {
+  const router = useRouter()
+  const isEditing = !!expense
+
+  const action = isEditing ? updateExpense : createExpense
+  const [state, formAction, isPending] = useFormState(action, { error: null, success: false })
+
+  const [description, setDescription] = useState(expense?.description || "")
+  const [category, setCategory] = useState<(typeof expenseCategories)[number]>(expense?.category || "autre")
+  const [amount, setAmount] = useState<number>(expense?.amount || 0)
+  const [expenseDate, setExpenseDate] = useState<string>(
+    expense?.expense_date
+      ? new Date(expense.expense_date).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0],
   )
-}
+  const [notes, setNotes] = useState(expense?.notes || "")
 
-export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
-  const [state, formAction] = useFormState(action, {})
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/expenses") // Redirect to expenses list on success
+    }
+  }, [state, router])
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid gap-2">
-        <Label htmlFor="expense_date">Date de la dépense</Label>
-        <Input
-          id="expense_date"
-          name="expense_date"
-          type="date"
-          defaultValue={initialData?.expense_date || new Date().toISOString().split("T")[0]}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          placeholder="Description de la dépense"
-          defaultValue={initialData?.description || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="category">Catégorie</Label>
-        <Select name="category" defaultValue={initialData?.category || ""}>
-          <SelectTrigger id="category">
-            <SelectValue placeholder="Sélectionner une catégorie" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Salaires">Salaires</SelectItem>
-            <SelectItem value="Loyer">Loyer</SelectItem>
-            <SelectItem value="Services Publics">Services Publics</SelectItem>
-            <SelectItem value="Transport">Transport</SelectItem>
-            <SelectItem value="Marketing">Marketing</SelectItem>
-            <SelectItem value="Maintenance">Maintenance</SelectItem>
-            <SelectItem value="Autre">Autre</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes supplémentaires" defaultValue={initialData?.notes || ""} />
-      </div>
-      {state?.error && (
-        <Alert variant="destructive" className="md:col-span-2">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="md:col-span-2 flex justify-end">
-        <SubmitButton />
-      </div>
-    </form>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{isEditing ? "Modifier la dépense" : "Enregistrer une nouvelle dépense"}</CardTitle>
+        <CardDescription>
+          {isEditing ? "Mettez à jour les détails de la dépense." : "Remplissez les détails de la dépense."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="space-y-6">
+          {isEditing && <input type="hidden" name="id" value={expense.id} />}
+
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              name="description"
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              disabled={isPending}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="category">Catégorie</Label>
+              <Select
+                name="category"
+                value={category}
+                onValueChange={(value: (typeof expenseCategories)[number]) => setCategory(value)}
+                disabled={isPending}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {expenseCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1).replace("_", " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="amount">Montant (FCFA)</Label>
+              <Input
+                id="amount"
+                name="amount"
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                min={0.01}
+                required
+                disabled={isPending}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="expense_date">Date de la dépense</Label>
+            <Input
+              id="expense_date"
+              name="expense_date"
+              type="date"
+              value={expenseDate}
+              onChange={(e) => setExpenseDate(e.target.value)}
+              required
+              disabled={isPending}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="notes">Notes (optionnel)</Label>
+            <Input
+              id="notes"
+              name="notes"
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={isPending}
+            />
+          </div>
+
+          {state?.error && (
+            <Alert variant="destructive">
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          )}
+          {state?.success && (
+            <Alert>
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isPending || !description || !category || isNaN(amount) || amount <= 0 || !expenseDate}
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isEditing ? "Mise à jour..." : "Enregistrement..."}
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                {isEditing ? "Mettre à jour la dépense" : "Enregistrer la dépense"}
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

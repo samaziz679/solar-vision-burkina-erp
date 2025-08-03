@@ -6,14 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { Expense } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import type { Expense } from "@/lib/supabase/types"
 import { useState, useEffect } from "react"
 
 interface ExpenseFormProps {
@@ -32,7 +27,6 @@ function SubmitButton() {
 
 export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [date, setDate] = useState(initialData?.expense_date ? new Date(initialData.expense_date) : undefined)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -47,26 +41,31 @@ export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="expense_date">Date de la dépense</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : <span>Choisir une date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-          </PopoverContent>
-        </Popover>
-        <input type="hidden" name="expense_date" value={date ? format(date, "yyyy-MM-dd") : ""} />
+        <Label htmlFor="date">Date</Label>
+        <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="amount">Montant</Label>
         <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="category">Catégorie</Label>
+        <Input id="category" name="category" type="text" defaultValue={initialData?.category || ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="payment_method">Méthode de paiement</Label>
+        <Select name="payment_method" defaultValue={initialData?.payment_method || ""}>
+          <SelectTrigger id="payment_method">
+            <SelectValue placeholder="Sélectionner la méthode" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Espèces">Espèces</SelectItem>
+            <SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem>
+            <SelectItem value="Chèque">Chèque</SelectItem>
+            <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+            <SelectItem value="Autre">Autre</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="description">Description</Label>
@@ -75,29 +74,7 @@ export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
           name="description"
           placeholder="Description de la dépense"
           defaultValue={initialData?.description || ""}
-          required
         />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="category">Catégorie</Label>
-        <Select name="category" defaultValue={initialData?.category || ""}>
-          <SelectTrigger id="category">
-            <SelectValue placeholder="Sélectionner une catégorie" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Salaires">Salaires</SelectItem>
-            <SelectItem value="Loyer">Loyer</SelectItem>
-            <SelectItem value="Services Publics">Services Publics</SelectItem>
-            <SelectItem value="Transport">Transport</SelectItem>
-            <SelectItem value="Marketing">Marketing</SelectItem>
-            <SelectItem value="Maintenance">Maintenance</SelectItem>
-            <SelectItem value="Autre">Autre</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes supplémentaires" defaultValue={initialData?.notes || ""} />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

@@ -1,12 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from "next/dynamic"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+import { createExpense } from "@/app/expenses/actions"
 
 const ExpenseForm = dynamic(() => import("@/components/expenses/expense-form"), {
   ssr: false,
   loading: () => <div>Chargement du formulaire...</div>,
 })
-
-import { createExpense } from "@/app/expenses/actions"
 
 export default function NewExpensePage() {
   return (

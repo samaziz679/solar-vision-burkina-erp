@@ -4,15 +4,11 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { Purchase } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import type { Purchase } from "@/lib/supabase/types"
 import { useState, useEffect } from "react"
 
 interface PurchaseFormProps {
@@ -31,7 +27,6 @@ function SubmitButton() {
 
 export default function PurchaseForm({ action, initialData }: PurchaseFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [date, setDate] = useState(initialData?.purchase_date ? new Date(initialData.purchase_date) : undefined)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -46,26 +41,8 @@ export default function PurchaseForm({ action, initialData }: PurchaseFormProps)
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="purchase_date">Date d'achat</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : <span>Choisir une date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-          </PopoverContent>
-        </Popover>
-        <input type="hidden" name="purchase_date" value={date ? format(date, "yyyy-MM-dd") : ""} />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
+        <Label htmlFor="date">Date</Label>
+        <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="supplier_id">Fournisseur</Label>
@@ -90,9 +67,33 @@ export default function PurchaseForm({ action, initialData }: PurchaseFormProps)
           required
         />
       </div>
+      <div className="grid gap-2">
+        <Label htmlFor="total_price">Prix total</Label>
+        <Input
+          id="total_price"
+          name="total_price"
+          type="number"
+          step="0.01"
+          defaultValue={initialData?.total_price || ""}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="payment_status">Statut de paiement</Label>
+        <Select name="payment_status" defaultValue={initialData?.payment_status || ""}>
+          <SelectTrigger id="payment_status">
+            <SelectValue placeholder="Sélectionner le statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Payé">Payé</SelectItem>
+            <SelectItem value="En attente">En attente</SelectItem>
+            <SelectItem value="Partiellement payé">Partiellement payé</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes supplémentaires" defaultValue={initialData?.notes || ""} />
+        <Textarea id="notes" name="notes" placeholder="Notes sur l'achat" defaultValue={initialData?.notes || ""} />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

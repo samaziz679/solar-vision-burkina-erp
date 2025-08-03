@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 
 interface BankingFormProps {
-  action: FormAction
+  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
   initialData?: BankEntry
 }
 
@@ -19,7 +19,7 @@ function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer l'opération"}
+      {pending ? "Enregistrement..." : "Enregistrer l'entrée"}
     </Button>
   )
 }
@@ -31,7 +31,7 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="date">Date de l'opération</Label>
+        <Label htmlFor="date">Date</Label>
         <Input
           id="date"
           name="date"
@@ -39,18 +39,6 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
           defaultValue={initialData?.date || new Date().toISOString().split("T")[0]}
           required
         />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="type">Type d'opération</Label>
-        <Select name="type" defaultValue={initialData?.type || ""}>
-          <SelectTrigger id="type">
-            <SelectValue placeholder="Sélectionner un type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Dépôt">Dépôt</SelectItem>
-            <SelectItem value="Retrait">Retrait</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="amount">Montant</Label>
@@ -61,10 +49,22 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
         <Textarea
           id="description"
           name="description"
-          placeholder="Description de l'opération"
+          placeholder="Description de l'entrée bancaire"
           defaultValue={initialData?.description || ""}
           required
         />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="type">Type</Label>
+        <Select name="type" defaultValue={initialData?.type || ""}>
+          <SelectTrigger id="type">
+            <SelectValue placeholder="Sélectionner le type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="deposit">Dépôt</SelectItem>
+            <SelectItem value="withdrawal">Retrait</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

@@ -1,19 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import ProductForm from "@/components/inventory/product-form"
-import { addProduct } from "@/app/inventory/actions"
 
 export default function NewProductPage() {
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Ajouter un nouveau produit</CardTitle>
-          <CardDescription>Remplissez les détails du nouveau produit.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProductForm action={addProduct} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Nouveau Produit</h1>
+      <ProductForm />
     </div>
   )
 }

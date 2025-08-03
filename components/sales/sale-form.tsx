@@ -1,107 +1,200 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
+import { useState, useEffect } from "react"
+import { useFormState } from "react-dom"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Sale, Product, Client } from "@/lib/supabase/types"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { Loader2, Save } from "lucide-react"
+import type { Product, Client } from "@/lib/supabase/types"
+import { createSale } from "@/app/sales/actions" // Will be created next
 
 interface SaleFormProps {
-  action: FormAction
-  initialData?: Sale
   products: Product[]
-  clients: Client[]
+  clients: Client[] // Clients will be added later
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer la vente"}
-    </Button>
-  )
-}
+export default function SaleForm({ products, clients }: SaleFormProps) {
+  const router = useRouter()
+  const [state, formAction, isPending] = useFormState(createSale, { error: null, success: false })
 
-export default function SaleForm({ action, initialData, products, clients }: SaleFormProps) {
-  const [state, formAction] = useFormState(action, {})
+  const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined)
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined)
+  const [quantity, setQuantity] = useState<number>(1)
+  const [pricePlan, setPricePlan] = useState<"detail_1" | "detail_2" | "gros">("detail_1")
+  const [unitPrice, setUnitPrice] = useState<number>(0)
+  const [totalPrice, setTotalPrice] = useState<number>(0)
+
+  const selectedProduct = products.find((p) => p.id === selectedProductId)
+
+  useEffect(() => {
+    if (selectedProduct) {
+      let price = 0
+      switch (pricePlan) {
+        case "detail_1":
+          price = selectedProduct.prix_vente_detail_1
+          break
+        case "detail_2":
+          price = selectedProduct.prix_vente_detail_2
+          break
+        case "gros":
+          price = selectedProduct.prix_vente_gros
+          break
+      }
+      setUnitPrice(price)
+      setTotalPrice(price * quantity)
+    } else {
+      setUnitPrice(0)
+      setTotalPrice(0)
+    }
+  }, [selectedProductId, quantity, pricePlan, selectedProduct])
+
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/sales") // Redirect to sales list on success
+    }
+  }, [state, router])
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
-      {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid gap-2">
-        <Label htmlFor="product_id">Produit</Label>
-        <Select name="product_id" defaultValue={initialData?.product_id || ""} required>
-          <SelectTrigger id="product_id">
-            <SelectValue placeholder="Sélectionner un produit" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="quantity_sold">Quantité Vendue</Label>
-        <Input
-          id="quantity_sold"
-          name="quantity_sold"
-          type="number"
-          defaultValue={initialData?.quantity_sold || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Prix Unitaire</Label>
-        <Input
-          id="unit_price"
-          name="unit_price"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.unit_price || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="sale_date">Date de Vente</Label>
-        <Input
-          id="sale_date"
-          name="sale_date"
-          type="date"
-          defaultValue={initialData?.sale_date || new Date().toISOString().split("T")[0]}
-          required
-        />
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Select name="client_id" defaultValue={initialData?.client_id || ""} required>
-          <SelectTrigger id="client_id">
-            <SelectValue placeholder="Sélectionner un client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {state?.error && (
-        <Alert variant="destructive" className="md:col-span-2">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      )}
-      <div className="md:col-span-2 flex justify-end">
-        <SubmitButton />
-      </div>
-    </form>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Enregistrer une vente</CardTitle>
+        <CardDescription>Remplissez les détails de la vente.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="space-y-6">
+          {/* Product Selection */}
+          <div>
+            <Label htmlFor="product_id">Produit</Label>
+            <Select
+              name="product_id"
+              value={selectedProductId}
+              onValueChange={(value) => setSelectedProductId(value)}
+              disabled={isPending}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un produit" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name} (Stock: {product.quantity})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Quantity and Price Plan */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="quantity">Quantité</Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                min={1}
+                required
+                disabled={isPending}
+              />
+            </div>
+            <div>
+              <Label htmlFor="price_plan">Plan de prix</Label>
+              <Select
+                name="price_plan"
+                value={pricePlan}
+                onValueChange={(value: "detail_1" | "detail_2" | "gros") => setPricePlan(value)}
+                disabled={isPending}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un plan de prix" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="detail_1">Détail 1</SelectItem>
+                  <SelectItem value="detail_2">Détail 2</SelectItem>
+                  <SelectItem value="gros">Gros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Unit Price and Total Price (Display Only) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Prix Unitaire (FCFA)</Label>
+              <Input type="text" value={unitPrice.toLocaleString("fr-FR")} readOnly disabled />
+              <input type="hidden" name="unit_price" value={unitPrice} /> {/* Hidden input for Server Action */}
+            </div>
+            <div>
+              <Label>Total (FCFA)</Label>
+              <Input type="text" value={totalPrice.toLocaleString("fr-FR")} readOnly disabled />
+              <input type="hidden" name="total" value={totalPrice} /> {/* Hidden input for Server Action */}
+            </div>
+          </div>
+
+          {/* Client Selection */}
+          <div>
+            <Label htmlFor="client_id">Client</Label>
+            <Select
+              name="client_id"
+              value={selectedClientId}
+              onValueChange={(value) => setSelectedClientId(value === "none" ? undefined : value)}
+              disabled={isPending}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un client (optionnel)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Aucun client</SelectItem> {/* Option for no client */}
+                {clients?.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Notes (Optional) */}
+          <div>
+            <Label htmlFor="notes">Notes (optionnel)</Label>
+            <Input id="notes" name="notes" type="text" disabled={isPending} />
+          </div>
+
+          {state?.error && (
+            <Alert variant="destructive">
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          )}
+          {state?.success && (
+            <Alert>
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button type="submit" className="w-full" disabled={isPending || !selectedProductId || quantity <= 0}>
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Enregistrer la vente
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

@@ -9,15 +9,19 @@ const ClientForm = dynamic(() => import("@/components/clients/client-form"), {
 })
 
 export default async function EditClientPage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const { data: client, error } = await getClientById(id)
-
-  if (error) {
-    return <div className="text-red-500">Erreur: {error.message}</div>
-  }
+  const client = await getClientById(params.id)
 
   if (!client) {
-    return <div className="text-gray-500">Client non trouvé.</div>
+    return (
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Client introuvable</CardTitle>
+            <CardDescription>Le client avec l'ID spécifié n'existe pas.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (

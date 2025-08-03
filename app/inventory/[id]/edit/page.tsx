@@ -9,15 +9,19 @@ const ProductForm = dynamic(() => import("@/components/inventory/product-form"),
 })
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const { data: product, error } = await getProductById(id)
-
-  if (error) {
-    return <div className="text-red-500">Erreur: {error.message}</div>
-  }
+  const product = await getProductById(params.id)
 
   if (!product) {
-    return <div className="text-gray-500">Produit non trouvé.</div>
+    return (
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Produit introuvable</CardTitle>
+            <CardDescription>Le produit avec l'ID spécifié n'existe pas.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (

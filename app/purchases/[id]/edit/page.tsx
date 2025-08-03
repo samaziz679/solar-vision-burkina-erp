@@ -9,15 +9,19 @@ const PurchaseForm = dynamic(() => import("@/components/purchases/purchase-form"
 })
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const { data: purchase, error } = await getPurchaseById(id)
-
-  if (error) {
-    return <div className="text-red-500">Erreur: {error.message}</div>
-  }
+  const purchase = await getPurchaseById(params.id)
 
   if (!purchase) {
-    return <div className="text-gray-500">Achat non trouvé.</div>
+    return (
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Achat introuvable</CardTitle>
+            <CardDescription>L'achat avec l'ID spécifié n'existe pas.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (

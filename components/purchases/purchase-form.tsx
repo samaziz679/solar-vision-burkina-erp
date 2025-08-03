@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Purchase } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
@@ -13,11 +14,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface PurchaseFormProps {
   action: FormAction
   initialData?: Purchase
+  products: { id: string; name: string }[]
+  suppliers: { id: string; name: string }[]
 }
 
 function SubmitButton() {
@@ -29,22 +32,53 @@ function SubmitButton() {
   )
 }
 
-export default function PurchaseForm({ action, initialData }: PurchaseFormProps) {
+export default function PurchaseForm({ action, initialData, products, suppliers }: PurchaseFormProps) {
   const [state, formAction] = useFormState(action, {})
   const [purchaseDate, setPurchaseDate] = useState(
     initialData?.purchase_date ? new Date(initialData.purchase_date) : undefined,
   )
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="product_id">Produit</Label>
-        <Input id="product_id" name="product_id" type="text" defaultValue={initialData?.product_id || ""} required />
+        <Select name="product_id" defaultValue={initialData?.product_id || ""}>
+          <SelectTrigger id="product_id">
+            <SelectValue placeholder="Sélectionner un produit" />
+          </SelectTrigger>
+          <SelectContent>
+            {products.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="supplier_id">Fournisseur</Label>
-        <Input id="supplier_id" name="supplier_id" type="text" defaultValue={initialData?.supplier_id || ""} required />
+        <Select name="supplier_id" defaultValue={initialData?.supplier_id || ""}>
+          <SelectTrigger id="supplier_id">
+            <SelectValue placeholder="Sélectionner un fournisseur" />
+          </SelectTrigger>
+          <SelectContent>
+            {suppliers.map((supplier) => (
+              <SelectItem key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantité</Label>
@@ -58,17 +92,6 @@ export default function PurchaseForm({ action, initialData }: PurchaseFormProps)
           type="number"
           step="0.01"
           defaultValue={initialData?.unit_price || ""}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="total_price">Prix Total</Label>
-        <Input
-          id="total_price"
-          name="total_price"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.total_price || ""}
           required
         />
       </div>

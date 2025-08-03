@@ -1,4 +1,4 @@
-"use client" // Marks this component as a Client Component
+"use client"
 
 import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { useState, useEffect } from "react"
 
 interface ProductFormProps {
   action: FormAction
@@ -26,6 +27,15 @@ function SubmitButton() {
 
 export default function ProductForm({ action, initialData }: ProductFormProps) {
   const [state, formAction] = useFormState(action, {})
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

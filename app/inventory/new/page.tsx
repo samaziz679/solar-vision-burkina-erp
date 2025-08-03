@@ -3,10 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { createProduct } from "@/app/inventory/actions"
 
-// Dynamically import ProductForm with ssr: false
 const ProductForm = dynamic(() => import("@/components/inventory/product-form"), {
   ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>, // Optional loading component
+  loading: () => <div>Chargement du formulaire...</div>,
 })
 
 export default function NewProductPage() {

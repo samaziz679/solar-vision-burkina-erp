@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { BankingEntry } from "@/lib/supabase/types"
+import type { BankEntry } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 import { Calendar } from "@/components/ui/calendar"
@@ -14,11 +14,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface BankingFormProps {
   action: FormAction
-  initialData?: BankingEntry
+  initialData?: BankEntry
 }
 
 function SubmitButton() {
@@ -32,13 +32,22 @@ function SubmitButton() {
 
 export default function BankingForm({ action, initialData }: BankingFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [date, setDate] = useState(initialData?.date ? new Date(initialData.date) : undefined)
+  const [date, setDate] = useState(initialData?.entry_date ? new Date(initialData.entry_date) : undefined)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
-        <Label htmlFor="date">Date</Label>
+        <Label htmlFor="entry_date">Date de l'entrée</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -53,7 +62,11 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
             <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
           </PopoverContent>
         </Popover>
-        <input type="hidden" name="date" value={date ? format(date, "yyyy-MM-dd") : ""} />
+        <input type="hidden" name="entry_date" value={date ? format(date, "yyyy-MM-dd") : ""} />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="amount">Montant</Label>
+        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="type">Type</Label>
@@ -64,15 +77,25 @@ export default function BankingForm({ action, initialData }: BankingFormProps) {
           <SelectContent>
             <SelectItem value="Dépôt">Dépôt</SelectItem>
             <SelectItem value="Retrait">Retrait</SelectItem>
-            <SelectItem value="Transfert">Transfert</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
+        <Label htmlFor="category">Catégorie</Label>
+        <Select name="category" defaultValue={initialData?.category || ""}>
+          <SelectTrigger id="category">
+            <SelectValue placeholder="Sélectionner une catégorie" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Vente">Vente</SelectItem>
+            <SelectItem value="Achat">Achat</SelectItem>
+            <SelectItem value="Salaire">Salaire</SelectItem>
+            <SelectItem value="Loyer">Loyer</SelectItem>
+            <SelectItem value="Autre">Autre</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <div className="grid gap-2">
+      <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"

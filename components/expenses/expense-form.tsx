@@ -1,4 +1,4 @@
-"use client" // Marks this component as a Client Component
+"use client"
 
 import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface ExpenseFormProps {
   action: FormAction
@@ -33,6 +33,15 @@ function SubmitButton() {
 export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
   const [state, formAction] = useFormState(action, {})
   const [date, setDate] = useState(initialData?.expense_date ? new Date(initialData.expense_date) : undefined)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

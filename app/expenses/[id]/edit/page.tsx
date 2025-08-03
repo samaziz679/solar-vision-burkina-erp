@@ -9,15 +9,19 @@ const ExpenseForm = dynamic(() => import("@/components/expenses/expense-form"), 
 })
 
 export default async function EditExpensePage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const { data: expense, error } = await getExpenseById(id)
-
-  if (error) {
-    return <div className="text-red-500">Erreur: {error.message}</div>
-  }
+  const expense = await getExpenseById(params.id)
 
   if (!expense) {
-    return <div className="text-gray-500">Dépense non trouvée.</div>
+    return (
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Dépense introuvable</CardTitle>
+            <CardDescription>La dépense avec l'ID spécifié n'existe pas.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (

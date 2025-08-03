@@ -9,15 +9,19 @@ const SaleForm = dynamic(() => import("@/components/sales/sale-form"), {
 })
 
 export default async function EditSalePage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const { data: sale, error } = await getSaleById(id)
-
-  if (error) {
-    return <div className="text-red-500">Erreur: {error.message}</div>
-  }
+  const sale = await getSaleById(params.id)
 
   if (!sale) {
-    return <div className="text-gray-500">Vente non trouvée.</div>
+    return (
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Vente introuvable</CardTitle>
+            <CardDescription>La vente avec l'ID spécifié n'existe pas.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (

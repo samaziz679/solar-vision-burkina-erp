@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Client } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { useState, useEffect } from "react"
 
 interface ClientFormProps {
   action: FormAction
@@ -25,6 +26,15 @@ function SubmitButton() {
 
 export default function ClientForm({ action, initialData }: ClientFormProps) {
   const [state, formAction] = useFormState(action, {})
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div>
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

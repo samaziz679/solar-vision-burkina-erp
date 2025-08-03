@@ -5,17 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import type { Product, Supplier, Purchase } from "@/lib/supabase/types"
+import type { Purchase, Product, Supplier } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useEffect, useState } from "react"
 
 interface EditPurchaseFormProps {
   initialData: Purchase
   products: Product[]
   suppliers: Supplier[]
-  action: FormAction // Add action prop with FormAction type
+  action: FormAction
 }
 
 function SubmitButton() {
@@ -28,30 +26,15 @@ function SubmitButton() {
 }
 
 export default function EditPurchaseForm({ initialData, products, suppliers, action }: EditPurchaseFormProps) {
-  const [state, formAction] = useFormState(action, {}) // Update the useFormState call to pass `action`
-  const [selectedProductId, setSelectedProductId] = useState(initialData?.product_id || "")
-  const [quantity, setQuantity] = useState(initialData?.quantity_purchased || 0)
-  const [unitCost, setUnitCost] = useState(initialData?.unit_cost || 0)
-  const [totalCost, setTotalCost] = useState(initialData?.total_cost || 0)
-
-  useEffect(() => {
-    if (quantity > 0 && unitCost > 0) {
-      setTotalCost(quantity * unitCost)
-    } else {
-      setTotalCost(0)
-    }
-  }, [quantity, unitCost])
+  const [state, formAction] = useFormState(action, {})
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       <input type="hidden" name="id" value={initialData.id} />
-      <div className="grid gap-2">
-        <Label htmlFor="purchase_date">Date d'achat</Label>
-        <Input id="purchase_date" name="purchase_date" type="date" defaultValue={initialData.purchase_date} required />
-      </div>
+      <input type="hidden" name="old_quantity" value={initialData.quantity} /> {/* Hidden field for old quantity */}
       <div className="grid gap-2">
         <Label htmlFor="product_id">Produit</Label>
-        <Select name="product_id" value={selectedProductId} onValueChange={setSelectedProductId} required>
+        <Select name="product_id" defaultValue={initialData.product_id} required>
           <SelectTrigger id="product_id">
             <SelectValue placeholder="Sélectionner un produit" />
           </SelectTrigger>
@@ -65,8 +48,27 @@ export default function EditPurchaseForm({ initialData, products, suppliers, act
         </Select>
       </div>
       <div className="grid gap-2">
+        <Label htmlFor="quantity">Quantité</Label>
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData.quantity} required />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="unit_price">Prix Unitaire</Label>
+        <Input
+          id="unit_price"
+          name="unit_price"
+          type="number"
+          step="0.01"
+          defaultValue={initialData.unit_price}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="purchase_date">Date d'achat</Label>
+        <Input id="purchase_date" name="purchase_date" type="date" defaultValue={initialData.purchase_date} required />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="supplier_id">Fournisseur</Label>
-        <Select name="supplier_id" defaultValue={initialData.supplier_id || ""} required>
+        <Select name="supplier_id" defaultValue={initialData.supplier_id} required>
           <SelectTrigger id="supplier_id">
             <SelectValue placeholder="Sélectionner un fournisseur" />
           </SelectTrigger>
@@ -78,50 +80,6 @@ export default function EditPurchaseForm({ initialData, products, suppliers, act
             ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="quantity_purchased">Quantité achetée</Label>
-        <Input
-          id="quantity_purchased"
-          name="quantity_purchased"
-          type="number"
-          defaultValue={initialData.quantity_purchased}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_cost">Coût unitaire</Label>
-        <Input
-          id="unit_cost"
-          name="unit_cost"
-          type="number"
-          step="0.01"
-          defaultValue={initialData.unit_cost}
-          onChange={(e) => setUnitCost(Number(e.target.value))}
-          required
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="total_cost">Coût total</Label>
-        <Input id="total_cost" name="total_cost" type="number" step="0.01" value={totalCost} readOnly required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="payment_status">Statut du paiement</Label>
-        <Select name="payment_status" defaultValue={initialData.payment_status} required>
-          <SelectTrigger id="payment_status">
-            <SelectValue placeholder="Sélectionner le statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="paid">Payé</SelectItem>
-            <SelectItem value="partially_paid">Partiellement payé</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes sur l'achat" defaultValue={initialData.notes || ""} />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

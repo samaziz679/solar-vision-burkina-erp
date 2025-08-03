@@ -2,33 +2,43 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
-import type { Expense } from "@/lib/supabase/types"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import type { Database } from "@/lib/supabase/types"
 
-export async function createExpense(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+export async function addExpense(prevState: any, formData: FormData) {
+  const supabase = createServerActionClient<Database>({ cookies })
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "User not authenticated." }
+  }
 
   const expense_date = formData.get("expense_date") as string
-  const description = formData.get("description") as string
   const amount = Number.parseFloat(formData.get("amount") as string)
-  const category = formData.get("category") as Expense["category"]
+  const description = formData.get("description") as string
+  const category = formData.get("category") as string
   const notes = formData.get("notes") as string
 
-  if (!expense_date || !description || isNaN(amount)) {
-    return { error: "La date, la description et le montant sont requis." }
+  if (!expense_date || isNaN(amount) || !description) {
+    return { error: "La date, le montant et la description sont requis." }
   }
 
   const { error } = await supabase.from("expenses").insert({
+    user_id: user.id,
     expense_date,
-    description,
     amount,
+    description,
     category,
     notes,
   })
 
   if (error) {
-    console.error("Error creating expense:", error)
-    return { error: "Échec de l'ajout de la dépense. Veuillez réessayer." }
+    console.error("Error adding expense:", error)
+    return { error: error.message }
   }
 
   revalidatePath("/expenses")
@@ -36,33 +46,42 @@ export async function createExpense(prevState: any, formData: FormData) {
 }
 
 export async function updateExpense(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = createServerActionClient<Database>({ cookies })
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "User not authenticated." }
+  }
 
   const id = formData.get("id") as string
   const expense_date = formData.get("expense_date") as string
-  const description = formData.get("description") as string
   const amount = Number.parseFloat(formData.get("amount") as string)
-  const category = formData.get("category") as Expense["category"]
+  const description = formData.get("description") as string
+  const category = formData.get("category") as string
   const notes = formData.get("notes") as string
 
-  if (!id || !expense_date || !description || isNaN(amount)) {
-    return { error: "La date, la description et le montant sont requis." }
+  if (!id || !expense_date || isNaN(amount) || !description) {
+    return { error: "La date, le montant et la description sont requis." }
   }
 
   const { error } = await supabase
     .from("expenses")
     .update({
       expense_date,
-      description,
       amount,
+      description,
       category,
       notes,
     })
     .eq("id", id)
+    .eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating expense:", error)
-    return { error: "Échec de la mise à jour de la dépense. Veuillez réessayer." }
+    return { error: error.message }
   }
 
   revalidatePath("/expenses")
@@ -70,13 +89,21 @@ export async function updateExpense(prevState: any, formData: FormData) {
 }
 
 export async function deleteExpense(id: string) {
-  const supabase = await createServerClient()
+  const supabase = createServerActionClient<Database>({ cookies })
 
-  const { error } = await supabase.from("expenses").delete().eq("id", id)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: "User not authenticated." }
+  }
+
+  const { error } = await supabase.from("expenses").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error deleting expense:", error)
-    return { error: "Échec de la suppression de la dépense. Veuillez réessayer." }
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/expenses")

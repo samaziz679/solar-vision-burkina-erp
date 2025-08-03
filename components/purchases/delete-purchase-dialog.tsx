@@ -1,8 +1,9 @@
 "use client"
 
-import { useFormState } from "react-dom"
+import { useState } from "react"
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -10,70 +11,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Trash, Loader2 } from "lucide-react"
 import { deletePurchase } from "@/app/purchases/actions"
-import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 interface DeletePurchaseDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   purchaseId: string
-  productName: string
-  onDeleteSuccess: () => void // Callback to notify parent of successful deletion
+  onClose: () => void
 }
 
-export default function DeletePurchaseDialog({ purchaseId, productName, onDeleteSuccess }: DeletePurchaseDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [state, formAction, isPending] = useFormState(deletePurchase, { error: null, success: false })
+export default function DeletePurchaseDialog({ open, onOpenChange, purchaseId, onClose }: DeletePurchaseDialogProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
 
-  useEffect(() => {
-    if (state?.success) {
-      setIsOpen(false) // Close dialog on success
-      onDeleteSuccess() // Notify parent component
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const result = await deletePurchase(purchaseId)
+    if (result?.error) {
+      toast({
+        title: "Erreur de suppression",
+        description: result.error,
+        variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Succès",
+        description: "L'achat a été supprimé.",
+      })
     }
-    // Optionally, handle error state here if you want to display it in the dialog
-    // if (state?.error) {
-    //   console.error("Deletion error:", state.error);
-    // }
-  }, [state, onDeleteSuccess])
+    setIsDeleting(false)
+    onClose()
+  }
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 text-red-500 hover:text-red-600"
-        onClick={() => setIsOpen(true)}
-      >
-        <Trash className="h-4 w-4" />
-        <span className="sr-only">Supprimer</span>
-      </Button>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement l'achat du produit{" "}
-            <span className="font-semibold">{productName}</span> et déduira la quantité du stock.
-            {state?.error && <p className="text-red-500 mt-2">{state.error}</p>}
+            Cette action ne peut pas être annulée. Cela supprimera définitivement cet achat de votre base de données.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Annuler</AlertDialogCancel>
-          <form action={formAction}>
-            <input type="hidden" name="id" value={purchaseId} />
-            <Button type="submit" variant="destructive" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Suppression...
-                </>
-              ) : (
-                <>
-                  <Trash className="mr-2 h-4 w-4" />
-                  Supprimer
-                </>
-              )}
-            </Button>
-          </form>
+          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? "Suppression..." : "Supprimer"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

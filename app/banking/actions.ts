@@ -2,31 +2,41 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server" // Corrected import
-import type { BankEntry } from "@/lib/supabase/types"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import type { Database } from "@/lib/supabase/types"
 
-export async function createBankEntry(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+export async function addBankEntry(prevState: any, formData: FormData) {
+  const supabase = createServerActionClient<Database>({ cookies })
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "User not authenticated." }
+  }
 
   const date = formData.get("date") as string
-  const description = formData.get("description") as string
+  const type = formData.get("type") as string
   const amount = Number.parseFloat(formData.get("amount") as string)
-  const type = formData.get("type") as BankEntry["type"]
+  const description = formData.get("description") as string
 
-  if (!date || !description || isNaN(amount) || !type) {
-    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
+  if (!date || !type || isNaN(amount) || !description) {
+    return { error: "Tous les champs requis doivent être remplis." }
   }
 
   const { error } = await supabase.from("bank_entries").insert({
+    user_id: user.id,
     date,
-    description,
-    amount,
     type,
+    amount,
+    description,
   })
 
   if (error) {
-    console.error("Error creating bank entry:", error)
-    return { error: "Échec de l'ajout de l'entrée bancaire. Veuillez réessayer." }
+    console.error("Error adding bank entry:", error)
+    return { error: error.message }
   }
 
   revalidatePath("/banking")
@@ -34,31 +44,40 @@ export async function createBankEntry(prevState: any, formData: FormData) {
 }
 
 export async function updateBankEntry(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = createServerActionClient<Database>({ cookies })
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "User not authenticated." }
+  }
 
   const id = formData.get("id") as string
   const date = formData.get("date") as string
-  const description = formData.get("description") as string
+  const type = formData.get("type") as string
   const amount = Number.parseFloat(formData.get("amount") as string)
-  const type = formData.get("type") as BankEntry["type"]
+  const description = formData.get("description") as string
 
-  if (!id || !date || !description || isNaN(amount) || !type) {
-    return { error: "Tous les champs requis ne sont pas remplis ou sont invalides." }
+  if (!id || !date || !type || isNaN(amount) || !description) {
+    return { error: "Tous les champs requis doivent être remplis." }
   }
 
   const { error } = await supabase
     .from("bank_entries")
     .update({
       date,
-      description,
-      amount,
       type,
+      amount,
+      description,
     })
     .eq("id", id)
+    .eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating bank entry:", error)
-    return { error: "Échec de la mise à jour de l'entrée bancaire. Veuillez réessayer." }
+    return { error: error.message }
   }
 
   revalidatePath("/banking")
@@ -66,13 +85,21 @@ export async function updateBankEntry(prevState: any, formData: FormData) {
 }
 
 export async function deleteBankEntry(id: string) {
-  const supabase = await createServerClient()
+  const supabase = createServerActionClient<Database>({ cookies })
 
-  const { error } = await supabase.from("bank_entries").delete().eq("id", id)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: "User not authenticated." }
+  }
+
+  const { error } = await supabase.from("bank_entries").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error deleting bank entry:", error)
-    return { error: "Échec de la suppression de l'entrée bancaire. Veuillez réessayer." }
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/banking")

@@ -41,7 +41,7 @@ export default function ClientList({ clients }: ClientListProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Nom</TableHead>
-            <TableHead>Téléphone</TableHead>
+            <TableHead>Contact</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Adresse</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -51,7 +51,7 @@ export default function ClientList({ clients }: ClientListProps) {
           {clients.map((client) => (
             <TableRow key={client.id}>
               <TableCell className="font-medium">{client.name}</TableCell>
-              <TableCell>{client.phone}</TableCell>
+              <TableCell>{client.contact}</TableCell>
               <TableCell>{client.email}</TableCell>
               <TableCell>{client.address}</TableCell>
               <TableCell className="text-right">
@@ -89,14 +89,16 @@ export function ClientListSkeleton() {
     <div className="space-y-4">
       <div className="grid grid-cols-5 gap-4">
         <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-2" />
+        <div className="h-6 bg-gray-200 rounded col-span-1" />
+        <div className="h-6 bg-gray-200 rounded col-span-1" />
         <div className="h-6 bg-gray-200 rounded col-span-1" />
         <div className="h-6 bg-gray-200 rounded col-span-1" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="grid grid-cols-5 gap-4">
           <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-2" />
+          <div className="h-8 bg-gray-100 rounded col-span-1" />
+          <div className="h-8 bg-gray-100 rounded col-span-1" />
           <div className="h-8 bg-gray-100 rounded col-span-1" />
           <div className="h-8 bg-gray-100 rounded col-span-1" />
         </div>

@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useFormState } from "react-dom"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,54 +10,74 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Trash, Loader2 } from "lucide-react"
 import { deleteExpense } from "@/app/expenses/actions"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react"
 
 interface DeleteExpenseDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
   expenseId: string
-  onClose: () => void
+  expenseDescription: string
+  onDeleteSuccess: () => void // Callback to notify parent of successful deletion
 }
 
-export default function DeleteExpenseDialog({ open, onOpenChange, expenseId, onClose }: DeleteExpenseDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
+export default function DeleteExpenseDialog({
+  expenseId,
+  expenseDescription,
+  onDeleteSuccess,
+}: DeleteExpenseDialogProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [state, formAction, isPending] = useFormState(deleteExpense, { error: null, success: false })
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteExpense(expenseId)
-    if (result?.error) {
-      toast({
-        title: "Erreur de suppression",
-        description: result.error,
-        variant: "destructive",
-      })
-    } else {
-      toast({
-        title: "Succès",
-        description: "La dépense a été supprimée.",
-      })
+  useEffect(() => {
+    if (state?.success) {
+      setIsOpen(false) // Close dialog on success
+      onDeleteSuccess() // Notify parent component
     }
-    setIsDeleting(false)
-    onClose()
-  }
+    // Optionally, handle error state here if you want to display it in the dialog
+    // if (state?.error) {
+    //   console.error("Deletion error:", state.error);
+    // }
+  }, [state, onDeleteSuccess])
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-red-500 hover:text-red-600"
+        onClick={() => setIsOpen(true)}
+      >
+        <Trash className="h-4 w-4" />
+        <span className="sr-only">Supprimer</span>
+      </Button>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement cette dépense de votre base de
-            données.
+            Cette action ne peut pas être annulée. Cela supprimera définitivement la dépense{" "}
+            <span className="font-semibold">{expenseDescription}</span>.
+            {state?.error && <p className="text-red-500 mt-2">{state.error}</p>}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel disabled={isPending}>Annuler</AlertDialogCancel>
+          <form action={formAction}>
+            <input type="hidden" name="id" value={expenseId} />
+            <Button type="submit" variant="destructive" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash className="mr-2 h-4 w-4" />
+                  Supprimer
+                </>
+              )}
+            </Button>
+          </form>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

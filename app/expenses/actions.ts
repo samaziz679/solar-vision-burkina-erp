@@ -2,110 +2,110 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createServerClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth"
 import type { Database } from "@/lib/supabase/types"
 
-export async function addExpense(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
+type ExpenseInsert = Database["public"]["Tables"]["expenses"]["Insert"]
+type ExpenseUpdate = Database["public"]["Tables"]["expenses"]["Update"]
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export async function createExpense(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
   if (!user) {
-    return { error: "User not authenticated." }
+    redirect("/login")
   }
 
-  const expense_date = formData.get("expense_date") as string
-  const amount = Number.parseFloat(formData.get("amount") as string)
   const description = formData.get("description") as string
-  const category = formData.get("category") as string
-  const notes = formData.get("notes") as string
+  const category = formData.get("category") as ExpenseInsert["category"]
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const expense_date = formData.get("expense_date") as string
+  const notes = formData.get("notes") as string | null
 
-  if (!expense_date || isNaN(amount) || !description) {
-    return { error: "La date, le montant et la description sont requis." }
+  if (!description || !category || isNaN(amount) || amount <= 0 || !expense_date) {
+    return {
+      success: false,
+      error: "Veuillez remplir tous les champs obligatoires et s'assurer que le montant est valide.",
+    }
   }
 
-  const { error } = await supabase.from("expenses").insert({
-    user_id: user.id,
-    expense_date,
-    amount,
+  const newExpense: ExpenseInsert = {
     description,
     category,
+    amount,
+    expense_date,
     notes,
-  })
+    created_by: user.id,
+  }
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("expenses").insert(newExpense)
 
   if (error) {
-    console.error("Error adding expense:", error)
-    return { error: error.message }
+    console.error("Error creating expense:", error.message)
+    return { success: false, error: "Échec de l'enregistrement de la dépense: " + error.message }
   }
 
   revalidatePath("/expenses")
-  redirect("/expenses")
+  return { success: true, message: "Dépense enregistrée avec succès!" }
 }
 
 export async function updateExpense(prevState: any, formData: FormData) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   if (!user) {
-    return { error: "User not authenticated." }
+    redirect("/login")
   }
 
   const id = formData.get("id") as string
-  const expense_date = formData.get("expense_date") as string
-  const amount = Number.parseFloat(formData.get("amount") as string)
   const description = formData.get("description") as string
-  const category = formData.get("category") as string
-  const notes = formData.get("notes") as string
+  const category = formData.get("category") as ExpenseUpdate["category"]
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const expense_date = formData.get("expense_date") as string
+  const notes = formData.get("notes") as string | null
 
-  if (!id || !expense_date || isNaN(amount) || !description) {
-    return { error: "La date, le montant et la description sont requis." }
+  if (!description || !category || isNaN(amount) || amount <= 0 || !expense_date) {
+    return {
+      success: false,
+      error: "Veuillez remplir tous les champs obligatoires et s'assurer que le montant est valide.",
+    }
   }
 
-  const { error } = await supabase
-    .from("expenses")
-    .update({
-      expense_date,
-      amount,
-      description,
-      category,
-      notes,
-    })
-    .eq("id", id)
-    .eq("user_id", user.id)
+  const updatedExpense: ExpenseUpdate = {
+    description,
+    category,
+    amount,
+    expense_date,
+    notes,
+  }
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("expenses").update(updatedExpense).eq("id", id)
 
   if (error) {
-    console.error("Error updating expense:", error)
-    return { error: error.message }
+    console.error("Error updating expense:", error.message)
+    return { success: false, error: "Échec de la mise à jour de la dépense: " + error.message }
   }
 
   revalidatePath("/expenses")
-  redirect("/expenses")
+  revalidatePath(`/expenses/${id}/edit`)
+  return { success: true, message: "Dépense mise à jour avec succès!" }
 }
 
-export async function deleteExpense(id: string) {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+export async function deleteExpense(prevState: any, formData: FormData) {
+  const user = await getCurrentUser()
   if (!user) {
-    return { success: false, error: "User not authenticated." }
+    redirect("/login")
   }
 
-  const { error } = await supabase.from("expenses").delete().eq("id", id).eq("user_id", user.id)
+  const id = formData.get("id") as string
+
+  const supabase = await createServerClient()
+  const { error } = await supabase.from("expenses").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting expense:", error)
-    return { success: false, error: error.message }
+    console.error("Error deleting expense:", error.message)
+    return { success: false, error: "Échec de la suppression de la dépense: " + error.message }
   }
 
   revalidatePath("/expenses")
-  return { success: true }
+  return { success: true, message: "Dépense supprimée avec succès!" }
 }

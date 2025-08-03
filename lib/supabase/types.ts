@@ -110,7 +110,6 @@ export type Database = {
           type: string | null
           unit: string | null
           updated_at: string
-          image: string | null
         }
         Insert: {
           created_at?: string
@@ -125,7 +124,6 @@ export type Database = {
           type?: string | null
           unit?: string | null
           updated_at?: string
-          image?: string | null
         }
         Update: {
           created_at?: string
@@ -140,7 +138,6 @@ export type Database = {
           type?: string | null
           unit?: string | null
           updated_at?: string
-          image?: string | null
         }
         Relationships: []
       }

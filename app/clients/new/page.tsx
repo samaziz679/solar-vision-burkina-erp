@@ -1,13 +1,5 @@
-"use client"
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
-
-const ClientForm = dynamic(() => import("@/components/clients/client-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
+import ClientForm from "@/components/clients/client-form"
 import { createClient } from "@/app/clients/actions"
 
 export default function NewClientPage() {

@@ -1,74 +1,70 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Banking } from "@/lib/supabase/types"
+import { Textarea } from "@/components/ui/textarea"
+import type { BankEntry } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { useState, useEffect } from "react"
 
 interface BankingFormProps {
-  action: FormAction
-  initialData?: Banking
+  action: (prevState: any, formData: FormData) => Promise<{ error?: string }>
+  initialData?: BankEntry
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Enregistrement..." : "Enregistrer l'opération"}
+      {pending ? "Enregistrement..." : "Enregistrer l'entrée"}
     </Button>
   )
 }
 
 export default function BankingForm({ action, initialData }: BankingFormProps) {
   const [state, formAction] = useFormState(action, {})
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  if (!isClient) {
-    return <div>Chargement du formulaire...</div>
-  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid gap-2">
         <Label htmlFor="date">Date</Label>
-        <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
+        <Input
+          id="date"
+          name="date"
+          type="date"
+          defaultValue={initialData?.date || new Date().toISOString().split("T")[0]}
+          required
+        />
       </div>
       <div className="grid gap-2">
+        <Label htmlFor="amount">Montant</Label>
+        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="Description de l'entrée bancaire"
+          defaultValue={initialData?.description || ""}
+          required
+        />
+      </div>
+      <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="type">Type</Label>
         <Select name="type" defaultValue={initialData?.type || ""}>
           <SelectTrigger id="type">
             <SelectValue placeholder="Sélectionner le type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Dépôt">Dépôt</SelectItem>
-            <SelectItem value="Retrait">Retrait</SelectItem>
-            <SelectItem value="Transfert">Transfert</SelectItem>
+            <SelectItem value="deposit">Dépôt</SelectItem>
+            <SelectItem value="withdrawal">Retrait</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          placeholder="Description de l'opération"
-          defaultValue={initialData?.description || ""}
-        />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

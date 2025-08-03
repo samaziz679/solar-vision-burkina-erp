@@ -1,32 +1,25 @@
-"use client"
-
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
-import { getBankingById } from "@/lib/data/banking"
-
-const BankingForm = dynamic(() => import("@/components/banking/banking-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
-import { updateBanking } from "@/app/banking/actions"
+import BankingForm from "@/components/banking/banking-form"
+import { getBankEntryById } from "@/lib/data/banking"
+import { updateBankEntry } from "@/app/banking/actions"
 
 export default async function EditBankingPage({ params }: { params: { id: string } }) {
-  const banking = await getBankingById(params.id)
+  const bankEntry = await getBankEntryById(params.id)
 
-  if (!banking) {
-    return <div>Opération bancaire non trouvée.</div>
+  if (!bankEntry) {
+    notFound()
   }
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Modifier l'opération bancaire</CardTitle>
-          <CardDescription>Mettez à jour les détails de l'opération bancaire.</CardDescription>
+          <CardTitle>Modifier l'entrée bancaire</CardTitle>
+          <CardDescription>Mettez à jour les détails de l'entrée bancaire.</CardDescription>
         </CardHeader>
         <CardContent>
-          <BankingForm action={updateBanking} initialData={banking} />
+          <BankingForm action={updateBankEntry} initialData={bankEntry} />
         </CardContent>
       </Card>
     </div>

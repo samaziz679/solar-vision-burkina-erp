@@ -1,73 +1,37 @@
-# Solar Vision Burkina ERP - Deployment Guide
+# Deployment Guide for Solar Vision Burkina ERP
 
-## Quick Deployment Steps
+This guide provides detailed steps for deploying your Solar Vision Burkina ERP application to Vercel.
 
-### 1. Deploy to Vercel
-- Go to [vercel.com](https://vercel.com)
-- Click "New Project"
-- Import this repository
-- Deploy
+## 1. Prepare Your Supabase Project
 
-### 2. Add Environment Variables in Vercel
-After deployment, add these in Vercel Dashboard → Settings → Environment Variables:
+Before deploying your Next.js application, ensure your Supabase project is correctly set up and accessible.
 
-\`\`\`
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-NEXT_PUBLIC_SITE_URL=https://your-production-domain.com # e.g., https://solar-vision-burkina-erp.vercel.app
-\`\`\`
+1.  **Create Supabase Project**: If you haven't already, create a new project on [Supabase](https://supabase.com/).
+2.  **Get API Keys**:
+    *   Navigate to `Project Settings` > `API`.
+    *   Copy your `Project URL` (e.g., `https://abcdefghijk.supabase.co`) and your `anon public` key.
+3.  **Run SQL Schema**:
+    *   Go to `SQL Editor` in your Supabase project.
+    *   Execute the schema scripts in the following order to set up your database tables, RLS policies, and triggers:
+        1.  `scripts/supabase_schema.sql`
+        2.  `scripts/complete_supabase_schema.sql`
+        3.  `scripts/complete_supabase_schema_corrected.sql`
+        4.  `scripts/complete_supabase_schema_final_correction.sql`
+        5.  `scripts/complete_supabase_schema_final_correction_v2.sql`
+    *   **Optional: Insert Initial Data**: If you want to pre-populate your `products` table, run:
+        1.  `scripts/insert_initial_stock.sql`
+        2.  `scripts/insert_initial_stock_corrected.sql`
 
-### 3. Supabase Setup
-- Create project at [supabase.com](https://supabase.com)
-- Run the SQL schema from `scripts/complete_supabase_schema_final_correction_v2.sql`
-- Get API keys from Settings → API
-- **Important:** In Supabase, go to **Authentication -> URL Configuration** and set:
-    - **Site URL:** Your Vercel deployment URL (e.g., `https://solar-vision-burkina-erp.vercel.app`)
-    - **Redirect URLs:** Add your Vercel deployment URL and your local development URL (e.g., `http://localhost:3000/auth/callback`, `https://solar-vision-burkina-erp.vercel.app/auth/callback`)
+## 2. Prepare Your Next.js Application
 
-### 4. First Admin User
-- After logging in for the first time, get your user ID from Supabase (Authentication -> Users).
-- Run this SQL query in Supabase SQL Editor to assign yourself the 'admin' role:
+Ensure your local Next.js project is ready for deployment.
 
-\`\`\`sql
-INSERT INTO user_roles (user_id, role) VALUES ('your-user-id', 'admin');
-\`\`\`
-
-## 🏃‍♂️ Développement local
-
-\`\`\`bash
-npm install
-npm run dev
-\`\`\`
-
-## 📊 Stack Technique
-
-- **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS, Shadcn/ui
-- **Backend**: Supabase (PostgreSQL + Auth)
-- **Déploiement**: Vercel
-- **Icons**: Lucide React
-
-## 📞 Support
-
-Pour toute assistance technique, contactez l'équipe de développement.
-
----
-
-**Solar Vision Burkina** - Powering sustainable energy solutions in Burkina Faso 🌞
-\`\`\`
-
-\`\`\`shellscript file="deploy.sh"
-#!/bin/bash
-# Deployment script for Solar Vision Burkina ERP
-
-echo "🚀 Deploying Solar Vision Burkina ERP..."
-
-# Install Vercel CLI if not installed
-npm install -g vercel
-
-# Deploy to Vercel
-vercel --prod
-
-echo "✅ Deployment complete!"
-echo "📝 Don't forget to add your Supabase environment variables in Vercel dashboard"
+1.  **Install Dependencies**:
+    \`\`\`bash
+    npm install
+    # or
+    yarn install
+    \`\`\`
+2.  **Configure Environment Variables**:
+    *   Create a `.env.local` file in your project root (if it doesn't exist).
+    *   Add your Supabase URL and Anon Key to this file:

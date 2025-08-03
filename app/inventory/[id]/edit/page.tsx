@@ -1,19 +1,13 @@
-import dynamic from "next/dynamic"
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import EditProductForm from "@/components/inventory/edit-product-form"
 import { getProductById } from "@/lib/data/products"
-
-const ProductForm = dynamic(() => import("@/components/inventory/product-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
-import { updateProduct } from "@/app/inventory/actions"
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const product = await getProductById(params.id)
 
   if (!product) {
-    return <div>Produit non trouvé.</div>
+    notFound()
   }
 
   return (
@@ -24,7 +18,7 @@ export default async function EditProductPage({ params }: { params: { id: string
           <CardDescription>Mettez à jour les détails du produit.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ProductForm action={updateProduct} initialData={product} />
+          <EditProductForm initialData={product} />
         </CardContent>
       </Card>
     </div>

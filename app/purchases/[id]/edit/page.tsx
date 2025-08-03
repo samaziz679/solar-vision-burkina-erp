@@ -1,21 +1,17 @@
-"use client"
-
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
+import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
 import { getPurchaseById } from "@/lib/data/purchases"
-
-const PurchaseForm = dynamic(() => import("@/components/purchases/purchase-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
-import { updatePurchase } from "@/app/purchases/actions"
+import { getProducts } from "@/lib/data/products"
+import { getSuppliers } from "@/lib/data/suppliers"
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
   const purchase = await getPurchaseById(params.id)
+  const products = await getProducts()
+  const suppliers = await getSuppliers()
 
   if (!purchase) {
-    return <div>Achat non trouvé.</div>
+    notFound()
   }
 
   return (
@@ -26,7 +22,7 @@ export default async function EditPurchasePage({ params }: { params: { id: strin
           <CardDescription>Mettez à jour les détails de l'achat.</CardDescription>
         </CardHeader>
         <CardContent>
-          <PurchaseForm action={updatePurchase} initialData={purchase} />
+          <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
         </CardContent>
       </Card>
     </div>

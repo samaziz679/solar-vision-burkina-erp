@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 
 export async function createSupplier(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const name = formData.get("name") as string
   const contact_person = formData.get("contact_person") as string
@@ -35,7 +35,7 @@ export async function createSupplier(prevState: any, formData: FormData) {
 }
 
 export async function updateSupplier(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const id = formData.get("id") as string
   const name = formData.get("name") as string
@@ -69,7 +69,7 @@ export async function updateSupplier(prevState: any, formData: FormData) {
 }
 
 export async function deleteSupplier(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.from("suppliers").delete().eq("id", id)
 

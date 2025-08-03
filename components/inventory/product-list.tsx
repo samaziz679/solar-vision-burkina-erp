@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image" // Import Image from next/image
 import { Edit, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -42,7 +41,6 @@ export default function ProductList({ products }: ProductListProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Nom</TableHead>
-            <TableHead>Image</TableHead> {/* Add this line */}
             <TableHead>Quantité</TableHead>
             <TableHead>Unité</TableHead>
             <TableHead>Type</TableHead>
@@ -57,23 +55,6 @@ export default function ProductList({ products }: ProductListProps) {
           {products.map((product) => (
             <TableRow key={product.id}>
               <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell>
-                {" "}
-                {/* Add this TableCell */}
-                {product.image ? (
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    width={40}
-                    height={40}
-                    className="rounded-md object-cover"
-                  />
-                ) : (
-                  <div className="h-10 w-10 flex items-center justify-center bg-gray-100 rounded-md text-gray-400 text-xs">
-                    No Img
-                  </div>
-                )}
-              </TableCell>
               <TableCell>{product.quantity}</TableCell>
               <TableCell>{product.unit}</TableCell>
               <TableCell>{product.type}</TableCell>
@@ -122,11 +103,8 @@ export default function ProductList({ products }: ProductListProps) {
 export function ProductListSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-10 gap-4">
-        {" "}
-        {/* Changed from grid-cols-9 to grid-cols-10 */}
+      <div className="grid grid-cols-9 gap-4">
         <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" /> {/* New placeholder for image */}
         <div className="h-6 bg-gray-200 rounded col-span-1" />
         <div className="h-6 bg-gray-200 rounded col-span-1" />
         <div className="h-6 bg-gray-200 rounded col-span-1" />
@@ -137,11 +115,8 @@ export function ProductListSkeleton() {
         <div className="h-6 bg-gray-200 rounded col-span-1" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="grid grid-cols-10 gap-4">
-          {" "}
-          {/* Changed from grid-cols-9 to grid-cols-10 */}
+        <div key={i} className="grid grid-cols-9 gap-4">
           <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" /> {/* New placeholder for image */}
           <div className="h-8 bg-gray-100 rounded col-span-1" />
           <div className="h-8 bg-gray-100 rounded col-span-1" />
           <div className="h-8 bg-gray-100 rounded col-span-1" />

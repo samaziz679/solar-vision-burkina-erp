@@ -1,19 +1,14 @@
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
+import ExpenseForm from "@/components/expenses/expense-form"
 import { getExpenseById } from "@/lib/data/expenses"
-
-const ExpenseForm = dynamic(() => import("@/components/expenses/expense-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
 import { updateExpense } from "@/app/expenses/actions"
 
 export default async function EditExpensePage({ params }: { params: { id: string } }) {
   const expense = await getExpenseById(params.id)
 
   if (!expense) {
-    return <div>Dépense non trouvée.</div>
+    notFound()
   }
 
   return (

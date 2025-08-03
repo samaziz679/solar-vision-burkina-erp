@@ -1,21 +1,14 @@
-"use client"
-
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
+import ClientForm from "@/components/clients/client-form"
 import { getClientById } from "@/lib/data/clients"
-
-const ClientForm = dynamic(() => import("@/components/clients/client-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
 import { updateClient } from "@/app/clients/actions"
 
 export default async function EditClientPage({ params }: { params: { id: string } }) {
   const client = await getClientById(params.id)
 
   if (!client) {
-    return <div>Client non trouvé.</div>
+    notFound()
   }
 
   return (

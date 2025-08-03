@@ -1,11 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
-
-const SupplierForm = dynamic(() => import("@/components/suppliers/supplier-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
+import SupplierForm from "@/components/suppliers/supplier-form"
 import { createSupplier } from "@/app/suppliers/actions"
 
 export default function NewSupplierPage() {

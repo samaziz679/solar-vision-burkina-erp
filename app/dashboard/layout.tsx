@@ -1,7 +1,10 @@
 import type React from "react"
 import { redirect } from "next/navigation"
-import { getCurrentUser, getUserRoles } from "@/lib/auth"
-import Sidebar from "@/components/layout/sidebar"
+import { getCurrentUser } from "@/lib/auth"
+import { SidebarInset } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/components/ui/breadcrumb"
 
 export default async function DashboardLayout({
   children,
@@ -14,26 +17,21 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const userRoles = await getUserRoles(user.id)
-
-  if (userRoles.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Accès non autorisé</h1>
-          <p className="text-gray-600">Votre compte n'a pas encore été configuré avec les rôles appropriés.</p>
-          <p className="text-gray-600 mt-2">Veuillez contacter l'administrateur.</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar userRoles={userRoles} />
-      <main className="flex-1 overflow-auto lg:ml-0">
-        <div className="p-6 lg:p-8">{children}</div>
-      </main>
-    </div>
+    <SidebarInset>
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            {/* You can add more dynamic breadcrumbs here based on the current route */}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
+      <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">{children}</div>
+    </SidebarInset>
   )
 }

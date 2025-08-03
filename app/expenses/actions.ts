@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import type { Expense } from "@/lib/supabase/types"
 
 export async function createExpense(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const expense_date = formData.get("expense_date") as string
   const description = formData.get("description") as string
@@ -36,7 +36,7 @@ export async function createExpense(prevState: any, formData: FormData) {
 }
 
 export async function updateExpense(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const id = formData.get("id") as string
   const expense_date = formData.get("expense_date") as string
@@ -70,7 +70,7 @@ export async function updateExpense(prevState: any, formData: FormData) {
 }
 
 export async function deleteExpense(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.from("expenses").delete().eq("id", id)
 

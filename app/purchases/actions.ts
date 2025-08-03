@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import type { Purchase } from "@/lib/supabase/types"
 
 export async function createPurchase(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const purchase_date = formData.get("purchase_date") as string
   const product_id = formData.get("product_id") as string
@@ -50,7 +50,7 @@ export async function createPurchase(prevState: any, formData: FormData) {
 }
 
 export async function updatePurchase(prevState: any, formData: FormData) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const id = formData.get("id") as string
   const purchase_date = formData.get("purchase_date") as string
@@ -99,7 +99,7 @@ export async function updatePurchase(prevState: any, formData: FormData) {
 }
 
 export async function deletePurchase(id: string) {
-  const supabase = await createServerClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.from("purchases").delete().eq("id", id)
 

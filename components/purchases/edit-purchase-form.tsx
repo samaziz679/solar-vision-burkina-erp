@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus, type FormAction } from "react-dom"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,12 +10,12 @@ import type { Product, Supplier, Purchase } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
 import { useEffect, useState } from "react"
+import { updatePurchase } from "@/app/purchases/actions"
 
 interface EditPurchaseFormProps {
   initialData: Purchase
   products: Product[]
   suppliers: Supplier[]
-  action: FormAction // Add action prop with FormAction type
 }
 
 function SubmitButton() {
@@ -27,8 +27,8 @@ function SubmitButton() {
   )
 }
 
-export default function EditPurchaseForm({ initialData, products, suppliers, action }: EditPurchaseFormProps) {
-  const [state, formAction] = useFormState(action, {}) // Update the useFormState call to pass `action`
+export default function EditPurchaseForm({ initialData, products, suppliers }: EditPurchaseFormProps) {
+  const [state, formAction] = useFormState(updatePurchase, {})
   const [selectedProductId, setSelectedProductId] = useState(initialData?.product_id || "")
   const [quantity, setQuantity] = useState(initialData?.quantity_purchased || 0)
   const [unitCost, setUnitCost] = useState(initialData?.unit_cost || 0)

@@ -1,19 +1,14 @@
+import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from "next/dynamic"
+import SupplierForm from "@/components/suppliers/supplier-form"
 import { getSupplierById } from "@/lib/data/suppliers"
-
-const SupplierForm = dynamic(() => import("@/components/suppliers/supplier-form"), {
-  ssr: false,
-  loading: () => <div>Chargement du formulaire...</div>,
-})
-
 import { updateSupplier } from "@/app/suppliers/actions"
 
 export default async function EditSupplierPage({ params }: { params: { id: string } }) {
   const supplier = await getSupplierById(params.id)
 
   if (!supplier) {
-    return <div>Fournisseur non trouvé.</div>
+    notFound()
   }
 
   return (

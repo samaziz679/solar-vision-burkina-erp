@@ -1,13 +1,9 @@
 import LoginForm from "@/components/auth/login-form"
-import { getCurrentUser } from "@/lib/auth"
-import { redirect } from "next/navigation"
 
-export default async function LoginPage() {
-  const user = await getCurrentUser()
-
-  if (user) {
-    redirect("/dashboard")
-  }
-
-  return <LoginForm />
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12 dark:bg-gray-950">
+      <LoginForm />
+    </div>
+  )
 }

@@ -1,119 +1,69 @@
 "use client"
-
-import type React from "react"
-import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { createClient } from "@/lib/supabase/client"
 
-// Helper function to get the correct URL for redirects
-const getURL = () => {
-  let url =
-    process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env.
-    process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
-    "http://localhost:3000/" // Default for local development
+async function signInWithEmail(prevState: any, formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+  const supabase = createClient()
 
-  // Ensure it starts with https:// for production or http:// for localhost
-  url = url.startsWith("http") ? url : `https://${url}`
-  // Ensure it has a trailing slash
-  url = url.endsWith("/") ? url : `${url}/`
-  return url
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) {
+    console.error("Sign-in error:", error.message)
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? "Connexion..." : "Se connecter"}
+    </Button>
+  )
 }
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState("")
-  const [error, setError] = useState("")
-
-  const supabase = createClient()
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setMessage("")
-
-    try {
-      // Construct the redirect URL using the robust getURL helper
-      const redirectToUrl = `${getURL()}auth/callback`
-      console.log("Attempting to sign in with emailRedirectTo:", redirectToUrl) // Debug log for Vercel logs
-
-      const { error: supabaseError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: redirectToUrl,
-        },
-      })
-
-      if (supabaseError) {
-        setError(supabaseError.message)
-        console.error("Supabase signInWithOtp error:", supabaseError)
-      } else {
-        setMessage("Vérifiez votre email pour le lien de connexion magique!")
-      }
-    } catch (err: any) {
-      setError("Une erreur est survenue: " + (err.message || "Vérifiez votre connexion ou les logs console."))
-      console.error("General fetch error caught in LoginForm:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [state, formAction] = useFormState(signInWithEmail, {})
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-            {/* Removed Mail icon usage here */}
+    <Card className="w-full max-w-sm">
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-bold">Connexion</CardTitle>
+        <CardDescription>Entrez votre email et mot de passe pour vous connecter à votre compte.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" placeholder="m@example.com" required />
           </div>
-          <CardTitle className="text-2xl font-bold">Solar Vision Burkina</CardTitle>
-          <CardDescription>Système de gestion commerciale</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="email">Adresse email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="votre@email.com"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {message && (
-              <Alert>
-                <AlertDescription>{message}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading
-                ? // Replaced Loader2 with simple text
-                  "Envoi en cours..."
-                : "Envoyer le lien magique"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>Un lien de connexion sera envoyé à votre email</p>
-            <p className="mt-2">Pas de mot de passe requis!</p>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input id="password" name="password" type="password" required />
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          {state?.error && (
+            <Alert variant="destructive">
+              <ExclamationTriangleIcon className="h-4 w-4" />
+              <AlertTitle>Erreur de connexion</AlertTitle>
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          )}
+          <SubmitButton />
+        </form>
+      </CardContent>
+    </Card>
   )
 }

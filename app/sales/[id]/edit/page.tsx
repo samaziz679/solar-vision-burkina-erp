@@ -1,33 +1,28 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import EditSaleForm from "@/components/sales/edit-sale-form"
-import { getSaleById } from "@/lib/data/sales"
-import { updateSale } from "@/app/sales/actions"
+import { getSaleById } from "@/lib/data/sales" // Need to update getSaleById to fetch product and client details
 import { getProducts } from "@/lib/data/products"
-import { getClients } from "@/lib/data/clients"
+import { getClients } from "@/lib/data/clients" // Will be created later
+import EditSaleForm from "@/components/sales/edit-sale-form"
 import { notFound } from "next/navigation"
 
-export const dynamic = "force-dynamic"
+interface EditSalePageProps {
+  params: {
+    id: string
+  }
+}
 
-export default async function EditSalePage({ params }: { params: { id: string } }) {
+export default async function EditSalePage({ params }: EditSalePageProps) {
   const sale = await getSaleById(params.id)
   const products = await getProducts()
-  const clients = await getClients()
+  const clients = await getClients() // Uncomment when getClients is implemented
 
   if (!sale) {
-    notFound()
+    notFound() // Show 404 if sale not found
   }
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Modifier la vente</CardTitle>
-          <CardDescription>Mettez à jour les détails de la vente.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditSaleForm initialData={sale} products={products} clients={clients} action={updateSale} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Modifier Vente: {sale.products?.name || "Vente Inconnue"}</h1>
+      <EditSaleForm sale={sale} products={products} clients={clients} />
     </div>
   )
 }

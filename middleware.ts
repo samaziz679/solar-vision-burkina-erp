@@ -1,12 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/middleware"
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs" // Import directly
 
 export async function middleware(request: NextRequest) {
   try {
-    // This `try/catch` block is only here to avoid Next.js errors
-    // when deploying this example to vercel with `externalFlags: { enableUndici: true }`
-    // https://github.com/vercel/next.js/pull/53688
-    const { supabase, response } = createClient(request)
+    // Create a response object
+    const response = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+
+    // Create a Supabase client with the request and response
+    const supabase = createMiddlewareClient({ req: request, res: response })
 
     // Refresh session if expired - required for Server Components
     // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
@@ -14,6 +19,10 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (e) {
+    // This catch block is primarily for local development or specific edge cases
+    // where the middleware might throw before a response can be created.
+    // In production, Supabase auth helpers usually handle errors gracefully.
+    console.error("Middleware error:", e)
     return NextResponse.next({
       request: {
         headers: request.headers,

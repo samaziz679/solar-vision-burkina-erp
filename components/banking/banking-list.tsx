@@ -32,8 +32,8 @@ export default function BankingList({ bankEntries }: BankingListProps) {
   if (!bankEntries || bankEntries.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        <p>Aucune opération bancaire trouvée.</p>
-        <p className="text-sm mt-1">Ajoutez votre première opération pour commencer.</p>
+        <p>Aucune entrée bancaire trouvée.</p>
+        <p className="text-sm mt-1">Ajoutez votre première entrée pour commencer.</p>
       </div>
     )
   }
@@ -44,9 +44,9 @@ export default function BankingList({ bankEntries }: BankingListProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
-            <TableHead>Type</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead className="text-right">Montant</TableHead>
+            <TableHead>Montant</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -54,12 +54,14 @@ export default function BankingList({ bankEntries }: BankingListProps) {
           {bankEntries.map((entry) => (
             <TableRow key={entry.id}>
               <TableCell>{format(new Date(entry.date), "dd MMMM yyyy", { locale: fr })}</TableCell>
-              <TableCell>
-                <Badge variant={entry.type === "Dépôt" ? "default" : "secondary"}>{entry.type}</Badge>
-              </TableCell>
               <TableCell>{entry.description}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className={entry.type === "deposit" ? "text-green-600" : "text-red-600"}>
                 {entry.amount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
+              </TableCell>
+              <TableCell>
+                <Badge variant={entry.type === "deposit" ? "default" : "destructive"}>
+                  {entry.type === "deposit" ? "Dépôt" : "Retrait"}
+                </Badge>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
@@ -96,16 +98,14 @@ export function BankingListSkeleton() {
     <div className="space-y-4">
       <div className="grid grid-cols-5 gap-4">
         <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
-        <div className="h-6 bg-gray-200 rounded col-span-1" />
+        <div className="h-6 bg-gray-200 rounded col-span-2" />
         <div className="h-6 bg-gray-200 rounded col-span-1" />
         <div className="h-6 bg-gray-200 rounded col-span-1" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="grid grid-cols-5 gap-4">
           <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
-          <div className="h-8 bg-gray-100 rounded col-span-1" />
+          <div className="h-8 bg-gray-100 rounded col-span-2" />
           <div className="h-8 bg-gray-100 rounded col-span-1" />
           <div className="h-8 bg-gray-100 rounded col-span-1" />
         </div>

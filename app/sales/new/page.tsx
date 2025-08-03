@@ -1,26 +1,15 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import SaleForm from "@/components/sales/sale-form"
-import { addSale } from "@/app/sales/actions"
-import { getProducts } from "@/lib/data/products"
-import { getClients } from "@/lib/data/clients"
-
-export const dynamic = "force-dynamic"
+import { getProducts } from "@/lib/data/products" // To get products for selection
+import { getClients } from "@/lib/data/clients" // Import getClients
 
 export default async function NewSalePage() {
   const products = await getProducts()
-  const clients = await getClients()
+  const clients = await getClients() // Fetch clients and pass to SaleForm
 
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Enregistrer une nouvelle vente</CardTitle>
-          <CardDescription>Remplissez les détails de la nouvelle vente.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SaleForm action={addSale} products={products} clients={clients} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Enregistrer une nouvelle vente</h1>
+      <SaleForm products={products} clients={clients} /> {/* Pass products and clients */}
     </div>
   )
 }

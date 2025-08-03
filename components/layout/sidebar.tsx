@@ -1,315 +1,171 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
 import {
-  Activity,
-  CreditCard,
-  DollarSign,
-  Home,
+  LayoutDashboard,
   Package,
   ShoppingCart,
-  Users,
-  Package2,
-  Menu,
+  TrendingUp,
+  CreditCard,
   Banknote,
-  Truck,
+  Users,
+  LogOut,
+  Menu,
+  X,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { usePathname } from "next/navigation"
-import type { User } from "@supabase/supabase-js"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useRouter } from "next/navigation"
-import { toast } from "@/hooks/use-toast"
+import type { UserRole } from "@/lib/supabase/types"
 
 interface SidebarProps {
-  user: User | null
+  userRoles: UserRole[]
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+const menuItems = [
+  {
+    title: "Tableau de bord",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    roles: ["admin", "stock_manager", "commercial", "finance", "visitor", "seller"],
+  },
+  {
+    title: "Inventaire",
+    href: "/inventory",
+    icon: Package,
+    roles: ["admin", "stock_manager"],
+  },
+  {
+    title: "Ventes",
+    href: "/sales",
+    icon: ShoppingCart,
+    roles: ["admin", "commercial", "seller"],
+  },
+  {
+    title: "Achats",
+    href: "/purchases",
+    icon: TrendingUp,
+    roles: ["admin", "stock_manager"],
+  },
+  {
+    title: "Dépenses",
+    href: "/expenses",
+    icon: CreditCard,
+    roles: ["admin", "finance"],
+  },
+  {
+    title: "Banque",
+    href: "/banking",
+    icon: Banknote,
+    roles: ["admin", "finance"],
+  },
+  {
+    title: "Clients",
+    href: "/clients",
+    icon: Users,
+    roles: ["admin", "commercial", "seller", "visitor"],
+  },
+  {
+    title: "Fournisseurs",
+    href: "/suppliers",
+    icon: Users, // You can choose a different icon if you prefer, e.g., Truck or Factory
+    roles: ["admin", "stock_manager", "visitor"],
+  },
+]
+
+export default function Sidebar({ userRoles }: SidebarProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      toast({
-        title: "Erreur de déconnexion",
-        description: error.message,
-        variant: "destructive",
-      })
-    } else {
-      router.push("/login")
-    }
+    await supabase.auth.signOut()
+    window.location.href = "/login"
   }
 
+  const hasAccess = (requiredRoles: string[]) => {
+    return requiredRoles.some((role) => userRoles.includes(role as UserRole))
+  }
+
+  const filteredMenuItems = menuItems.filter((item) => hasAccess(item.roles))
+
   return (
-    <TooltipProvider>
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-        <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-          <Link
-            href="/dashboard"
-            className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-          >
-            <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-            <span className="sr-only">Solar Vision Burkina ERP</span>
-          </Link>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/dashboard"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname === "/dashboard" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Home className="h-5 w-5" />
-                <span className="sr-only">Tableau de bord</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Tableau de bord</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/inventory"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/inventory") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Package className="h-5 w-5" />
-                <span className="sr-only">Inventaire</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Inventaire</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/sales"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/sales") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <span className="sr-only">Ventes</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Ventes</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/purchases"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/purchases") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <CreditCard className="h-5 w-5" />
-                <span className="sr-only">Achats</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Achats</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/expenses"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/expenses") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Activity className="h-5 w-5" />
-                <span className="sr-only">Dépenses</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Dépenses</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/banking"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/banking") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Banknote className="h-5 w-5" />
-                <span className="sr-only">Banque</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Banque</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/clients"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/clients") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Users className="h-5 w-5" />
-                <span className="sr-only">Clients</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Clients</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/suppliers"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/suppliers") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Truck className="h-5 w-5" />
-                <span className="sr-only">Fournisseurs</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Fournisseurs</TooltipContent>
-          </Tooltip>
-        </nav>
-        <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-          {user ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="mt-auto flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                  onClick={handleLogout}
-                >
-                  <DollarSign className="h-5 w-5" />
-                  <span className="sr-only">Déconnexion</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Déconnexion</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
+    <>
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden fixed top-4 left-4 z-50"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </Button>
+
+      {/* Sidebar */}
+      <div
+        className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
+        lg:translate-x-0 lg:static lg:inset-0
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">SV</span>
+              </div>
+              <span className="font-bold text-lg">Solar Vision</span>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {filteredMenuItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+
+              return (
                 <Link
-                  href="/login"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                    ${
+                      isActive ? "bg-orange-100 text-orange-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }
+                  `}
+                  onClick={() => setIsOpen(false)}
                 >
-                  <DollarSign className="h-5 w-5" />
-                  <span className="sr-only">Connexion</span>
+                  <Icon className="w-5 h-5" />
+                  <span>{item.title}</span>
                 </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Connexion</TooltipContent>
-            </Tooltip>
-          )}
-        </nav>
-      </aside>
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button size="icon" variant="outline" className="sm:hidden bg-transparent">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Menu</span>
+              )
+            })}
+          </nav>
+
+          {/* User info and logout */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="mb-3 text-xs text-gray-500">Rôles: {userRoles.join(", ")}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Déconnexion
             </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="sm:max-w-xs">
-            <nav className="grid gap-6 text-lg font-medium">
-              <Link
-                href="/dashboard"
-                className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-              >
-                <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
-                <span className="sr-only">Solar Vision Burkina ERP</span>
-              </Link>
-              <Link
-                href="/dashboard"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Home className="h-5 w-5" />
-                Tableau de bord
-              </Link>
-              <Link
-                href="/inventory"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/inventory") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Package className="h-5 w-5" />
-                Inventaire
-                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">10</Badge>
-              </Link>
-              <Link
-                href="/sales"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/sales") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                Ventes
-              </Link>
-              <Link
-                href="/purchases"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/purchases") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <CreditCard className="h-5 w-5" />
-                Achats
-              </Link>
-              <Link
-                href="/expenses"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/expenses") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Activity className="h-5 w-5" />
-                Dépenses
-              </Link>
-              <Link
-                href="/banking"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/banking") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Banknote className="h-5 w-5" />
-                Banque
-              </Link>
-              <Link
-                href="/clients"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/clients") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Users className="h-5 w-5" />
-                Clients
-              </Link>
-              <Link
-                href="/suppliers"
-                className={`flex items-center gap-4 px-2.5 ${
-                  pathname.startsWith("/suppliers") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Truck className="h-5 w-5" />
-                Fournisseurs
-              </Link>
-              {user ? (
-                <Button variant="ghost" className="flex items-center gap-4 px-2.5" onClick={handleLogout}>
-                  <DollarSign className="h-5 w-5" />
-                  Déconnexion
-                </Button>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <DollarSign className="h-5 w-5" />
-                  Connexion
-                </Link>
-              )}
-            </nav>
-          </SheetContent>
-        </Sheet>
-      </header>
-    </TooltipProvider>
+          </div>
+        </div>
+      </div>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" onClick={() => setIsOpen(false)} />
+      )}
+    </>
   )
 }

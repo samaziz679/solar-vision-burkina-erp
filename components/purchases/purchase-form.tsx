@@ -4,11 +4,10 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import type { Purchase } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import type { Purchase } from "@/lib/supabase/types"
 import { useState, useEffect } from "react"
 
 interface PurchaseFormProps {
@@ -78,22 +77,14 @@ export default function PurchaseForm({ action, initialData }: PurchaseFormProps)
           required
         />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="payment_status">Statut de paiement</Label>
-        <Select name="payment_status" defaultValue={initialData?.payment_status || ""}>
-          <SelectTrigger id="payment_status">
-            <SelectValue placeholder="Sélectionner le statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Payé">Payé</SelectItem>
-            <SelectItem value="En attente">En attente</SelectItem>
-            <SelectItem value="Partiellement payé">Partiellement payé</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
       <div className="grid gap-2 md:col-span-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" placeholder="Notes sur l'achat" defaultValue={initialData?.notes || ""} />
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="Description de l'achat"
+          defaultValue={initialData?.description || ""}
+        />
       </div>
       {state?.error && (
         <Alert variant="destructive" className="md:col-span-2">

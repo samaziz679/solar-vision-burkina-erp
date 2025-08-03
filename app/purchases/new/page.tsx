@@ -1,12 +1,14 @@
-import dynamic from "next/dynamic"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
 
-import { createPurchase } from "@/app/purchases/actions"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
 
 const PurchaseForm = dynamic(() => import("@/components/purchases/purchase-form"), {
   ssr: false,
   loading: () => <div>Chargement du formulaire...</div>,
 })
+
+import { createPurchase } from "@/app/purchases/actions"
 
 export default function NewPurchasePage() {
   return (

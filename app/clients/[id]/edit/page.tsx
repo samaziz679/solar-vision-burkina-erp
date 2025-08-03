@@ -1,27 +1,21 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from "next/dynamic"
 import { getClientById } from "@/lib/data/clients"
-import { updateClient } from "@/app/clients/actions"
 
 const ClientForm = dynamic(() => import("@/components/clients/client-form"), {
   ssr: false,
   loading: () => <div>Chargement du formulaire...</div>,
 })
 
+import { updateClient } from "@/app/clients/actions"
+
 export default async function EditClientPage({ params }: { params: { id: string } }) {
   const client = await getClientById(params.id)
 
   if (!client) {
-    return (
-      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-        <Card className="w-full max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle>Client introuvable</CardTitle>
-            <CardDescription>Le client avec l'ID spécifié n'existe pas.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
+    return <div>Client non trouvé.</div>
   }
 
   return (

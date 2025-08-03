@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import type { Supplier } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import type { Supplier } from "@/lib/supabase/types"
 import { useState, useEffect } from "react"
 
 interface SupplierFormProps {
@@ -44,16 +44,8 @@ export default function SupplierForm({ action, initialData }: SupplierFormProps)
         <Input id="name" name="name" type="text" defaultValue={initialData?.name || ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="contact_person">Personne de contact</Label>
-        <Input id="contact_person" name="contact_person" type="text" defaultValue={initialData?.contact_person || ""} />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="phone">Téléphone</Label>
-        <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
+        <Label htmlFor="contact">Contact</Label>
+        <Input id="contact" name="contact" type="text" defaultValue={initialData?.contact || ""} />
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="address">Adresse</Label>

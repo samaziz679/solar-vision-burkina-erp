@@ -1,12 +1,14 @@
-import dynamic from "next/dynamic"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
 
-import { createSale } from "@/app/sales/actions"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dynamic from "next/dynamic"
 
 const SaleForm = dynamic(() => import("@/components/sales/sale-form"), {
   ssr: false,
   loading: () => <div>Chargement du formulaire...</div>,
 })
+
+import { createSale } from "@/app/sales/actions"
 
 export default function NewSalePage() {
   return (

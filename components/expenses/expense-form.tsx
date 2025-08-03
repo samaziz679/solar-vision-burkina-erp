@@ -4,11 +4,11 @@ import { useFormState, useFormStatus, type FormAction } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { Expense } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import type { Expense } from "@/lib/supabase/types"
 import { useState, useEffect } from "react"
 
 interface ExpenseFormProps {
@@ -45,27 +45,24 @@ export default function ExpenseForm({ action, initialData }: ExpenseFormProps) {
         <Input id="date" name="date" type="date" defaultValue={initialData?.date || ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
-      </div>
-      <div className="grid gap-2">
         <Label htmlFor="category">Catégorie</Label>
-        <Input id="category" name="category" type="text" defaultValue={initialData?.category || ""} />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="payment_method">Méthode de paiement</Label>
-        <Select name="payment_method" defaultValue={initialData?.payment_method || ""}>
-          <SelectTrigger id="payment_method">
-            <SelectValue placeholder="Sélectionner la méthode" />
+        <Select name="category" defaultValue={initialData?.category || ""}>
+          <SelectTrigger id="category">
+            <SelectValue placeholder="Sélectionner la catégorie" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Espèces">Espèces</SelectItem>
-            <SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem>
-            <SelectItem value="Chèque">Chèque</SelectItem>
-            <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+            <SelectItem value="Loyer">Loyer</SelectItem>
+            <SelectItem value="Salaires">Salaires</SelectItem>
+            <SelectItem value="Fournitures">Fournitures</SelectItem>
+            <SelectItem value="Transport">Transport</SelectItem>
+            <SelectItem value="Marketing">Marketing</SelectItem>
             <SelectItem value="Autre">Autre</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="amount">Montant</Label>
+        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount || ""} required />
       </div>
       <div className="grid gap-2 md:col-span-2">
         <Label htmlFor="description">Description</Label>

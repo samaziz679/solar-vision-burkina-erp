@@ -1,12 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
   try {
-    // This `try/catch` block is only for logging errors in `middleware.ts`
-    // in a Next.js app. In Next.js 13.5, it's a better practice to use
-    // Route Handlers and Server Actions (working with Supabase client
-    // in Server Components) instead.
+    // This `try/catch` block is only here to avoid Next.js errors
+    // when deploying this example to vercel with `externalFlags: { enableUndici: true }`
+    // https://github.com/vercel/next.js/pull/53688
     const { supabase, response } = createClient(request)
 
     // Refresh session if expired - required for Server Components
@@ -15,7 +14,6 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (e) {
-    console.error("Middleware error:", e)
     return NextResponse.next({
       request: {
         headers: request.headers,
@@ -31,8 +29,12 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - login (login page)
+     * - auth (auth callback)
+     * - setup-required (setup page)
+     * - api (api routes)
+     * - public (public assets)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|login|auth|setup-required|api|.*\\..*).*)",
   ],
 }

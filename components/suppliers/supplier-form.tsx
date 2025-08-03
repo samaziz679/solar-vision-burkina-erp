@@ -2,72 +2,125 @@
 
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { addSupplier, updateSupplier } from "@/app/suppliers/actions"
-import type { Tables } from "@/lib/supabase/types"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
-type Supplier = Tables<"suppliers">
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { createSupplier, updateSupplier } from "@/app/suppliers/actions"
+import type { Tables } from "@/lib/supabase/types"
+
+const formSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters."),
+  email: z.string().email("Invalid email address.").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+})
+
+type SupplierFormValues = z.infer<typeof formSchema>
 
 interface SupplierFormProps {
-  initialData?: Supplier
+  initialData?: Tables<"suppliers">
 }
 
 export function SupplierForm({ initialData }: SupplierFormProps) {
   const router = useRouter()
-  const [state, formAction, isPending] = useActionState(initialData ? updateSupplier : addSupplier, {
-    success: false,
-    message: "",
-    errors: undefined,
+  const [state, formAction] = useActionState(initialData ? updateSupplier : createSupplier, null)
+
+  const form = useForm<SupplierFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialData || {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+    },
   })
 
-  const handleSubmit = async (formData: FormData) => {
+  async function onSubmit(values: SupplierFormValues) {
+    const formData = new FormData()
+    formData.append("name", values.name)
+    formData.append("email", values.email || "")
+    formData.append("phone", values.phone || "")
+    formData.append("address", values.address || "")
+    if (initialData) {
+      formData.append("id", initialData.id)
+    }
+
     const result = await formAction(formData)
-    if (result.success) {
-      toast.success(result.message)
-      router.push("/suppliers")
+
+    if (result?.error) {
+      toast.error(result.error)
     } else {
-      toast.error(result.message)
+      toast.success(initialData ? "Supplier updated successfully!" : "Supplier created successfully!")
+      router.push("/suppliers")
+      router.refresh()
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{initialData ? "Edit Supplier" : "Add New Supplier"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={handleSubmit} className="grid gap-4">
-          {initialData && <input type="hidden" name="id" value={initialData.id} />}
-          <div>
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" name="name" defaultValue={initialData?.name || ""} required />
-            {state?.errors?.name && <p className="text-red-500 text-sm">{state.errors.name}</p>}
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
-            {state?.errors?.email && <p className="text-red-500 text-sm">{state.errors.email}</p>}
-          </div>
-          <div>
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
-            {state?.errors?.phone && <p className="text-red-500 text-sm">{state.errors.phone}</p>}
-          </div>
-          <div>
-            <Label htmlFor="address">Address</Label>
-            <Textarea id="address" name="address" defaultValue={initialData?.address || ""} rows={3} />
-            {state?.errors?.address && <p className="text-red-500 text-sm">{state.errors.address}</p>}
-          </div>
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Saving..." : initialData ? "Save Changes" : "Add Supplier"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full">
+          {initialData ? "Update Supplier" : "Create Supplier"}
+        </Button>
+      </form>
+    </Form>
   )
 }

@@ -1,107 +1,92 @@
 import { createClient } from "@/lib/supabase/server"
-import type { Tables } from "@/lib/supabase/types"
 
-type Product = Tables<"products">
-type Sale = Tables<"sales">
-type Purchase = Tables<"purchases">
-type Expense = Tables<"expenses">
-type BankingTransaction = Tables<"banking_transactions">
-
-export async function getDashboardData(userId: string) {
+export async function getDashboardSummary(userId: string) {
   const supabase = createClient()
 
-  // Fetch total products
-  const { count: totalProducts, error: productsError } = await supabase
+  // Total Products
+  const { count: productCount, error: productError } = await supabase
     .from("products")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
 
-  if (productsError) {
-    console.error("Error fetching total products:", productsError)
-  }
+  if (productError) console.error("Error fetching product count:", productError)
 
-  // Fetch total sales amount
-  const { data: sales, error: salesError } = await supabase.from("sales").select("amount").eq("user_id", userId)
-
-  const totalSalesAmount = sales?.reduce((sum, sale) => sum + sale.amount, 0) || 0
-
-  if (salesError) {
-    console.error("Error fetching total sales amount:", salesError)
-  }
-
-  // Fetch total purchases amount
-  const { data: purchases, error: purchasesError } = await supabase
-    .from("purchases")
-    .select("amount")
+  // Total Sales
+  const { data: salesData, error: salesError } = await supabase
+    .from("sales")
+    .select("total_price")
     .eq("user_id", userId)
 
-  const totalPurchasesAmount = purchases?.reduce((sum, purchase) => sum + purchase.amount, 0) || 0
+  if (salesError) console.error("Error fetching sales data:", salesError)
+  const totalSales = salesData?.reduce((sum, sale) => sum + sale.total_price, 0) || 0
 
-  if (purchasesError) {
-    console.error("Error fetching total purchases amount:", purchasesError)
-  }
-
-  // Fetch total expenses amount
-  const { data: expenses, error: expensesError } = await supabase
+  // Total Expenses
+  const { data: expensesData, error: expensesError } = await supabase
     .from("expenses")
     .select("amount")
     .eq("user_id", userId)
 
-  const totalExpensesAmount = expenses?.reduce((sum, expense) => sum + expense.amount, 0) || 0
+  if (expensesError) console.error("Error fetching expenses data:", expensesError)
+  const totalExpenses = expensesData?.reduce((sum, expense) => sum + expense.amount, 0) || 0
 
-  if (expensesError) {
-    console.error("Error fetching total expenses amount:", expensesError)
-  }
-
-  // Fetch recent sales (e.g., last 5)
+  // Recent Sales (last 5)
   const { data: recentSales, error: recentSalesError } = await supabase
     .from("sales")
     .select("*, products(name), clients(name)")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+    .order("sale_date", { ascending: false })
     .limit(5)
 
-  if (recentSalesError) {
-    console.error("Error fetching recent sales:", recentSalesError)
-  }
+  if (recentSalesError) console.error("Error fetching recent sales:", recentSalesError)
 
-  // Fetch low stock products (e.g., stock < 10)
+  // Low Stock Products (quantity < 10)
   const { data: lowStockProducts, error: lowStockError } = await supabase
     .from("products")
     .select("*")
     .eq("user_id", userId)
-    .lt("stock", 10)
-    .order("stock", { ascending: true })
+    .lt("quantity_in_stock", 10)
+    .order("quantity_in_stock", { ascending: true })
     .limit(5)
 
-  if (lowStockError) {
-    console.error("Error fetching low stock products:", lowStockError)
-  }
-
-  // Fetch banking balance (simple sum of income - expense transactions)
-  const { data: bankingTransactions, error: bankingError } = await supabase
-    .from("banking_transactions")
-    .select("amount, type")
-    .eq("user_id", userId)
-
-  let currentBalance = 0
-  if (bankingTransactions) {
-    currentBalance = bankingTransactions.reduce((sum, transaction) => {
-      return transaction.type === "income" ? sum + transaction.amount : sum - transaction.amount
-    }, 0)
-  }
-
-  if (bankingError) {
-    console.error("Error fetching banking transactions for balance:", bankingError)
-  }
+  if (lowStockError) console.error("Error fetching low stock products:", lowStockError)
 
   return {
-    totalProducts: totalProducts || 0,
-    totalSalesAmount,
-    totalPurchasesAmount,
-    totalExpensesAmount,
+    totalProducts: productCount || 0,
+    totalSales,
+    totalExpenses,
     recentSales: recentSales || [],
     lowStockProducts: lowStockProducts || [],
-    currentBalance,
   }
+}
+
+export async function getSalesChartData(userId: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("sales")
+    .select("sale_date, total_price")
+    .eq("user_id", userId)
+    .order("sale_date", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching sales chart data:", error)
+    return []
+  }
+
+  const monthlySales: { [key: string]: number } = {}
+
+  data.forEach((sale) => {
+    const month = new Date(sale.sale_date).toLocaleString("en-US", {
+      month: "short",
+      year: "numeric",
+    })
+    if (!monthlySales[month]) {
+      monthlySales[month] = 0
+    }
+    monthlySales[month] += sale.total_price
+  })
+
+  return Object.keys(monthlySales).map((month) => ({
+    name: month,
+    Sales: monthlySales[month],
+  }))
 }

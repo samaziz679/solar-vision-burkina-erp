@@ -5,86 +5,93 @@ CREATE TYPE transaction_type AS ENUM ('income', 'expense');
 
 -- Create 'users' table
 CREATE TABLE users (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    name VARCHAR(255),
-    email VARCHAR(255) UNIQUE
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    name TEXT,
+    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT users_email_key UNIQUE (email)
 );
 
 -- Create 'products' table
 CREATE TABLE products (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    price NUMERIC(10, 2) NOT NULL,
-    stock INT NOT NULL,
     category VARCHAR(255),
+    cost_price DOUBLE PRECISION NOT NULL,
+    selling_price DOUBLE PRECISION NOT NULL,
+    quantity_in_stock INT NOT NULL DEFAULT 0,
     image_url TEXT -- Added image_url column
 );
 
 -- Create 'clients' table
 CREATE TABLE clients (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    phone VARCHAR(50),
+    email TEXT,
+    phone TEXT,
     address TEXT
 );
 
 -- Create 'suppliers' table
 CREATE TABLE suppliers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    phone VARCHAR(50),
+    email TEXT,
+    phone TEXT,
     address TEXT
 );
 
 -- Create 'sales' table
 CREATE TABLE sales (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    product_id UUID REFERENCES public.products(id) ON DELETE RESTRICT,
-    client_id UUID REFERENCES public.clients(id) ON DELETE RESTRICT,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    product_id TEXT REFERENCES public.products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    client_id TEXT REFERENCES public.clients(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     quantity INT NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL
+    total_price DOUBLE PRECISION NOT NULL,
+    sale_date TIMESTAMP(3) NOT NULL
 );
 
 -- Create 'purchases' table
 CREATE TABLE purchases (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    product_id UUID REFERENCES public.products(id) ON DELETE RESTRICT,
-    supplier_id UUID REFERENCES public.suppliers(id) ON DELETE RESTRICT,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    product_id TEXT REFERENCES public.products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    supplier_id TEXT REFERENCES public.suppliers(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     quantity INT NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL
+    total_cost DOUBLE PRECISION NOT NULL,
+    purchase_date TIMESTAMP(3) NOT NULL
 );
 
 -- Create 'expenses' table
 CREATE TABLE expenses (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     date DATE NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
     category VARCHAR(255),
     description TEXT
 );
 
 -- Create 'banking_transactions' table
 CREATE TABLE banking_transactions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     type transaction_type NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
     description TEXT
 );
 

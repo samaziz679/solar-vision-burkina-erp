@@ -2,88 +2,165 @@
 
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { addProduct, updateProduct } from "@/app/inventory/actions"
-import type { Tables } from "@/lib/supabase/types"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
-type Product = Tables<"products">
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { createProduct } from "@/app/inventory/actions"
 
-interface ProductFormProps {
-  initialData?: Product
-}
+const formSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters."),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  cost_price: z.coerce.number().min(0.01, "Cost price must be positive."),
+  selling_price: z.coerce.number().min(0.01, "Selling price must be positive."),
+  quantity_in_stock: z.coerce.number().min(0, "Quantity cannot be negative."),
+  image_url: z.string().url("Invalid URL").optional().or(z.literal("")),
+})
 
-export function ProductForm({ initialData }: ProductFormProps) {
+type ProductFormValues = z.infer<typeof formSchema>
+
+export function ProductForm() {
   const router = useRouter()
-  const [state, formAction, isPending] = useActionState(initialData ? updateProduct : addProduct, {
-    success: false,
-    message: "",
-    errors: undefined,
+  const [state, formAction] = useActionState(createProduct, null)
+
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      category: "",
+      cost_price: 0,
+      selling_price: 0,
+      quantity_in_stock: 0,
+      image_url: "",
+    },
   })
 
-  const handleSubmit = async (formData: FormData) => {
+  async function onSubmit(values: ProductFormValues) {
+    const formData = new FormData()
+    formData.append("name", values.name)
+    formData.append("description", values.description || "")
+    formData.append("category", values.category || "")
+    formData.append("cost_price", values.cost_price.toString())
+    formData.append("selling_price", values.selling_price.toString())
+    formData.append("quantity_in_stock", values.quantity_in_stock.toString())
+    formData.append("image_url", values.image_url || "")
+
     const result = await formAction(formData)
-    if (result.success) {
-      toast.success(result.message)
-      router.push("/inventory")
+
+    if (result?.error) {
+      toast.error(result.error)
     } else {
-      toast.error(result.message)
+      toast.success("Product created successfully!")
+      router.push("/inventory")
+      router.refresh()
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{initialData ? "Edit Product" : "Add New Product"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={handleSubmit} className="grid gap-4">
-          {initialData && <input type="hidden" name="id" value={initialData.id} />}
-          <div>
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" name="name" defaultValue={initialData?.name || ""} required />
-            {state?.errors?.name && <p className="text-red-500 text-sm">{state.errors.name}</p>}
-          </div>
-          <div>
-            <Label htmlFor="price">Price</Label>
-            <Input id="price" name="price" type="number" step="0.01" defaultValue={initialData?.price || ""} required />
-            {state?.errors?.price && <p className="text-red-500 text-sm">{state.errors.price}</p>}
-          </div>
-          <div>
-            <Label htmlFor="stock">Stock</Label>
-            <Input id="stock" name="stock" type="number" defaultValue={initialData?.stock || ""} required />
-            {state?.errors?.stock && <p className="text-red-500 text-sm">{state.errors.stock}</p>}
-          </div>
-          <div>
-            <Label htmlFor="category">Category</Label>
-            <Input id="category" name="category" defaultValue={initialData?.category || ""} />
-            {state?.errors?.category && <p className="text-red-500 text-sm">{state.errors.category}</p>}
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" defaultValue={initialData?.description || ""} rows={3} />
-            {state?.errors?.description && <p className="text-red-500 text-sm">{state.errors.description}</p>}
-          </div>
-          {/* Temporarily removed image_url field for debugging */}
-          {/* <div>
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input
-              id="image_url"
-              name="image_url"
-              type="url"
-              defaultValue={initialData?.image_url || ""}
-            />
-            {state?.errors?.image_url && <p className="text-red-500 text-sm">{state.errors.image_url}</p>}
-          </div> */}
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Saving..." : initialData ? "Save Changes" : "Add Product"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="cost_price"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cost Price</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="selling_price"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Selling Price</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="quantity_in_stock"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantity in Stock</FormLabel>
+              <FormControl>
+                <Input type="number" step="1" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="image_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image URL</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full">
+          Create Product
+        </Button>
+      </form>
+    </Form>
   )
 }

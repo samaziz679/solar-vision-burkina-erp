@@ -1,9 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
-import type { Tables } from "@/lib/supabase/types"
 
-type Expense = Tables<"expenses">
-
-export async function getExpenses(userId: string): Promise<Expense[]> {
+export async function getExpenses(userId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("expenses")
@@ -18,12 +15,12 @@ export async function getExpenses(userId: string): Promise<Expense[]> {
   return data
 }
 
-export async function getExpenseById(id: string, userId: string): Promise<Expense | null> {
+export async function getExpenseById(id: string, userId: string) {
   const supabase = createClient()
   const { data, error } = await supabase.from("expenses").select("*").eq("id", id).eq("user_id", userId).single()
 
   if (error) {
-    console.error("Error fetching expense by ID:", error)
+    console.error("Error fetching expense:", error)
     return null
   }
   return data

@@ -3,5 +3,5 @@
 import { useMediaQuery } from "@uidotdev/usehooks"
 
 export function useMobile() {
-  return useMediaQuery("(max-width: 768px)")
+  return useMediaQuery("only screen and (max-width : 768px)")
 }

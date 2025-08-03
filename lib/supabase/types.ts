@@ -10,6 +10,7 @@ export type Database = {
           description: string | null
           id: string
           type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -18,6 +19,7 @@ export type Database = {
           description?: string | null
           id?: string
           type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -26,6 +28,7 @@ export type Database = {
           description?: string | null
           id?: string
           type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -46,6 +49,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -55,6 +59,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -64,6 +69,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -84,6 +90,7 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -93,6 +100,7 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -102,6 +110,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -117,35 +126,41 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          cost_price: number
           created_at: string
           description: string | null
           id: string
           image_url: string | null
           name: string
-          price: number
-          stock: number
+          quantity_in_stock: number
+          selling_price: number
+          updated_at: string
           user_id: string
         }
         Insert: {
           category?: string | null
+          cost_price: number
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
           name: string
-          price: number
-          stock: number
+          quantity_in_stock?: number
+          selling_price: number
+          updated_at?: string
           user_id: string
         }
         Update: {
           category?: string | null
+          cost_price?: number
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
           name?: string
-          price?: number
-          stock?: number
+          quantity_in_stock?: number
+          selling_price?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -160,30 +175,36 @@ export type Database = {
       }
       purchases: {
         Row: {
-          amount: number
           created_at: string
           id: string
           product_id: string
+          purchase_date: string
           quantity: number
           supplier_id: string
+          total_cost: number
+          updated_at: string
           user_id: string
         }
         Insert: {
-          amount: number
           created_at?: string
           id?: string
           product_id: string
+          purchase_date: string
           quantity: number
           supplier_id: string
+          total_cost: number
+          updated_at?: string
           user_id: string
         }
         Update: {
-          amount?: number
           created_at?: string
           id?: string
           product_id?: string
+          purchase_date?: string
           quantity?: number
           supplier_id?: string
+          total_cost?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -212,30 +233,36 @@ export type Database = {
       }
       sales: {
         Row: {
-          amount: number
           client_id: string
           created_at: string
           id: string
           product_id: string
           quantity: number
+          sale_date: string
+          total_price: number
+          updated_at: string
           user_id: string
         }
         Insert: {
-          amount: number
           client_id: string
           created_at?: string
           id?: string
           product_id: string
           quantity: number
+          sale_date: string
+          total_price: number
+          updated_at?: string
           user_id: string
         }
         Update: {
-          amount?: number
           client_id?: string
           created_at?: string
           id?: string
           product_id?: string
           quantity?: number
+          sale_date?: string
+          total_price?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -270,6 +297,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -279,6 +307,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -288,6 +317,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -302,29 +332,27 @@ export type Database = {
       }
       users: {
         Row: {
-          email: string | null
+          created_at: string
+          email: string
           id: string
           name: string | null
+          updated_at: string
         }
         Insert: {
-          email?: string | null
-          id: string
-          name?: string | null
-        }
-        Update: {
-          email?: string | null
+          created_at?: string
+          email: string
           id?: string
           name?: string | null
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -342,10 +370,10 @@ export type Database = {
   }
 }
 
+type PublicSchema = Database[Extract<keyof Database, "public">]
+
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
-    | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] & PublicSchema["Views"]) | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
@@ -357,8 +385,8 @@ export type Tables<
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] & Database["public"]["Views"])
-    ? (Database["public"]["Tables"] & Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    ? (PublicSchema["Tables"] & PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -366,7 +394,7 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof PublicSchema["Tables"] | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -376,8 +404,8 @@ export type TablesInsert<
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -385,7 +413,7 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof PublicSchema["Tables"] | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -395,8 +423,8 @@ export type TablesUpdate<
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
-    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -404,12 +432,12 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends keyof Database["public"]["Enums"] | { schema: keyof Database },
+  PublicEnumNameOrOptions extends keyof PublicSchema["Enums"] | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
-    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never

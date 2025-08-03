@@ -53,13 +53,15 @@ export async function logout() {
   redirect("/login")
 }
 
-export async function getAuthUser() {
+export async function getUser() {
   const supabase = createClient()
-  const { data, error } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (error || !data?.user) {
+  if (!user) {
     redirect("/login")
   }
 
-  return data.user
+  return user
 }

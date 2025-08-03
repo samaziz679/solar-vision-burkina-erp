@@ -1,60 +1,44 @@
 # Solar Vision Burkina ERP
 
-This is a comprehensive Enterprise Resource Planning (ERP) system designed for Solar Vision Burkina, focusing on managing inventory, sales, purchases, clients, suppliers, expenses, and banking transactions.
+This is a comprehensive Enterprise Resource Planning (ERP) system designed for Solar Vision Burkina, a company specializing in solar energy solutions. The application helps manage various aspects of the business, including inventory, sales, purchases, clients, suppliers, expenses, and banking transactions.
 
 ## Features
 
 *   **User Authentication:** Secure login and user management using Supabase Auth.
-*   **Dashboard:** Overview of key business metrics (total products, sales, purchases, expenses, banking balance, recent activities, low stock alerts).
-*   **Inventory Management:**
-    *   Add, view, edit, and delete products.
-    *   Track product stock levels.
-*   **Sales Management:**
-    *   Record new sales transactions.
-    *   View and manage sales history.
-*   **Purchases Management:**
-    *   Record new purchase transactions.
-    *   Track purchases from suppliers.
-*   **Client Management:**
-    *   Maintain a database of clients.
-    *   View client details and their purchase history.
-*   **Supplier Management:**
-    *   Manage supplier information.
-    *   Track purchases made from each supplier.
-*   **Expense Tracking:**
-    *   Log and categorize business expenses.
-    *   Monitor spending.
-*   **Banking Transactions:**
-    *   Record income and expense transactions.
-    *   View banking history and current balance.
-*   **Responsive Design:** Optimized for various screen sizes.
+*   **Dashboard:** Overview of key business metrics, recent activities, and low stock alerts.
+*   **Inventory Management:** Track products, their stock levels, cost prices, and selling prices.
+*   **Sales Management:** Record sales transactions, link to clients and products, and track revenue.
+*   **Purchases Management:** Record purchase transactions, link to suppliers and products, and track costs.
+*   **Client Management:** Maintain a database of clients with their contact information.
+*   **Supplier Management:** Maintain a database of suppliers with their contact information.
+*   **Expense Tracking:** Log and categorize business expenses.
+*   **Banking Transactions:** Record income and expense transactions to manage cash flow.
+*   **Responsive Design:** Optimized for various screen sizes, from desktop to mobile.
 
 ## Technologies Used
 
-*   **Next.js 14 (App Router):** React framework for building the web application.
+*   **Next.js 14:** React framework for building the web application (App Router).
 *   **React:** Frontend library for building user interfaces.
-*   **TypeScript:** Strongly typed JavaScript.
 *   **Tailwind CSS:** Utility-first CSS framework for styling.
 *   **shadcn/ui:** Reusable UI components built with Radix UI and Tailwind CSS.
-*   **Supabase:** Backend-as-a-Service for database (PostgreSQL), authentication, and real-time subscriptions.
-*   **Vercel:** Platform for deployment.
-*   **Zod:** Schema validation library.
-*   **Lucide React:** Icon library.
-*   **Recharts:** Charting library for data visualization on the dashboard.
-*   **Sonner:** Toast notifications.
+*   **Supabase:** Backend-as-a-Service for database (PostgreSQL), authentication, and storage.
+*   **Zod:** Schema declaration and validation library.
+*   **React Hook Form:** Forms library with easy validation integration.
+*   **Lucide React:** Open-source icon library.
+*   **Recharts:** Composable charting library built with React and D3.
 
 ## Getting Started
 
 ### Prerequisites
 
 *   Node.js (v18.x or later)
-*   npm or Yarn
-*   Git
+*   npm or yarn
+*   A Supabase project
 
 ### 1. Clone the Repository
 
 \`\`\`bash
-git clone <your-repository-url>
+git clone https://github.com/samaziz679/solar-vision-burkina-erp.git
 cd solar-vision-burkina-erp
 \`\`\`
 
@@ -69,10 +53,8 @@ yarn install
 ### 3. Set up Supabase
 
 1.  **Create a new Supabase project:** Go to [Supabase](https://supabase.com/) and create a new project.
-2.  **Get your API keys:**
-    *   Navigate to `Project Settings` -> `API`.
-    *   Copy your `Project URL` and `anon public` key.
-3.  **Set up Environment Variables:** Create a `.env.local` file in the root of your project and add the following:
+2.  **Get your Project URL and Anon Key:** You can find these in your project settings under `API`.
+3.  **Configure Environment Variables:** Create a `.env.local` file in the root of your project and add the following:
 
     \`\`\`env
     NEXT_PUBLIC_SUPABASE_URL="YOUR_SUPABASE_URL"
@@ -80,15 +62,14 @@ yarn install
     NEXT_PUBLIC_SITE_URL="http://localhost:3000" # For local development
     \`\`\`
 
-    Replace `YOUR_SUPABASE_URL` and `YOUR_SUPABASE_ANON_KEY` with your actual Supabase project details.
-4.  **Run SQL Migrations:**
-    *   In your Supabase project, go to `SQL Editor`.
-    *   Run the SQL script located at `scripts/supabase_schema.sql` (or `scripts/complete_supabase_schema.sql` for the full schema) to set up your database tables and Row Level Security (RLS) policies.
-    *   Ensure you enable the `uuid-ossp` extension in your Supabase project (Database -> Extensions -> search for `uuid-ossp` and enable it).
-    *   (Optional) Run `scripts/insert_initial_stock.sql` to populate some initial product data. Remember to replace `'YOUR_USER_ID'` with an actual user ID from your `auth.users` table if you have one, or insert a dummy one for testing.
-5.  **Configure Auth Redirect URLs:**
-    *   In your Supabase project, go to `Authentication` -> `URL Configuration`.
-    *   Add `http://localhost:3000` to the "Redirect URLs" list. When deploying to Vercel, you'll also add your Vercel deployment URL here.
+4.  **Run SQL Migrations:** Use the SQL scripts in the `scripts/` directory to set up your database schema. You can run these directly in the Supabase SQL Editor.
+    *   `scripts/supabase_schema.sql`: Creates all necessary tables and enums.
+    *   `scripts/complete_supabase_schema_corrected.sql`: Applies corrections for `updated_at` timestamps.
+    *   `scripts/complete_supabase_schema_final_correction.sql`: Further ensures `NOT NULL` constraints and triggers.
+    *   `scripts/complete_supabase_schema_final_correction_v2.sql`: Final version of schema corrections.
+    *   `scripts/insert_initial_stock.sql` / `scripts/insert_initial_stock_corrected.sql`: Populates initial data (optional).
+
+    **Important:** After running the schema scripts, ensure you enable Row Level Security (RLS) for all tables in your Supabase dashboard under "Authentication" -> "Policies". Then, create policies to allow `select`, `insert`, `update`, and `delete` operations based on `user_id` for authenticated users.
 
 ### 4. Run the Development Server
 
@@ -100,19 +81,13 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-## Project Structure
+## Deployment
 
-*   `app/`: Next.js App Router pages, layouts, and API routes.
-*   `components/`: Reusable React components, including `shadcn/ui` components.
-*   `lib/`: Utility functions, Supabase client setup, and data fetching logic.
-*   `public/`: Static assets.
-*   `scripts/`: SQL scripts for database schema and seeding.
-*   `styles/`: Global CSS.
-*   `hooks/`: Custom React hooks.
+This application is designed for deployment on [Vercel](https://vercel.com/). Refer to the `DEPLOYMENT_GUIDE.md` file for detailed instructions on deploying this project to Vercel.
 
 ## Contributing
 
-Feel free to fork the repository and contribute.
+Feel free to fork the repository, make improvements, and submit pull requests.
 
 ## License
 

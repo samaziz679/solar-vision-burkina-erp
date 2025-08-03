@@ -5,29 +5,20 @@ set -e
 
 echo "Starting Vercel deployment script..."
 
-# Install dependencies
-echo "Installing dependencies..."
-npm install
+# Install Vercel CLI globally
+echo "Installing Vercel CLI..."
+npm install --global vercel@latest
 
-# Link the project to Vercel (if not already linked)
-# This command will prompt you to select an existing project or create a new one.
-# It will also set up the .vercel directory with project metadata.
-echo "Linking project to Vercel..."
-vercel link --yes
+# Pull environment variables for the preview environment
+echo "Pulling environment variables for preview environment..."
+vercel pull --yes --environment=preview --token=${VERCEL_TOKEN}
 
-# Pull environment variables from Vercel
-# This ensures that local builds use the same environment variables as production.
-echo "Pulling environment variables from Vercel..."
-vercel env pull .env.local
+# Build the project
+echo "Building the project..."
+vercel build
 
-# Run the build command
-echo "Running build command..."
-npm run build
+# Deploy the prebuilt project
+echo "Deploying the prebuilt project..."
+vercel deploy --prebuilt
 
-# Deploy the application to Vercel
-# The --prod flag deploys to the production environment.
-# The --prebuilt flag tells Vercel to use the already built output.
-echo "Deploying to Vercel production..."
-vercel --prod --prebuilt
-
-echo "Deployment script finished!"
+echo "Vercel deployment script finished."

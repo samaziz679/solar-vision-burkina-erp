@@ -1,15 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
-import type { Tables } from "@/lib/supabase/types"
 
-type Purchase = Tables<"purchases">
-
-export async function getPurchases(userId: string): Promise<Purchase[]> {
+export async function getPurchases(userId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("purchases")
     .select("*, products(name), suppliers(name)")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+    .order("purchase_date", { ascending: false })
 
   if (error) {
     console.error("Error fetching purchases:", error)
@@ -18,7 +15,7 @@ export async function getPurchases(userId: string): Promise<Purchase[]> {
   return data
 }
 
-export async function getPurchaseById(id: string, userId: string): Promise<Purchase | null> {
+export async function getPurchaseById(id: string, userId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("purchases")
@@ -28,7 +25,7 @@ export async function getPurchaseById(id: string, userId: string): Promise<Purch
     .single()
 
   if (error) {
-    console.error("Error fetching purchase by ID:", error)
+    console.error("Error fetching purchase:", error)
     return null
   }
   return data

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/supabase/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
+import { useState, useEffect } from "react" // Import useState and useEffect
 
 interface ProductFormProps {
   action: FormAction
@@ -25,7 +26,16 @@ function SubmitButton() {
 }
 
 export default function ProductForm({ action, initialData }: ProductFormProps) {
+  const [isClient, setIsClient] = useState(false) // State to track if component is mounted on client
   const [state, formAction] = useFormState(action, {})
+
+  useEffect(() => {
+    setIsClient(true) // Set to true once component mounts on client
+  }, [])
+
+  if (!isClient) {
+    return <div>Chargement du formulaire...</div> // Render a loading state on the server
+  }
 
   return (
     <form action={formAction} className="grid gap-4 md:grid-cols-2">

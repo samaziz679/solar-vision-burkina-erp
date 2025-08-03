@@ -28,6 +28,7 @@ const nextConfig = {
       allowedOrigins: ["localhost:3000", "*.vercel.app"],
     },
   },
+  // No 'output' configuration here to allow for hybrid rendering (SSR for dynamic pages, SSG for static)
 }
 
 module.exports = nextConfig

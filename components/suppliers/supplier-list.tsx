@@ -6,25 +6,20 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
+import { DeleteSupplierDialog } from "./delete-supplier-dialog"
 import type { Supplier } from "@/lib/supabase/types"
-import DeleteSupplierDialog from "./delete-supplier-dialog"
 
 interface SupplierListProps {
   suppliers: Supplier[]
 }
 
-export default function SupplierList({ suppliers }: SupplierListProps) {
+export function SupplierList({ suppliers }: SupplierListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
 
-  const openDeleteDialog = (id: string) => {
+  const handleDeleteClick = (id: string) => {
     setSelectedSupplierId(id)
     setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setSelectedSupplierId(null)
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -32,11 +27,11 @@ export default function SupplierList({ suppliers }: SupplierListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nom</TableHead>
-            <TableHead>Personne de Contact</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Contact Person</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Téléphone</TableHead>
-            <TableHead>Adresse</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Address</TableHead>
             <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -51,16 +46,16 @@ export default function SupplierList({ suppliers }: SupplierListProps) {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/suppliers/${supplier.id}/edit`}>Modifier</Link>
+                      <Link href={`/suppliers/${supplier.id}/edit`}>Edit</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDeleteDialog(supplier.id)}>Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(supplier.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -70,7 +65,11 @@ export default function SupplierList({ suppliers }: SupplierListProps) {
       </Table>
 
       {selectedSupplierId && (
-        <DeleteSupplierDialog supplierId={selectedSupplierId} isOpen={isDeleteDialogOpen} onClose={closeDeleteDialog} />
+        <DeleteSupplierDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          supplierId={selectedSupplierId}
+        />
       )}
     </>
   )

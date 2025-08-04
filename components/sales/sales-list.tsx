@@ -6,25 +6,21 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/utils"
+import { DeleteSaleDialog } from "./delete-sale-dialog"
 import type { Sale } from "@/lib/supabase/types"
-import DeleteSaleDialog from "./delete-sale-dialog"
 
 interface SalesListProps {
   sales: Sale[]
 }
 
-export default function SalesList({ sales }: SalesListProps) {
+export function SalesList({ sales }: SalesListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null)
 
-  const openDeleteDialog = (id: string) => {
+  const handleDeleteClick = (id: string) => {
     setSelectedSaleId(id)
     setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setSelectedSaleId(null)
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -32,37 +28,39 @@ export default function SalesList({ sales }: SalesListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Produit</TableHead>
             <TableHead>Client</TableHead>
-            <TableHead>Quantité</TableHead>
-            <TableHead>Prix Unitaire</TableHead>
-            <TableHead>Montant Total</TableHead>
-            <TableHead>Date de Vente</TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead>Quantity</TableHead>
+            <TableHead>Unit Price</TableHead>
+            <TableHead>Total</TableHead>
+            <TableHead>Sale Date</TableHead>
+            <TableHead>Notes</TableHead>
             <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sales.map((sale) => (
             <TableRow key={sale.id}>
-              <TableCell className="font-medium">{sale.products?.name || "N/A"}</TableCell>
               <TableCell>{sale.clients?.name || "N/A"}</TableCell>
+              <TableCell>{sale.products?.name || "N/A"}</TableCell>
               <TableCell>{sale.quantity}</TableCell>
-              <TableCell>{sale.unit_price.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}</TableCell>
-              <TableCell>{sale.total_amount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}</TableCell>
-              <TableCell>{new Date(sale.sale_date).toLocaleDateString("fr-FR")}</TableCell>
+              <TableCell>{formatCurrency(sale.unit_price)}</TableCell>
+              <TableCell>{formatCurrency(sale.quantity * sale.unit_price)}</TableCell>
+              <TableCell>{new Date(sale.sale_date).toLocaleDateString()}</TableCell>
+              <TableCell>{sale.notes}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/sales/${sale.id}/edit`}>Modifier</Link>
+                      <Link href={`/sales/${sale.id}/edit`}>Edit</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDeleteDialog(sale.id)}>Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(sale.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -72,7 +70,7 @@ export default function SalesList({ sales }: SalesListProps) {
       </Table>
 
       {selectedSaleId && (
-        <DeleteSaleDialog saleId={selectedSaleId} isOpen={isDeleteDialogOpen} onClose={closeDeleteDialog} />
+        <DeleteSaleDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} saleId={selectedSaleId} />
       )}
     </>
   )

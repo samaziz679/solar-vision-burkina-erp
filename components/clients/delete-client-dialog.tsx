@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,44 +14,36 @@ import { deleteClient } from "@/app/clients/actions"
 import { toast } from "sonner"
 
 interface DeleteClientDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   clientId: string
-  isOpen: boolean
-  onClose: () => void
 }
 
-export default function DeleteClientDialog({ clientId, isOpen, onClose }: DeleteClientDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
-
+export function DeleteClientDialog({ open, onOpenChange, clientId }: DeleteClientDialogProps) {
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteClient(clientId)
-    if (result.message) {
-      toast.success(result.message)
-      onClose()
-    } else {
-      toast.error("Échec de la suppression du client.", {
-        description: "Une erreur est survenue lors de la suppression. Veuillez réessayer.",
+    try {
+      await deleteClient(clientId)
+      toast.success("Client deleted successfully.")
+      onOpenChange(false)
+    } catch (error: any) {
+      toast.error("Failed to delete client.", {
+        description: error.message || "An unexpected error occurred.",
       })
     }
-    setIsDeleting(false)
   }
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce client de votre base de données.
+            This action cannot be undone. This will permanently delete your client.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} disabled={isDeleting}>
-            Annuler
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

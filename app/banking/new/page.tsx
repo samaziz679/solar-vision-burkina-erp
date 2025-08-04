@@ -1,9 +1,10 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BankingForm } from "@/components/banking/banking-form"
 import { getBankingAccounts } from "@/lib/data/banking"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
-export default async function NewBankingPage() {
+export default async function NewBankingTransactionPage() {
   const supabase = createClient()
   const {
     data: { user },
@@ -15,12 +16,19 @@ export default async function NewBankingPage() {
 
   const bankingAccounts = await getBankingAccounts(user.id)
 
+  if (bankingAccounts.length === 0) {
+    // Redirect to a page where they can create an account first
+    redirect("/setup-required?message=Please create at least one banking account before adding transactions.")
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Add New Transaction</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle>New Banking Transaction</CardTitle>
+      </CardHeader>
+      <CardContent>
         <BankingForm bankingAccounts={bankingAccounts} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

@@ -1,15 +1,12 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { EditSaleForm } from "@/components/sales/edit-sale-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSaleById } from "@/lib/data/sales"
+import { EditSaleForm } from "@/components/sales/edit-sale-form"
+import { notFound, redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { getClients } from "@/lib/data/clients"
 import { getProducts } from "@/lib/data/products"
 
-export default async function EditSalePage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function EditSalePage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
     data: { user },
@@ -24,15 +21,17 @@ export default async function EditSalePage({
   const products = await getProducts(user.id)
 
   if (!sale) {
-    redirect("/sales")
+    notFound()
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Edit Sale</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Sale</CardTitle>
+      </CardHeader>
+      <CardContent>
         <EditSaleForm initialData={sale} clients={clients} products={products} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

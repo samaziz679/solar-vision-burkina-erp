@@ -6,25 +6,20 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
+import { DeleteClientDialog } from "./delete-client-dialog"
 import type { Client } from "@/lib/supabase/types"
-import DeleteClientDialog from "./delete-client-dialog"
 
 interface ClientListProps {
   clients: Client[]
 }
 
-export default function ClientList({ clients }: ClientListProps) {
+export function ClientList({ clients }: ClientListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
 
-  const openDeleteDialog = (id: string) => {
+  const handleDeleteClick = (id: string) => {
     setSelectedClientId(id)
     setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setSelectedClientId(null)
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -32,11 +27,11 @@ export default function ClientList({ clients }: ClientListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nom</TableHead>
-            <TableHead>Personne de Contact</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Contact Person</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Téléphone</TableHead>
-            <TableHead>Adresse</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Address</TableHead>
             <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -51,16 +46,16 @@ export default function ClientList({ clients }: ClientListProps) {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/clients/${client.id}/edit`}>Modifier</Link>
+                      <Link href={`/clients/${client.id}/edit`}>Edit</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDeleteDialog(client.id)}>Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(client.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -70,7 +65,11 @@ export default function ClientList({ clients }: ClientListProps) {
       </Table>
 
       {selectedClientId && (
-        <DeleteClientDialog clientId={selectedClientId} isOpen={isDeleteDialogOpen} onClose={closeDeleteDialog} />
+        <DeleteClientDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          clientId={selectedClientId}
+        />
       )}
     </>
   )

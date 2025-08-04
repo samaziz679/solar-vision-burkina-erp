@@ -1,13 +1,10 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { SupplierForm } from "@/components/suppliers/supplier-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getSupplierById } from "@/lib/data/suppliers"
+import { SupplierForm } from "@/components/suppliers/supplier-form"
+import { notFound, redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
-export default async function EditSupplierPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function EditSupplierPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
     data: { user },
@@ -20,15 +17,17 @@ export default async function EditSupplierPage({
   const supplier = await getSupplierById(params.id, user.id)
 
   if (!supplier) {
-    redirect("/suppliers")
+    notFound()
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Edit Supplier</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Supplier</CardTitle>
+      </CardHeader>
+      <CardContent>
         <SupplierForm initialData={supplier} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

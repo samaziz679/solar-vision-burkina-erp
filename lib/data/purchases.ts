@@ -7,7 +7,7 @@ export async function getPurchases(userId: string): Promise<Purchase[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("purchases")
-    .select("*, suppliers(name), products(name)")
+    .select("*, products(name), suppliers(name)") // Fetch related product and supplier names
     .eq("user_id", userId)
     .order("purchase_date", { ascending: false })
 
@@ -23,7 +23,7 @@ export async function getPurchaseById(id: string, userId: string): Promise<Purch
   const supabase = createClient()
   const { data, error } = await supabase
     .from("purchases")
-    .select("*, suppliers(name), products(name)")
+    .select("*, products(name), suppliers(name)")
     .eq("id", id)
     .eq("user_id", userId)
     .single()

@@ -1,89 +1,43 @@
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import type { Product } from "@/lib/supabase/types"
-import { getProducts } from "@/lib/data/products"
-import ProductList from "@/components/inventory/product-list"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getProducts } from "@/lib/data/products"
 import { PlusCircle } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-export const dynamic = "force-dynamic"
+import Link from "next/link"
+import { ProductList } from "@/components/inventory/product-list"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
 export default async function InventoryPage() {
-  const cookieStore = cookies()
-  const supabase = createServerClient({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        cookieStore.delete({ name, ...options })
-      },
-    },
-  })
-
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)]">
-        <p className="text-lg text-muted-foreground">Veuillez vous connecter pour voir l&apos;inventaire.</p>
-        <Button asChild className="mt-4">
-          <Link href="/login">Se connecter</Link>
-        </Button>
-      </div>
-    )
+    redirect("/login")
   }
 
-  const { products, error } = await getProducts(user.id)
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)]">
-        <p className="text-lg text-destructive">Erreur lors du chargement des produits: {error.message}</p>
-      </div>
-    )
-  }
+  const products = await getProducts(user.id)
 
   return (
-    <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <div className="flex items-center">
-        <h1 className="font-semibold text-lg md:text-2xl">Inventaire</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Button asChild size="sm" className="h-8 gap-1">
-            <Link href="/inventory/new">
-              <PlusCircle className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Ajouter un produit</span>
-            </Link>
-          </Button>
-        </div>
+    <div className="grid gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Inventory</h1>
+        <Button asChild>
+          <Link href="/inventory/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Product
+          </Link>
+        </Button>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Liste des produits</CardTitle>
-          <CardDescription>Gérez vos produits et leurs stocks.</CardDescription>
+          <CardTitle>All Products</CardTitle>
         </CardHeader>
         <CardContent>
-          {products && products.length > 0 ? (
-            <ProductList products={products as Product[]} />
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Aucun produit trouvé.</p>
-              <p className="text-muted-foreground">
-                Cliquez sur &quot;Ajouter un produit&quot; pour en créer un nouveau.
-              </p>
-            </div>
-          )}
+          <ProductList products={products} />
         </CardContent>
       </Card>
-    </main>
+    </div>
   )
 }

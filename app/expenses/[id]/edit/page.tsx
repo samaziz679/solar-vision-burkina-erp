@@ -1,13 +1,10 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { ExpenseForm } from "@/components/expenses/expense-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getExpenseById } from "@/lib/data/expenses"
+import { ExpenseForm } from "@/components/expenses/expense-form"
+import { notFound, redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
-export default async function EditExpensePage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function EditExpensePage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
     data: { user },
@@ -20,15 +17,17 @@ export default async function EditExpensePage({
   const expense = await getExpenseById(params.id, user.id)
 
   if (!expense) {
-    redirect("/expenses")
+    notFound()
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Edit Expense</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Expense</CardTitle>
+      </CardHeader>
+      <CardContent>
         <ExpenseForm initialData={expense} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

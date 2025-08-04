@@ -6,25 +6,21 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/utils"
+import { DeleteExpenseDialog } from "./delete-expense-dialog"
 import type { Expense } from "@/lib/supabase/types"
-import DeleteExpenseDialog from "./delete-expense-dialog"
 
 interface ExpenseListProps {
   expenses: Expense[]
 }
 
-export default function ExpenseList({ expenses }: ExpenseListProps) {
+export function ExpenseList({ expenses }: ExpenseListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
 
-  const openDeleteDialog = (id: string) => {
+  const handleDeleteClick = (id: string) => {
     setSelectedExpenseId(id)
     setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setSelectedExpenseId(null)
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -33,9 +29,9 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Description</TableHead>
-            <TableHead>Catégorie</TableHead>
+            <TableHead>Amount</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead className="text-right">Montant</TableHead>
+            <TableHead>Category</TableHead>
             <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -43,24 +39,22 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
           {expenses.map((expense) => (
             <TableRow key={expense.id}>
               <TableCell className="font-medium">{expense.description}</TableCell>
+              <TableCell>{formatCurrency(expense.amount)}</TableCell>
+              <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
               <TableCell>{expense.category}</TableCell>
-              <TableCell>{new Date(expense.date).toLocaleDateString("fr-FR")}</TableCell>
-              <TableCell className="text-right">
-                {expense.amount.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-              </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/expenses/${expense.id}/edit`}>Modifier</Link>
+                      <Link href={`/expenses/${expense.id}/edit`}>Edit</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDeleteDialog(expense.id)}>Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(expense.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -70,7 +64,11 @@ export default function ExpenseList({ expenses }: ExpenseListProps) {
       </Table>
 
       {selectedExpenseId && (
-        <DeleteExpenseDialog expenseId={selectedExpenseId} isOpen={isDeleteDialogOpen} onClose={closeDeleteDialog} />
+        <DeleteExpenseDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          expenseId={selectedExpenseId}
+        />
       )}
     </>
   )

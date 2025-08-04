@@ -6,25 +6,21 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
-import type { BankingAccount } from "@/lib/supabase/types"
-import DeleteBankingDialog from "./delete-banking-dialog"
+import { formatCurrency } from "@/lib/utils"
+import { DeleteBankingDialog } from "./delete-banking-dialog"
+import type { BankingTransaction } from "@/lib/supabase/types"
 
 interface BankingListProps {
-  bankingAccounts: BankingAccount[]
+  transactions: BankingTransaction[]
 }
 
-export default function BankingList({ bankingAccounts }: BankingListProps) {
+export function BankingList({ transactions }: BankingListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
 
-  const openDeleteDialog = (id: string) => {
-    setSelectedAccountId(id)
+  const handleDeleteClick = (id: string) => {
+    setSelectedTransactionId(id)
     setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setSelectedAccountId(null)
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -32,35 +28,35 @@ export default function BankingList({ bankingAccounts }: BankingListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nom du Compte</TableHead>
-            <TableHead>Numéro de Compte</TableHead>
-            <TableHead>Nom de la Banque</TableHead>
-            <TableHead className="text-right">Solde</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Account</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Date</TableHead>
             <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {bankingAccounts.map((account) => (
-            <TableRow key={account.id}>
-              <TableCell className="font-medium">{account.account_name}</TableCell>
-              <TableCell>{account.account_number}</TableCell>
-              <TableCell>{account.bank_name}</TableCell>
-              <TableCell className="text-right">
-                {account.balance.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-              </TableCell>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell className="capitalize">{transaction.type}</TableCell>
+              <TableCell>{transaction.account_id}</TableCell> {/* Display account name if joined */}
+              <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+              <TableCell>{transaction.description}</TableCell>
+              <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/banking/${account.id}/edit`}>Modifier</Link>
+                      <Link href={`/banking/${transaction.id}/edit`}>Edit</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDeleteDialog(account.id)}>Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(transaction.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -69,8 +65,12 @@ export default function BankingList({ bankingAccounts }: BankingListProps) {
         </TableBody>
       </Table>
 
-      {selectedAccountId && (
-        <DeleteBankingDialog accountId={selectedAccountId} isOpen={isDeleteDialogOpen} onClose={closeDeleteDialog} />
+      {selectedTransactionId && (
+        <DeleteBankingDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          transactionId={selectedTransactionId}
+        />
       )}
     </>
   )

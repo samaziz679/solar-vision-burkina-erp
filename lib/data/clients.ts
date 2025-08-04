@@ -9,7 +9,7 @@ export async function getClients(userId: string): Promise<Client[]> {
     .from("clients")
     .select("*")
     .eq("user_id", userId)
-    .order("name", { ascending: true })
+    .order("created_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching clients:", error)

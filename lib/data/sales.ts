@@ -7,7 +7,7 @@ export async function getSales(userId: string): Promise<Sale[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("sales")
-    .select("*, clients(name), products(name)")
+    .select("*, products(name), clients(name)") // Fetch related product and client names
     .eq("user_id", userId)
     .order("sale_date", { ascending: false })
 
@@ -23,7 +23,7 @@ export async function getSaleById(id: string, userId: string): Promise<Sale | nu
   const supabase = createClient()
   const { data, error } = await supabase
     .from("sales")
-    .select("*, clients(name), products(name)")
+    .select("*, products(name), clients(name)")
     .eq("id", id)
     .eq("user_id", userId)
     .single()

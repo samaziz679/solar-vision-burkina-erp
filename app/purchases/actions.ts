@@ -1,11 +1,11 @@
 "use server"
 
+import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import type { Purchase } from "@/lib/supabase/types"
 
-export async function createPurchase(values: Omit<Purchase, "id" | "user_id" | "created_at" | "total_amount">) {
+export async function createPurchase(formData: Omit<Purchase, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -15,11 +15,7 @@ export async function createPurchase(values: Omit<Purchase, "id" | "user_id" | "
     redirect("/login")
   }
 
-  const { error } = await supabase.from("purchases").insert({
-    ...values,
-    user_id: user.id,
-    total_amount: values.quantity * values.unit_price,
-  })
+  const { error } = await supabase.from("purchases").insert({ ...formData, user_id: user.id })
 
   if (error) {
     console.error("Error creating purchase:", error)
@@ -29,7 +25,7 @@ export async function createPurchase(values: Omit<Purchase, "id" | "user_id" | "
   revalidatePath("/purchases")
 }
 
-export async function updatePurchase(id: string, values: Omit<Purchase, "user_id" | "created_at" | "total_amount">) {
+export async function updatePurchase(id: string, formData: Omit<Purchase, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -39,14 +35,7 @@ export async function updatePurchase(id: string, values: Omit<Purchase, "user_id
     redirect("/login")
   }
 
-  const { error } = await supabase
-    .from("purchases")
-    .update({
-      ...values,
-      total_amount: values.quantity * values.unit_price,
-    })
-    .eq("id", id)
-    .eq("user_id", user.id)
+  const { error } = await supabase.from("purchases").update(formData).eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating purchase:", error)
@@ -54,6 +43,7 @@ export async function updatePurchase(id: string, values: Omit<Purchase, "user_id
   }
 
   revalidatePath("/purchases")
+  revalidatePath(`/purchases/${id}/edit`)
 }
 
 export async function deletePurchase(id: string) {

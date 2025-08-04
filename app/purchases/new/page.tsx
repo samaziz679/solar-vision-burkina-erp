@@ -1,8 +1,9 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PurchaseForm } from "@/components/purchases/purchase-form"
-import { getSuppliers } from "@/lib/data/suppliers"
 import { getProducts } from "@/lib/data/products"
+import { getSuppliers } from "@/lib/data/suppliers"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
 export default async function NewPurchasePage() {
   const supabase = createClient()
@@ -14,15 +15,21 @@ export default async function NewPurchasePage() {
     redirect("/login")
   }
 
-  const suppliers = await getSuppliers(user.id)
   const products = await getProducts(user.id)
+  const suppliers = await getSuppliers(user.id)
+
+  if (products.length === 0 || suppliers.length === 0) {
+    redirect("/setup-required?message=Please add at least one product and one supplier before creating purchases.")
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Add New Purchase</h2>
-        <PurchaseForm suppliers={suppliers} products={products} />
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>New Purchase</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <PurchaseForm products={products} suppliers={suppliers} />
+      </CardContent>
+    </Card>
   )
 }

@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,49 +10,40 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { deleteBankingAccount } from "@/app/banking/actions"
+import { deleteBankingTransaction } from "@/app/banking/actions"
 import { toast } from "sonner"
 
 interface DeleteBankingDialogProps {
-  accountId: string
-  isOpen: boolean
-  onClose: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  transactionId: string
 }
 
-export default function DeleteBankingDialog({ accountId, isOpen, onClose }: DeleteBankingDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
-
+export function DeleteBankingDialog({ open, onOpenChange, transactionId }: DeleteBankingDialogProps) {
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteBankingAccount(accountId)
-    if (result.message) {
-      toast.success(result.message)
-      onClose()
-    } else {
-      toast.error("Échec de la suppression du compte bancaire.", {
-        description: "Une erreur est survenue lors de la suppression. Veuillez réessayer.",
+    try {
+      await deleteBankingTransaction(transactionId)
+      toast.success("Banking transaction deleted successfully.")
+      onOpenChange(false)
+    } catch (error: any) {
+      toast.error("Failed to delete banking transaction.", {
+        description: error.message || "An unexpected error occurred.",
       })
     }
-    setIsDeleting(false)
   }
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce compte bancaire de votre base de
-            données.
+            This action cannot be undone. This will permanently delete your banking transaction.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} disabled={isDeleting}>
-            Annuler
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

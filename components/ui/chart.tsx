@@ -1,122 +1,97 @@
 "use client"
-
-import type * as React from "react"
+import React from "react"
 import {
   CartesianGrid,
   Line,
   LineChart,
   Bar,
   BarChart,
-  Pie,
-  PieChart,
-  RadialBar,
-  RadialBarChart,
   Area,
   AreaChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
 } from "recharts"
 
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChartContainer as RechartsChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart" // Corrected import path
+import { cn } from "@/lib/utils"
 
-// Define a type for the chart components
-type ChartComponent = typeof LineChart | typeof BarChart | typeof PieChart | typeof RadialBarChart | typeof AreaChart
+const ChartContainer = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof RechartsChartContainer>>(
+  ({ className, ...props }, ref) => (
+    <RechartsChartContainer ref={ref} className={cn("h-[200px] w-full", className)} {...props} />
+  ),
+)
+ChartContainer.displayName = "ChartContainer"
 
-// Define a type for the chart elements (Line, Bar, Pie, etc.)
-type ChartElement = typeof Line | typeof Bar | typeof Pie | typeof RadialBar | typeof Area | typeof CartesianGrid
-
-interface ChartProps extends React.HTMLAttributes<HTMLDivElement> {
-  title: string
+interface ChartProps {
+  data: any[]
+  type: "line" | "bar" | "area"
+  xAxisKey: string
+  yAxisKey: string
+  title?: string
   description?: string
-  chartType: "line" | "bar" | "pie" | "radial" | "area"
-  data: Record<string, any>[]
-  dataKeys: { name: string; color: string; type?: string }[]
-  xAxisKey?: string
-  yAxisKey?: string
-  className?: string
-}
-
-const chartComponents: Record<string, ChartComponent> = {
-  line: LineChart,
-  bar: BarChart,
-  pie: PieChart,
-  radial: RadialBarChart,
-  area: AreaChart,
-}
-
-const chartElements: Record<string, ChartElement> = {
-  line: Line,
-  bar: Bar,
-  pie: Pie,
-  radial: RadialBar,
-  area: Area,
-  grid: CartesianGrid,
+  lineColor?: string
+  barColor?: string
+  areaColor?: string
 }
 
 export function Chart({
-  title,
-  description,
-  chartType,
   data,
-  dataKeys,
+  type,
   xAxisKey,
   yAxisKey,
-  className,
-  ...props
+  title,
+  description,
+  lineColor = "hsl(var(--primary))",
+  barColor = "hsl(var(--primary))",
+  areaColor = "hsl(var(--primary))",
 }: ChartProps) {
-  const ChartComponent = chartComponents[chartType]
-  const ChartElement = chartElements[chartType]
-
-  if (!ChartComponent || !ChartElement) {
-    return <div>Invalid chart type</div>
-  }
+  const ChartComponent = type === "line" ? LineChart : type === "bar" ? BarChart : AreaChart
+  const DataComponent = type === "line" ? Line : type === "bar" ? Bar : Area
 
   return (
-    <Card className={className} {...props}>
+    <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        {title && <CardTitle>{title}</CardTitle>}
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <ChartContainer
-          config={dataKeys.reduce(
-            (acc, key) => ({
-              ...acc,
-              [key.name]: { color: key.color },
-            }),
-            {},
-          )}
-          className="aspect-auto h-[250px] w-full"
+          config={{
+            [yAxisKey]: {
+              label: yAxisKey,
+              color: "hsl(var(--primary))",
+            },
+          }}
         >
-          <ChartComponent data={data}>
-            <chartElements.grid vertical={false} />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            {dataKeys.map((key) => {
-              if (chartType === "pie" || chartType === "radial") {
-                return (
-                  <ChartElement
-                    key={key.name}
-                    dataKey={key.name}
-                    name={key.name}
-                    fill={key.color}
-                    innerRadius={chartType === "pie" ? 60 : 20}
-                    outerRadius={chartType === "pie" ? 80 : 80}
-                  />
-                )
-              } else {
-                return (
-                  <ChartElement
-                    key={key.name}
-                    dataKey={key.name}
-                    stroke={key.color}
-                    fill={key.color}
-                    type={key.type || "monotone"}
-                  />
-                )
-              }
-            })}
-          </ChartComponent>
+          <ResponsiveContainer width="100%" height={300}>
+            <ChartComponent data={data}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey={xAxisKey}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => value.slice(0, 3)}
+              />
+              <YAxis tickLine={false} axisLine={false} tickMargin={8} tickCount={5} />
+              <Tooltip content={<ChartTooltipContent />} />
+              <Legend />
+              <DataComponent
+                dataKey={yAxisKey}
+                fill={type === "line" ? lineColor : type === "bar" ? barColor : areaColor}
+                stroke={lineColor}
+                type="monotone"
+              />
+            </ChartComponent>
+          </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
     </Card>
   )
 }
+
+export { ChartContainer, ChartTooltip, ChartTooltipContent }

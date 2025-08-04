@@ -1,13 +1,10 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getBankingAccounts, getBankingTransactionById } from "@/lib/data/banking"
 import { BankingForm } from "@/components/banking/banking-form"
-import { getBankingTransactionById, getBankingAccounts } from "@/lib/data/banking"
+import { notFound, redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
-export default async function EditBankingPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function EditBankingTransactionPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
     data: { user },
@@ -21,15 +18,17 @@ export default async function EditBankingPage({
   const bankingAccounts = await getBankingAccounts(user.id)
 
   if (!transaction) {
-    redirect("/banking")
+    notFound()
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Edit Transaction</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Banking Transaction</CardTitle>
+      </CardHeader>
+      <CardContent>
         <BankingForm initialData={transaction} bankingAccounts={bankingAccounts} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

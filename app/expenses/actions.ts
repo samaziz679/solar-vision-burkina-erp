@@ -1,11 +1,11 @@
 "use server"
 
+import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import type { Expense } from "@/lib/supabase/types"
 
-export async function createExpense(values: Omit<Expense, "id" | "user_id" | "created_at">) {
+export async function createExpense(formData: Omit<Expense, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -15,10 +15,7 @@ export async function createExpense(values: Omit<Expense, "id" | "user_id" | "cr
     redirect("/login")
   }
 
-  const { error } = await supabase.from("expenses").insert({
-    ...values,
-    user_id: user.id,
-  })
+  const { error } = await supabase.from("expenses").insert({ ...formData, user_id: user.id })
 
   if (error) {
     console.error("Error creating expense:", error)
@@ -28,7 +25,7 @@ export async function createExpense(values: Omit<Expense, "id" | "user_id" | "cr
   revalidatePath("/expenses")
 }
 
-export async function updateExpense(id: string, values: Omit<Expense, "user_id" | "created_at">) {
+export async function updateExpense(id: string, formData: Omit<Expense, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -38,7 +35,7 @@ export async function updateExpense(id: string, values: Omit<Expense, "user_id" 
     redirect("/login")
   }
 
-  const { error } = await supabase.from("expenses").update(values).eq("id", id).eq("user_id", user.id)
+  const { error } = await supabase.from("expenses").update(formData).eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating expense:", error)
@@ -46,6 +43,7 @@ export async function updateExpense(id: string, values: Omit<Expense, "user_id" 
   }
 
   revalidatePath("/expenses")
+  revalidatePath(`/expenses/${id}/edit`)
 }
 
 export async function deleteExpense(id: string) {

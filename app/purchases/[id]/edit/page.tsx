@@ -1,15 +1,12 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getPurchaseById } from "@/lib/data/purchases"
-import { getSuppliers } from "@/lib/data/suppliers"
+import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
+import { notFound, redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { getProducts } from "@/lib/data/products"
+import { getSuppliers } from "@/lib/data/suppliers"
 
-export default async function EditPurchasePage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function EditPurchasePage({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
     data: { user },
@@ -20,19 +17,21 @@ export default async function EditPurchasePage({
   }
 
   const purchase = await getPurchaseById(params.id, user.id)
-  const suppliers = await getSuppliers(user.id)
   const products = await getProducts(user.id)
+  const suppliers = await getSuppliers(user.id)
 
   if (!purchase) {
-    redirect("/purchases")
+    notFound()
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Edit Purchase</h2>
-        <EditPurchaseForm initialData={purchase} suppliers={suppliers} products={products} />
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Purchase</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
+      </CardContent>
+    </Card>
   )
 }

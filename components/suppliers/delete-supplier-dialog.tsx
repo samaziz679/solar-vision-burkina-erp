@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,45 +14,36 @@ import { deleteSupplier } from "@/app/suppliers/actions"
 import { toast } from "sonner"
 
 interface DeleteSupplierDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   supplierId: string
-  isOpen: boolean
-  onClose: () => void
 }
 
-export default function DeleteSupplierDialog({ supplierId, isOpen, onClose }: DeleteSupplierDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
-
+export function DeleteSupplierDialog({ open, onOpenChange, supplierId }: DeleteSupplierDialogProps) {
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const result = await deleteSupplier(supplierId)
-    if (result.message) {
-      toast.success(result.message)
-      onClose()
-    } else {
-      toast.error("Échec de la suppression du fournisseur.", {
-        description: "Une erreur est survenue lors de la suppression. Veuillez réessayer.",
+    try {
+      await deleteSupplier(supplierId)
+      toast.success("Supplier deleted successfully.")
+      onOpenChange(false)
+    } catch (error: any) {
+      toast.error("Failed to delete supplier.", {
+        description: error.message || "An unexpected error occurred.",
       })
     }
-    setIsDeleting(false)
   }
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            Cette action ne peut pas être annulée. Cela supprimera définitivement ce fournisseur de votre base de
-            données.
+            This action cannot be undone. This will permanently delete your supplier.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} disabled={isDeleting}>
-            Annuler
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Suppression..." : "Supprimer"}
-          </AlertDialogAction>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

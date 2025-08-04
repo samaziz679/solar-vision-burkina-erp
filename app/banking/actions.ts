@@ -1,13 +1,11 @@
 "use server"
 
+import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import type { BankingTransaction } from "@/lib/supabase/types"
 
-export async function createBankingTransaction(
-  values: Omit<BankingTransaction, "id" | "user_id" | "created_at" | "total_amount">,
-) {
+export async function createBankingTransaction(formData: Omit<BankingTransaction, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -17,11 +15,7 @@ export async function createBankingTransaction(
     redirect("/login")
   }
 
-  const { error } = await supabase.from("banking_transactions").insert({
-    ...values,
-    user_id: user.id,
-    total_amount: values.amount, // Assuming total_amount is the same as amount for simplicity
-  })
+  const { error } = await supabase.from("banking_transactions").insert({ ...formData, user_id: user.id })
 
   if (error) {
     console.error("Error creating banking transaction:", error)
@@ -33,7 +27,7 @@ export async function createBankingTransaction(
 
 export async function updateBankingTransaction(
   id: string,
-  values: Omit<BankingTransaction, "user_id" | "created_at" | "total_amount">,
+  formData: Omit<BankingTransaction, "id" | "user_id" | "created_at">,
 ) {
   const supabase = createClient()
   const {
@@ -44,14 +38,7 @@ export async function updateBankingTransaction(
     redirect("/login")
   }
 
-  const { error } = await supabase
-    .from("banking_transactions")
-    .update({
-      ...values,
-      total_amount: values.amount, // Assuming total_amount is the same as amount for simplicity
-    })
-    .eq("id", id)
-    .eq("user_id", user.id)
+  const { error } = await supabase.from("banking_transactions").update(formData).eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating banking transaction:", error)
@@ -59,6 +46,7 @@ export async function updateBankingTransaction(
   }
 
   revalidatePath("/banking")
+  revalidatePath(`/banking/${id}/edit`)
 }
 
 export async function deleteBankingTransaction(id: string) {

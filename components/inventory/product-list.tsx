@@ -6,26 +6,21 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/utils"
+import { DeleteProductDialog } from "./delete-product-dialog"
 import type { Product } from "@/lib/supabase/types"
-import DeleteProductDialog from "./delete-product-dialog"
-import Image from "next/image"
 
 interface ProductListProps {
   products: Product[]
 }
 
-export default function ProductList({ products }: ProductListProps) {
+export function ProductList({ products }: ProductListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
 
-  const openDeleteDialog = (id: string) => {
+  const handleDeleteClick = (id: string) => {
     setSelectedProductId(id)
     setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setSelectedProductId(null)
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -33,45 +28,35 @@ export default function ProductList({ products }: ProductListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Image</TableHead>
-            <TableHead>Nom</TableHead>
-            <TableHead>Catégorie</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Price</TableHead>
             <TableHead>Stock</TableHead>
-            <TableHead className="text-right">Prix</TableHead>
+            <TableHead>Category</TableHead>
             <TableHead className="sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {products.map((product) => (
             <TableRow key={product.id}>
-              <TableCell>
-                <Image
-                  src={product.image_url || "/placeholder.svg?height=40&width=40&text=Product"}
-                  alt={product.name}
-                  width={40}
-                  height={40}
-                  className="rounded-md object-cover"
-                />
-              </TableCell>
               <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell>{product.category}</TableCell>
+              <TableCell>{product.description}</TableCell>
+              <TableCell>{formatCurrency(product.price)}</TableCell>
               <TableCell>{product.stock}</TableCell>
-              <TableCell className="text-right">
-                {product.price.toLocaleString("fr-FR", { style: "currency", currency: "XOF" })}
-              </TableCell>
+              <TableCell>{product.category}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/inventory/${product.id}/edit`}>Modifier</Link>
+                      <Link href={`/inventory/${product.id}/edit`}>Edit</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDeleteDialog(product.id)}>Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(product.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -81,7 +66,11 @@ export default function ProductList({ products }: ProductListProps) {
       </Table>
 
       {selectedProductId && (
-        <DeleteProductDialog productId={selectedProductId} isOpen={isDeleteDialogOpen} onClose={closeDeleteDialog} />
+        <DeleteProductDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          productId={selectedProductId}
+        />
       )}
     </>
   )

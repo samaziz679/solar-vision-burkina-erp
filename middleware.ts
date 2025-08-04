@@ -1,23 +1,14 @@
-import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/middleware"
+import type { NextRequest } from "next/server"
 
 export async function middleware(request: NextRequest) {
-  try {
-    const { supabase, response } = createClient(request)
+  const { supabase, response } = createClient(request)
 
-    // Refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
-    await supabase.auth.getSession()
+  // Refresh session if expired - required for Server Components
+  // and ensures the user's session is always up-to-date
+  await supabase.auth.getSession()
 
-    return response
-  } catch (e) {
-    // If an error occurs, you can return a custom error page or redirect to a login page
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    })
-  }
+  return response
 }
 
 export const config = {
@@ -28,11 +19,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - login (login page)
-     * - auth (auth callback)
+     * - auth/callback (Supabase auth callback)
      * - setup-required (setup page)
-     * - api (api routes)
-     * - public (public assets)
+     * - public folder (e.g. /public/placeholder.svg)
      */
-    "/((?!_next/static|_next/image|favicon.ico|login|auth|setup-required|api|.*\\..*).*)",
+    "/((?!_next/static|_next/image|favicon.ico|login|auth/callback|setup-required|.*\\..*).*)",
   ],
 }

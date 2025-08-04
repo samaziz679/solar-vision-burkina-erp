@@ -1,11 +1,11 @@
 "use server"
 
+import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import type { Product } from "@/lib/supabase/types"
 
-export async function createProduct(values: Omit<Product, "id" | "user_id" | "created_at">) {
+export async function createProduct(formData: Omit<Product, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -15,10 +15,7 @@ export async function createProduct(values: Omit<Product, "id" | "user_id" | "cr
     redirect("/login")
   }
 
-  const { error } = await supabase.from("products").insert({
-    ...values,
-    user_id: user.id,
-  })
+  const { error } = await supabase.from("products").insert({ ...formData, user_id: user.id })
 
   if (error) {
     console.error("Error creating product:", error)
@@ -28,7 +25,7 @@ export async function createProduct(values: Omit<Product, "id" | "user_id" | "cr
   revalidatePath("/inventory")
 }
 
-export async function updateProduct(id: string, values: Omit<Product, "user_id" | "created_at">) {
+export async function updateProduct(id: string, formData: Omit<Product, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -38,7 +35,7 @@ export async function updateProduct(id: string, values: Omit<Product, "user_id" 
     redirect("/login")
   }
 
-  const { error } = await supabase.from("products").update(values).eq("id", id).eq("user_id", user.id)
+  const { error } = await supabase.from("products").update(formData).eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating product:", error)
@@ -46,6 +43,7 @@ export async function updateProduct(id: string, values: Omit<Product, "user_id" 
   }
 
   revalidatePath("/inventory")
+  revalidatePath(`/inventory/${id}/edit`)
 }
 
 export async function deleteProduct(id: string) {

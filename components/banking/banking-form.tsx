@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { useEffect } from "react"
-import { createBankingAccount, updateBankingAccount } from "@/app/banking/actions" // Corrected imports
+import { createBankingAccount, updateBankingAccount } from "@/app/banking/actions"
 import type { BankingAccount } from "@/lib/supabase/types"
 
 interface BankingFormProps {

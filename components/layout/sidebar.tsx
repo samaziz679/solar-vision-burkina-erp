@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Package2, Home, DollarSign, Users, Package, Banknote, ShoppingBag, Settings } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePathname } from "next/navigation"
-import { createClientComponentClient } from "@/lib/supabase/client" // Corrected import
+import { createClientComponentClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 

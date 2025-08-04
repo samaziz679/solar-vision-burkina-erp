@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { getPurchaseById } from "@/lib/data/purchases"
 import { getProducts } from "@/lib/data/products"
 import { getSuppliers } from "@/lib/data/suppliers"
-import EditPurchaseForm from "@/components/purchases/edit-purchase-form" // Ensure correct import
+import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
 
 export const dynamic = "force-dynamic"
 
@@ -31,7 +31,7 @@ export default async function EditPurchasePage({ params }: { params: { id: strin
   } = await supabase.auth.getUser()
 
   if (!user) {
-    notFound() // Or redirect to login
+    notFound()
   }
 
   const { purchase, error: purchaseError } = await getPurchaseById(params.id, user.id)

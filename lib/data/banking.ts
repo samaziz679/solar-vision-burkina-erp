@@ -23,7 +23,7 @@ export async function getBankingAccounts(userId: string) {
   const { data, error } = await supabase
     .from("banking_accounts")
     .select("*")
-    .eq("user_id", userId) // Assuming banking accounts are tied to a user
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -56,7 +56,7 @@ export async function getBankingAccountById(id: string, userId: string) {
     .from("banking_accounts")
     .select("*")
     .eq("id", id)
-    .eq("user_id", userId) // Ensure user owns the account
+    .eq("user_id", userId)
     .single()
 
   if (error) {

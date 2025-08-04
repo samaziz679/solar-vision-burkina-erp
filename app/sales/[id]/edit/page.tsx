@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { getSaleById } from "@/lib/data/sales"
 import { getProducts } from "@/lib/data/products"
 import { getClients } from "@/lib/data/clients"
-import EditSaleForm from "@/components/sales/edit-sale-form" // Ensure correct import
+import EditSaleForm from "@/components/sales/edit-sale-form"
 
 export const dynamic = "force-dynamic"
 
@@ -31,7 +31,7 @@ export default async function EditSalePage({ params }: { params: { id: string } 
   } = await supabase.auth.getUser()
 
   if (!user) {
-    notFound() // Or redirect to login
+    notFound()
   }
 
   const { sale, error: saleError } = await getSaleById(params.id, user.id)

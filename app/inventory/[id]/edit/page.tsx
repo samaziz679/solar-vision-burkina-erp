@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { getProductById } from "@/lib/data/products"
-import EditProductForm from "@/components/inventory/edit-product-form" // Ensure correct import
+import EditProductForm from "@/components/inventory/edit-product-form"
 
 export const dynamic = "force-dynamic"
 
@@ -29,7 +29,7 @@ export default async function EditProductPage({ params }: { params: { id: string
   } = await supabase.auth.getUser()
 
   if (!user) {
-    notFound() // Or redirect to login
+    notFound()
   }
 
   const { product, error } = await getProductById(params.id, user.id)

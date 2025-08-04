@@ -1,36 +1,47 @@
 import { createClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
 import type { Sale } from "@/lib/supabase/types"
 
 export async function getSales(userId: string): Promise<Sale[]> {
-  noStore()
   const supabase = createClient()
   const { data, error } = await supabase
     .from("sales")
-    .select("*, products(name), clients(name)") // Fetch related product and client names
+    .select("*, clients(name), products(name)")
     .eq("user_id", userId)
     .order("sale_date", { ascending: false })
+    .order("created_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching sales:", error)
-    throw new Error("Failed to fetch sales.")
+    return []
   }
-  return data
+
+  return data.map((sale) => ({
+    ...sale,
+    client_name: (sale.clients as { name: string }).name,
+    product_name: (sale.products as { name: string }).name,
+  })) as Sale[]
 }
 
-export async function getSaleById(id: string, userId: string): Promise<Sale | null> {
-  noStore()
+export async function getSaleById(saleId: string, userId: string): Promise<Sale | null> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("sales")
-    .select("*, products(name), clients(name)")
-    .eq("id", id)
+    .select("*, clients(name), products(name)")
+    .eq("id", saleId)
     .eq("user_id", userId)
     .single()
 
   if (error) {
-    console.error("Error fetching sale:", error)
+    console.error("Error fetching sale by ID:", error)
     return null
   }
-  return data
+
+  if (data) {
+    return {
+      ...data,
+      client_name: (data.clients as { name: string }).name,
+      product_name: (data.products as { name: string }).name,
+    } as Sale
+  }
+  return null
 }

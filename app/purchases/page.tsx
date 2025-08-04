@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getPurchases } from "@/lib/data/purchases"
-import { PlusCircle } from "lucide-react"
-import Link from "next/link"
-import { PurchaseList } from "@/components/purchases/purchase-list"
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { PurchaseList } from "@/components/purchases/purchase-list"
+import { getPurchases } from "@/lib/data/purchases"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { PlusCircle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function PurchasesPage() {
   const supabase = createClient()
@@ -20,24 +20,19 @@ export default async function PurchasesPage() {
   const purchases = await getPurchases(user.id)
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Purchases</h1>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-2xl font-bold">Purchases</CardTitle>
         <Button asChild>
           <Link href="/purchases/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Add Purchase
+            Add New Purchase
           </Link>
         </Button>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>All Purchases</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PurchaseList purchases={purchases} />
-        </CardContent>
-      </Card>
-    </div>
+      </CardHeader>
+      <CardContent>
+        <PurchaseList purchases={purchases} />
+      </CardContent>
+    </Card>
   )
 }

@@ -15,7 +15,10 @@ export async function createExpense(formData: Omit<Expense, "id" | "user_id" | "
     redirect("/login")
   }
 
-  const { error } = await supabase.from("expenses").insert({ ...formData, user_id: user.id })
+  const { error } = await supabase.from("expenses").insert({
+    ...formData,
+    user_id: user.id,
+  })
 
   if (error) {
     console.error("Error creating expense:", error)
@@ -43,7 +46,6 @@ export async function updateExpense(id: string, formData: Omit<Expense, "id" | "
   }
 
   revalidatePath("/expenses")
-  revalidatePath(`/expenses/${id}/edit`)
 }
 
 export async function deleteExpense(id: string) {

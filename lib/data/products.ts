@@ -1,30 +1,27 @@
 import { createClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
 import type { Product } from "@/lib/supabase/types"
 
 export async function getProducts(userId: string): Promise<Product[]> {
-  noStore()
   const supabase = createClient()
   const { data, error } = await supabase
     .from("products")
     .select("*")
     .eq("user_id", userId)
-    .order("name", { ascending: true })
+    .order("created_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching products:", error)
-    throw new Error("Failed to fetch products.")
+    return []
   }
   return data
 }
 
-export async function getProductById(id: string, userId: string): Promise<Product | null> {
-  noStore()
+export async function getProductById(productId: string, userId: string): Promise<Product | null> {
   const supabase = createClient()
-  const { data, error } = await supabase.from("products").select("*").eq("id", id).eq("user_id", userId).single()
+  const { data, error } = await supabase.from("products").select("*").eq("id", productId).eq("user_id", userId).single()
 
   if (error) {
-    console.error("Error fetching product:", error)
+    console.error("Error fetching product by ID:", error)
     return null
   }
   return data

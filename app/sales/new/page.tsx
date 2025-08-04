@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SaleForm } from "@/components/sales/sale-form"
-import { getClients } from "@/lib/data/clients"
-import { getProducts } from "@/lib/data/products"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { getClients } from "@/lib/data/clients"
+import { getProducts } from "@/lib/data/products"
 
 export default async function NewSalePage() {
   const supabase = createClient()
@@ -25,7 +25,7 @@ export default async function NewSalePage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New Sale</CardTitle>
+        <CardTitle>Create New Sale</CardTitle>
       </CardHeader>
       <CardContent>
         <SaleForm clients={clients} products={products} />

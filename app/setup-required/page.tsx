@@ -7,32 +7,34 @@ import { useSearchParams } from "next/navigation"
 
 export default function SetupRequiredPage() {
   const searchParams = useSearchParams()
-  const message = searchParams.get("message") || "Additional setup is required to use this feature."
+  const message = searchParams.get("message") || "Some initial setup is required before you can proceed."
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 dark:bg-gray-950">
-      <Card className="w-full max-w-md text-center">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
+      <Card className="mx-auto max-w-md text-center">
         <CardHeader>
-          <CardTitle>Setup Required</CardTitle>
+          <CardTitle className="text-2xl font-bold">Setup Required</CardTitle>
           <CardDescription>{message}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p>Please navigate to the relevant section to add the necessary data.</p>
+          <p className="text-sm text-muted-foreground">
+            Please ensure you have created necessary entities like banking accounts, clients, products, or suppliers.
+          </p>
           <div className="flex flex-col gap-2">
             <Button asChild>
-              <Link href="/inventory/new">Add New Product</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/clients/new">Add New Client</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/suppliers/new">Add New Supplier</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/banking/new">Add New Banking Account</Link>
-            </Button>
-            <Button asChild variant="secondary">
               <Link href="/dashboard">Go to Dashboard</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/banking/new">Create Banking Account</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/clients/new">Create Client</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/inventory/new">Create Product</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/suppliers/new">Create Supplier</Link>
             </Button>
           </div>
         </CardContent>

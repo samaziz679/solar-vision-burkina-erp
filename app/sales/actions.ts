@@ -15,7 +15,10 @@ export async function createSale(formData: Omit<Sale, "id" | "user_id" | "create
     redirect("/login")
   }
 
-  const { error } = await supabase.from("sales").insert({ ...formData, user_id: user.id })
+  const { error } = await supabase.from("sales").insert({
+    ...formData,
+    user_id: user.id,
+  })
 
   if (error) {
     console.error("Error creating sale:", error)
@@ -43,7 +46,6 @@ export async function updateSale(id: string, formData: Omit<Sale, "id" | "user_i
   }
 
   revalidatePath("/sales")
-  revalidatePath(`/sales/${id}/edit`)
 }
 
 export async function deleteSale(id: string) {
@@ -54,14 +56,3 @@ export async function deleteSale(id: string) {
 
   if (!user) {
     redirect("/login")
-  }
-
-  const { error } = await supabase.from("sales").delete().eq("id", id).eq("user_id", user.id)
-
-  if (error) {
-    console.error("Error deleting sale:", error)
-    throw new Error("Failed to delete sale.")
-  }
-
-  revalidatePath("/sales")
-}

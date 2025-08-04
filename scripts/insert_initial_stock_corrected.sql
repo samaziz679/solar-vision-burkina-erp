@@ -3,75 +3,38 @@
 -- Ensure 'user_abc' exists in the 'users' table or replace with an actual user ID.
 
 -- Insert Products
-INSERT INTO products (id, user_id, name, description, category, cost_price, selling_price, quantity_in_stock, image_url, created_at, updated_at)
-VALUES
-('prod_001', 'user_abc', 'Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 'Solar Panels', 150.00, 250.00, 50, 'https://example.com/solar-panel-300w.jpg', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-    user_id = EXCLUDED.user_id,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    cost_price = EXCLUDED.cost_price,
-    selling_price = EXCLUDED.selling_price,
-    quantity_in_stock = EXCLUDED.quantity_in_stock,
-    image_url = EXCLUDED.image_url,
-    updated_at = NOW();
+DO $$
+DECLARE
+    user_uuid uuid;
+BEGIN
+    -- Attempt to get an existing user ID
+    SELECT id INTO user_uuid FROM auth.users LIMIT 1;
 
-INSERT INTO products (id, user_id, name, description, category, cost_price, selling_price, quantity_in_stock, image_url, created_at, updated_at)
-VALUES
-('prod_002', 'user_abc', 'Inverter 5KW', 'Hybrid solar inverter with battery support', 'Inverters', 500.00, 850.00, 20, 'https://example.com/inverter-5kw.jpg', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-    user_id = EXCLUDED.user_id,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    cost_price = EXCLUDED.cost_price,
-    selling_price = EXCLUDED.selling_price,
-    quantity_in_stock = EXCLUDED.quantity_in_stock,
-    image_url = EXCLUDED.image_url,
-    updated_at = NOW();
+    -- If no user exists, you might want to handle this (e.g., raise an error or insert a dummy user)
+    IF user_uuid IS NULL THEN
+        RAISE EXCEPTION 'No user found in auth.users. Please create a user first or replace the UUID manually.';
+    END IF;
 
-INSERT INTO products (id, user_id, name, description, category, cost_price, selling_price, quantity_in_stock, image_url, created_at, updated_at)
-VALUES
-('prod_003', 'user_abc', 'Deep Cycle Battery 200Ah', 'Gel battery for solar energy storage', 'Batteries', 200.00, 350.00, 30, 'https://example.com/battery-200ah.jpg', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-    user_id = EXCLUDED.user_id,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    cost_price = EXCLUDED.cost_price,
-    selling_price = EXCLUDED.selling_price,
-    quantity_in_stock = EXCLUDED.quantity_in_stock,
-    image_url = EXCLUDED.image_url,
-    updated_at = NOW();
-
-INSERT INTO products (id, user_id, name, description, category, cost_price, selling_price, quantity_in_stock, image_url, created_at, updated_at)
-VALUES
-('prod_004', 'user_abc', 'Mounting Kit', 'Universal mounting kit for rooftop solar panels', 'Accessories', 50.00, 90.00, 100, 'https://example.com/mounting-kit.jpg', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-    user_id = EXCLUDED.user_id,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    cost_price = EXCLUDED.cost_price,
-    selling_price = EXCLUDED.selling_price,
-    quantity_in_stock = EXCLUDED.quantity_in_stock,
-    image_url = EXCLUDED.image_url,
-    updated_at = NOW();
-
-INSERT INTO products (id, user_id, name, description, category, cost_price, selling_price, quantity_in_stock, image_url, created_at, updated_at)
-VALUES
-('prod_005', 'user_abc', 'Charge Controller 60A', 'MPPT solar charge controller', 'Controllers', 80.00, 140.00, 40, 'https://example.com/charge-controller-60a.jpg', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET
-    user_id = EXCLUDED.user_id,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    cost_price = EXCLUDED.cost_price,
-    selling_price = EXCLUDED.selling_price,
-    quantity_in_stock = EXCLUDED.quantity_in_stock,
-    image_url = EXCLUDED.image_url,
-    updated_at = NOW();
+    INSERT INTO public.products (id, user_id, name, description, category, cost_price, selling_price, quantity_in_stock, image_url, created_at, updated_at)
+    VALUES
+        ('prod_001', user_uuid, 'Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 'Solar Panels', 150.00, 250.00, 50, 'https://example.com/solar-panel-300w.jpg', NOW(), NOW()),
+        ('prod_002', user_uuid, 'Inverter 5KW', 'Hybrid solar inverter with battery support', 'Inverters', 500.00, 850.00, 20, 'https://example.com/inverter-5kw.jpg', NOW(), NOW()),
+        ('prod_003', user_uuid, 'Deep Cycle Battery 200Ah', 'Gel battery for solar energy storage', 'Batteries', 200.00, 350.00, 30, 'https://example.com/battery-200ah.jpg', NOW(), NOW()),
+        ('prod_004', user_uuid, 'Mounting Kit', 'Universal mounting kit for rooftop solar panels', 'Accessories', 50.00, 90.00, 100, 'https://example.com/mounting-kit.jpg', NOW(), NOW()),
+        ('prod_005', user_uuid, 'Charge Controller 60A', 'MPPT solar charge controller', 'Controllers', 80.00, 140.00, 40, 'https://example.com/charge-controller-60a.jpg', NOW(), NOW()),
+        ('prod_006', user_uuid, 'Mounting Kit (Roof)', 'Aluminum mounting kit for roof installations', 'Mounting Systems', 80.00, 120.00, 150, 'https://example.com/mounting-kit-roof.jpg', NOW(), NOW()),
+        ('prod_007', user_uuid, 'Solar Cable 6mm²', 'UV resistant solar cable', 1.50, 1000, 'Cables', 'https://example.com/solar-cable.jpg', NOW(), NOW())
+    ON CONFLICT (id) DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        name = EXCLUDED.name,
+        description = EXCLUDED.description,
+        category = EXCLUDED.category,
+        cost_price = EXCLUDED.cost_price,
+        selling_price = EXCLUDED.selling_price,
+        quantity_in_stock = EXCLUDED.quantity_in_stock,
+        image_url = EXCLUDED.image_url,
+        updated_at = NOW();
+END $$;
 
 -- Insert Clients
 INSERT INTO clients (id, user_id, name, email, phone, address, created_at, updated_at)

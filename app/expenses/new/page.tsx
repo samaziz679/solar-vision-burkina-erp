@@ -1,11 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ExpenseForm } from "@/components/expenses/expense-form"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
-export default function NewExpensePage() {
+export default async function NewExpensePage() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New Expense</CardTitle>
+        <CardTitle>Create New Expense</CardTitle>
       </CardHeader>
       <CardContent>
         <ExpenseForm />

@@ -1,11 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProductForm } from "@/components/inventory/product-form"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New Product</CardTitle>
+        <CardTitle>Create New Product</CardTitle>
       </CardHeader>
       <CardContent>
         <ProductForm />

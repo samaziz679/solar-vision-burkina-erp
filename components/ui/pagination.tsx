@@ -1,4 +1,4 @@
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import * as React from "react"
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 
@@ -30,20 +30,24 @@ PaginationItem.displayName = "PaginationItem"
 type PaginationLinkProps = {
   isActive?: boolean
 } & Pick<ButtonProps, "size"> &
-  React.ComponentProps<typeof Link>
+  React.ComponentProps<typeof Button>
 
 const PaginationLink = ({ className, isActive, size = "icon", ...props }: PaginationLinkProps) => (
-  <Link
-    aria-current={isActive ? "page" : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? "outline" : "ghost",
-        size,
-      }),
-      className,
-    )}
-    {...props}
-  />
+  <PaginationItem>
+    <Button
+      aria-current={isActive ? "page" : undefined}
+      variant={isActive ? "outline" : "ghost"}
+      size={size}
+      className={cn(
+        buttonVariants({
+          variant: isActive ? "outline" : "ghost",
+          size,
+        }),
+        className,
+      )}
+      {...props}
+    />
+  </PaginationItem>
 )
 PaginationLink.displayName = "PaginationLink"
 

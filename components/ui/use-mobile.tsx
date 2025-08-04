@@ -3,5 +3,6 @@
 import { useMediaQuery } from "@uidotdev/usehooks"
 
 export function useMobile() {
-  return useMediaQuery("only screen and (max-width : 768px)")
+  const isMobile = useMediaQuery("only screen and (max-width : 768px)")
+  return isMobile
 }

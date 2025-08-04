@@ -24,6 +24,10 @@ export default async function EditSalePage({ params }: { params: { id: string } 
     notFound()
   }
 
+  if (clients.length === 0 || products.length === 0) {
+    redirect("/setup-required?message=Please add at least one client and one product before editing sales.")
+  }
+
   return (
     <Card>
       <CardHeader>

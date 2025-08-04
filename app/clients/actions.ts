@@ -15,7 +15,10 @@ export async function createClient(formData: Omit<Client, "id" | "user_id" | "cr
     redirect("/login")
   }
 
-  const { error } = await supabase.from("clients").insert({ ...formData, user_id: user.id })
+  const { error } = await supabase.from("clients").insert({
+    ...formData,
+    user_id: user.id,
+  })
 
   if (error) {
     console.error("Error creating client:", error)
@@ -43,7 +46,6 @@ export async function updateClient(id: string, formData: Omit<Client, "id" | "us
   }
 
   revalidatePath("/clients")
-  revalidatePath(`/clients/${id}/edit`)
 }
 
 export async function deleteClient(id: string) {

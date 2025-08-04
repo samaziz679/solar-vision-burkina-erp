@@ -15,7 +15,10 @@ export async function createBankingTransaction(formData: Omit<BankingTransaction
     redirect("/login")
   }
 
-  const { error } = await supabase.from("banking_transactions").insert({ ...formData, user_id: user.id })
+  const { error } = await supabase.from("banking_transactions").insert({
+    ...formData,
+    user_id: user.id,
+  })
 
   if (error) {
     console.error("Error creating banking transaction:", error)
@@ -46,7 +49,6 @@ export async function updateBankingTransaction(
   }
 
   revalidatePath("/banking")
-  revalidatePath(`/banking/${id}/edit`)
 }
 
 export async function deleteBankingTransaction(id: string) {
@@ -64,6 +66,29 @@ export async function deleteBankingTransaction(id: string) {
   if (error) {
     console.error("Error deleting banking transaction:", error)
     throw new Error("Failed to delete banking transaction.")
+  }
+
+  revalidatePath("/banking")
+}
+
+export async function createBankingAccount(name: string) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { error } = await supabase.from("banking_accounts").insert({
+    name,
+    user_id: user.id,
+  })
+
+  if (error) {
+    console.error("Error creating banking account:", error)
+    throw new Error("Failed to create banking account.")
   }
 
   revalidatePath("/banking")

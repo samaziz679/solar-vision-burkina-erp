@@ -1,10 +1,11 @@
-import type React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getDashboardData } from "@/lib/data/dashboard"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { formatCurrency } from "@/lib/utils"
+import { getDashboardData } from "@/lib/data/dashboard"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DollarSign, ShoppingCart, Truck } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { format } from "date-fns"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -16,165 +17,147 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const { totalSales, totalExpenses, totalProductsInStock, recentSales, recentPurchases } = await getDashboardData(
-    user.id,
-  )
+  const { totalIncome, totalExpenses, totalSales, totalPurchases, stockLevels, recentTransactions } =
+    await getDashboardData(user.id)
+
+  const balance = totalIncome - totalExpenses
+
+  const chartData = [
+    { name: "Income", value: totalIncome },
+    { name: "Expenses", value: totalExpenses },
+    { name: "Sales", value: totalSales },
+    { name: "Purchases", value: totalPurchases },
+  ]
 
   return (
-    <div className="grid gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-          <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalSales)}</div>
-          <p className="text-xs text-muted-foreground">Total revenue from all sales</p>
+          <div className="text-2xl font-bold">${totalIncome.toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">from all transactions</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-          <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-          <p className="text-xs text-muted-foreground">Total expenditures</p>
+          <div className="text-2xl font-bold">${totalExpenses.toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">from all transactions</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Products in Stock</CardTitle>
-          <PackageIcon className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalProductsInStock}</div>
-          <p className="text-xs text-muted-foreground">Total quantity of all products</p>
+          <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">total revenue from sales</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
+          <Truck className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">${totalPurchases.toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">total cost of purchases</p>
         </CardContent>
       </Card>
 
       <Card className="col-span-full lg:col-span-2">
         <CardHeader>
-          <CardTitle>Recent Sales</CardTitle>
+          <CardTitle>Financial Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                <Bar dataKey="value" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="col-span-full lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Recent Banking Transactions</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Unit Price</TableHead>
-                <TableHead>Total</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentSales.map((sale) => (
-                <TableRow key={sale.id}>
-                  <TableCell>{sale.clients?.name || "N/A"}</TableCell>
-                  <TableCell>{sale.products?.name || "N/A"}</TableCell>
-                  <TableCell>{sale.quantity}</TableCell>
-                  <TableCell>{formatCurrency(sale.unit_price)}</TableCell>
-                  <TableCell>{formatCurrency(sale.quantity * sale.unit_price)}</TableCell>
-                  <TableCell>{new Date(sale.sale_date).toLocaleDateString()}</TableCell>
+              {recentTransactions.length > 0 ? (
+                recentTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
+                    <TableCell>{transaction.description}</TableCell>
+                    <TableCell>{transaction.account_name}</TableCell>
+                    <TableCell className="text-right">${transaction.amount.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    No recent transactions.
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      <Card className="col-span-full lg:col-span-1">
+      <Card className="col-span-full">
         <CardHeader>
-          <CardTitle>Recent Purchases</CardTitle>
+          <CardTitle>Low Stock Products</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Product Name</TableHead>
+                <TableHead className="text-right">Stock</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentPurchases.map((purchase) => (
-                <TableRow key={purchase.id}>
-                  <TableCell>{purchase.suppliers?.name || "N/A"}</TableCell>
-                  <TableCell>{purchase.products?.name || "N/A"}</TableCell>
-                  <TableCell>{purchase.quantity}</TableCell>
-                  <TableCell>{new Date(purchase.purchase_date).toLocaleDateString()}</TableCell>
+              {stockLevels.length > 0 ? (
+                stockLevels.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell className="text-right">{product.stock}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={2} className="h-24 text-center">
+                    All products are well stocked!
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function DollarSignIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="12" x2="12" y1="2" y2="22" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  )
-}
-
-function CreditCardIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="14" x="2" y="5" rx="2" />
-      <line x1="2" x2="22" y1="10" y2="10" />
-    </svg>
-  )
-}
-
-function PackageIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m7.5 4.27-.5.25C6.18 5.16 5 6.59 5 8c0 2.08 1.5 4 4 4.5 0 0 0 0 0 0V17l4 3 4-3v-4.5c2.5-.5 4-2.42 4-4.5 0-1.41-1.18-2.84-2-3.48l-.5-.25" />
-      <path d="M2 7h20" />
-      <path d="M22 17h-20" />
-      <path d="M12 22v-5" />
-      <path d="M12 12V2" />
-    </svg>
   )
 }

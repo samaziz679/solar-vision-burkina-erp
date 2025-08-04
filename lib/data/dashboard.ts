@@ -1,9 +1,25 @@
 import { createClient } from "@/lib/supabase/server"
-import { unstable_noStore as noStore } from "next/cache"
 
 export async function getDashboardData(userId: string) {
-  noStore()
   const supabase = createClient()
+
+  // Fetch total income
+  const { data: incomeData, error: incomeError } = await supabase
+    .from("banking_transactions")
+    .select("amount")
+    .eq("user_id", userId)
+    .eq("type", "income")
+
+  const totalIncome = incomeData?.reduce((sum, t) => sum + t.amount, 0) || 0
+
+  // Fetch total expenses
+  const { data: expenseData, error: expenseError } = await supabase
+    .from("banking_transactions")
+    .select("amount")
+    .eq("user_id", userId)
+    .eq("type", "expense")
+
+  const totalExpenses = expenseData?.reduce((sum, t) => sum + t.amount, 0) || 0
 
   // Fetch total sales
   const { data: salesData, error: salesError } = await supabase
@@ -11,70 +27,63 @@ export async function getDashboardData(userId: string) {
     .select("quantity, unit_price")
     .eq("user_id", userId)
 
-  if (salesError) {
-    console.error("Error fetching sales data:", salesError)
-    throw new Error("Failed to fetch sales data.")
-  }
+  const totalSales = salesData?.reduce((sum, s) => sum + s.quantity * s.unit_price, 0) || 0
 
-  const totalSales = salesData.reduce((sum, sale) => sum + sale.quantity * sale.unit_price, 0)
-
-  // Fetch total expenses
-  const { data: expensesData, error: expensesError } = await supabase
-    .from("expenses")
-    .select("amount")
+  // Fetch total purchases
+  const { data: purchasesData, error: purchasesError } = await supabase
+    .from("purchases")
+    .select("quantity, unit_price")
     .eq("user_id", userId)
 
-  if (expensesError) {
-    console.error("Error fetching expenses data:", expensesError)
-    throw new Error("Failed to fetch expenses data.")
-  }
+  const totalPurchases = purchasesData?.reduce((sum, p) => sum + p.quantity * p.unit_price, 0) || 0
 
-  const totalExpenses = expensesData.reduce((sum, expense) => sum + expense.amount, 0)
-
-  // Fetch total products in stock
+  // Fetch product stock levels
   const { data: productsData, error: productsError } = await supabase
     .from("products")
-    .select("stock")
+    .select("name, stock")
     .eq("user_id", userId)
+    .order("stock", { ascending: true })
+    .limit(5) // Get top 5 lowest stock products
 
-  if (productsError) {
-    console.error("Error fetching products data:", productsError)
-    throw new Error("Failed to fetch products data.")
-  }
-
-  const totalProductsInStock = productsData.reduce((sum, product) => sum + product.stock, 0)
-
-  // Fetch recent sales (e.g., last 5)
-  const { data: recentSales, error: recentSalesError } = await supabase
-    .from("sales")
-    .select("*, products(name), clients(name)")
+  // Fetch recent transactions (e.g., last 5 banking transactions)
+  const { data: recentTransactions, error: recentTransactionsError } = await supabase
+    .from("banking_transactions")
+    .select("*, banking_accounts(name)")
     .eq("user_id", userId)
-    .order("sale_date", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(5)
 
-  if (recentSalesError) {
-    console.error("Error fetching recent sales:", recentSalesError)
-    throw new Error("Failed to fetch recent sales.")
-  }
+  const formattedRecentTransactions = recentTransactions?.map((t) => ({
+    ...t,
+    account_name: (t.banking_accounts as { name: string }).name,
+  }))
 
-  // Fetch recent purchases (e.g., last 5)
-  const { data: recentPurchases, error: recentPurchasesError } = await supabase
-    .from("purchases")
-    .select("*, products(name), suppliers(name)")
-    .eq("user_id", userId)
-    .order("purchase_date", { ascending: false })
-    .limit(5)
-
-  if (recentPurchasesError) {
-    console.error("Error fetching recent purchases:", recentPurchasesError)
-    throw new Error("Failed to fetch recent purchases.")
+  if (incomeError || expenseError || salesError || purchasesError || productsError || recentTransactionsError) {
+    console.error("Error fetching dashboard data:", {
+      incomeError,
+      expenseError,
+      salesError,
+      purchasesError,
+      productsError,
+      recentTransactionsError,
+    })
+    // Return default/empty data in case of error
+    return {
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalSales: 0,
+      totalPurchases: 0,
+      stockLevels: [],
+      recentTransactions: [],
+    }
   }
 
   return {
-    totalSales,
+    totalIncome,
     totalExpenses,
-    totalProductsInStock,
-    recentSales,
-    recentPurchases,
+    totalSales,
+    totalPurchases,
+    stockLevels: productsData || [],
+    recentTransactions: formattedRecentTransactions || [],
   }
 }

@@ -15,7 +15,10 @@ export async function createPurchase(formData: Omit<Purchase, "id" | "user_id" |
     redirect("/login")
   }
 
-  const { error } = await supabase.from("purchases").insert({ ...formData, user_id: user.id })
+  const { error } = await supabase.from("purchases").insert({
+    ...formData,
+    user_id: user.id,
+  })
 
   if (error) {
     console.error("Error creating purchase:", error)
@@ -43,7 +46,6 @@ export async function updatePurchase(id: string, formData: Omit<Purchase, "id" |
   }
 
   revalidatePath("/purchases")
-  revalidatePath(`/purchases/${id}/edit`)
 }
 
 export async function deletePurchase(id: string) {

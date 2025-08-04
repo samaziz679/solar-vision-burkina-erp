@@ -9,6 +9,15 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
+// This file is intentionally left empty or minimal as the actual Sidebar
+// component is expected to be in `components/layout/sidebar.tsx`
+// and this `components/ui/sidebar.tsx` might be a placeholder or
+// a remnant from a previous shadcn/ui setup.
+// If you intend to use a shadcn/ui sidebar, you would typically
+// generate it using `npx shadcn@latest add sidebar` and its content
+// would be here.
+// For this project, the functional sidebar is in `components/layout/sidebar.tsx`.
+
 export function Sidebar() {
   const pathname = usePathname()
   const supabase = createClient()

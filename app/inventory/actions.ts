@@ -15,7 +15,10 @@ export async function createProduct(formData: Omit<Product, "id" | "user_id" | "
     redirect("/login")
   }
 
-  const { error } = await supabase.from("products").insert({ ...formData, user_id: user.id })
+  const { error } = await supabase.from("products").insert({
+    ...formData,
+    user_id: user.id,
+  })
 
   if (error) {
     console.error("Error creating product:", error)
@@ -43,7 +46,6 @@ export async function updateProduct(id: string, formData: Omit<Product, "id" | "
   }
 
   revalidatePath("/inventory")
-  revalidatePath(`/inventory/${id}/edit`)
 }
 
 export async function deleteProduct(id: string) {

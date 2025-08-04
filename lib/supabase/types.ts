@@ -3,35 +3,74 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
-      banking_transactions: {
+      banking_accounts: {
         Row: {
-          amount: number
           created_at: string
-          description: string | null
           id: string
-          type: Database["public"]["Enums"]["transaction_type"]
-          updated_at: string
+          name: string
           user_id: string
         }
         Insert: {
-          amount: number
           created_at?: string
-          description?: string | null
           id?: string
-          type: Database["public"]["Enums"]["transaction_type"]
-          updated_at?: string
+          name: string
           user_id: string
         }
         Update: {
-          amount?: number
           created_at?: string
-          description?: string | null
           id?: string
-          type?: Database["public"]["Enums"]["transaction_type"]
-          updated_at?: string
+          name?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "banking_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banking_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          date: string
+          description: string
+          id: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          type?: Database["public"]["Enums"]["transaction_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banking_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "banking_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "banking_transactions_user_id_fkey"
             columns: ["user_id"]
@@ -43,33 +82,33 @@ export type Database = {
       }
       clients: {
         Row: {
-          address: string | null
+          address: string
+          contact_person: string
           created_at: string
-          email: string | null
+          email: string
           id: string
           name: string
-          phone: string | null
-          updated_at: string
+          phone: string
           user_id: string
         }
         Insert: {
-          address?: string | null
+          address: string
+          contact_person: string
           created_at?: string
-          email?: string | null
+          email: string
           id?: string
           name: string
-          phone?: string | null
-          updated_at?: string
+          phone: string
           user_id: string
         }
         Update: {
-          address?: string | null
+          address?: string
+          contact_person?: string
           created_at?: string
-          email?: string | null
+          email?: string
           id?: string
           name?: string
-          phone?: string | null
-          updated_at?: string
+          phone?: string
           user_id?: string
         }
         Relationships: [
@@ -85,32 +124,29 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
-          category: string | null
+          category: string
           created_at: string
           date: string
-          description: string | null
+          description: string
           id: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
-          category?: string | null
+          category: string
           created_at?: string
           date: string
-          description?: string | null
+          description: string
           id?: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
-          category?: string | null
+          category?: string
           created_at?: string
           date?: string
-          description?: string | null
+          description?: string
           id?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -125,42 +161,36 @@ export type Database = {
       }
       products: {
         Row: {
-          category: string | null
-          cost_price: number
+          category: string
           created_at: string
-          description: string | null
+          description: string
           id: string
           image_url: string | null
           name: string
-          quantity_in_stock: number
-          selling_price: number
-          updated_at: string
+          price: number
+          stock: number
           user_id: string
         }
         Insert: {
-          category?: string | null
-          cost_price: number
+          category: string
           created_at?: string
-          description?: string | null
+          description: string
           id?: string
           image_url?: string | null
           name: string
-          quantity_in_stock?: number
-          selling_price: number
-          updated_at?: string
+          price: number
+          stock: number
           user_id: string
         }
         Update: {
-          category?: string | null
-          cost_price?: number
+          category?: string
           created_at?: string
-          description?: string | null
+          description?: string
           id?: string
           image_url?: string | null
           name?: string
-          quantity_in_stock?: number
-          selling_price?: number
-          updated_at?: string
+          price?: number
+          stock?: number
           user_id?: string
         }
         Relationships: [
@@ -177,34 +207,34 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          notes: string | null
           product_id: string
           purchase_date: string
           quantity: number
           supplier_id: string
-          total_cost: number
-          updated_at: string
+          unit_price: number
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          notes?: string | null
           product_id: string
           purchase_date: string
           quantity: number
           supplier_id: string
-          total_cost: number
-          updated_at?: string
+          unit_price: number
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          notes?: string | null
           product_id?: string
           purchase_date?: string
           quantity?: number
           supplier_id?: string
-          total_cost?: number
-          updated_at?: string
+          unit_price?: number
           user_id?: string
         }
         Relationships: [
@@ -236,33 +266,33 @@ export type Database = {
           client_id: string
           created_at: string
           id: string
+          notes: string | null
           product_id: string
           quantity: number
           sale_date: string
-          total_price: number
-          updated_at: string
+          unit_price: number
           user_id: string
         }
         Insert: {
           client_id: string
           created_at?: string
           id?: string
+          notes?: string | null
           product_id: string
           quantity: number
           sale_date: string
-          total_price: number
-          updated_at?: string
+          unit_price: number
           user_id: string
         }
         Update: {
           client_id?: string
           created_at?: string
           id?: string
+          notes?: string | null
           product_id?: string
           quantity?: number
           sale_date?: string
-          total_price?: number
-          updated_at?: string
+          unit_price?: number
           user_id?: string
         }
         Relationships: [
@@ -291,33 +321,33 @@ export type Database = {
       }
       suppliers: {
         Row: {
-          address: string | null
+          address: string
+          contact_person: string
           created_at: string
-          email: string | null
+          email: string
           id: string
           name: string
-          phone: string | null
-          updated_at: string
+          phone: string
           user_id: string
         }
         Insert: {
-          address?: string | null
+          address: string
+          contact_person: string
           created_at?: string
-          email?: string | null
+          email: string
           id?: string
           name: string
-          phone?: string | null
-          updated_at?: string
+          phone: string
           user_id: string
         }
         Update: {
-          address?: string | null
+          address?: string
+          contact_person?: string
           created_at?: string
-          email?: string | null
+          email?: string
           id?: string
           name?: string
-          phone?: string | null
-          updated_at?: string
+          phone?: string
           user_id?: string
         }
         Relationships: [
@@ -335,22 +365,16 @@ export type Database = {
           created_at: string
           email: string
           id: string
-          name: string | null
-          updated_at: string
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
-          name?: string | null
-          updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
-          name?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -362,7 +386,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      transaction_type: "income" | "expense"
+      transaction_type: "income" | "expense" | "transfer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -374,17 +398,17 @@ type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] & PublicSchema["Views"]) | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+  ? (Database[PublicTableNameOrOptions["schema"]] extends {
+      Tables: { [key: string]: infer R }
     }
-    ? R
-    : never
+      ? R
+      : never) &
+      (Database[PublicTableNameOrOptions["schema"]] extends {
+        Views: { [key: string]: infer R }
+      }
+        ? R
+        : never)
   : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] & PublicSchema["Views"])
     ? (PublicSchema["Tables"] & PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
@@ -394,12 +418,11 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends keyof PublicSchema["Tables"] | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] },
+> = PublicTableNameOrOptions extends { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][PublicTableNameOrOptions["table"]] extends {
       Insert: infer I
     }
     ? I
@@ -413,12 +436,11 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends keyof PublicSchema["Tables"] | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] },
+> = PublicTableNameOrOptions extends { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][PublicTableNameOrOptions["table"]] extends {
       Update: infer U
     }
     ? U
@@ -432,12 +454,22 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends keyof PublicSchema["Enums"] | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database; enum: keyof Database[keyof Database]["Enums"] },
+> = PublicEnumNameOrOptions extends { schema: keyof Database; enum: keyof Database[keyof Database]["Enums"] }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][PublicEnumNameOrOptions["enum"]]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
+
+// Custom types for convenience
+export type BankingAccount = Tables<"banking_accounts">
+export type BankingTransaction = Tables<"banking_transactions">
+export type Client = Tables<"clients">
+export type Expense = Tables<"expenses">
+export type Product = Tables<"products">
+export type Purchase = Tables<"purchases">
+export type Sale = Tables<"sales">
+export type Supplier = Tables<"suppliers">
+export type User = Tables<"users">

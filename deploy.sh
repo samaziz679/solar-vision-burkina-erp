@@ -3,7 +3,15 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-echo "Starting Vercel deployment script..."
+echo "Starting deployment script..."
+
+# Install dependencies
+echo "Installing dependencies..."
+npm install --prefer-offline --no-audit --progress=false || { echo "npm install failed"; exit 1; }
+
+# Run build
+echo "Running build..."
+npm run build || { echo "npm run build failed"; exit 1; }
 
 # Install Vercel CLI globally
 echo "Installing Vercel CLI..."
@@ -13,12 +21,8 @@ npm install --global vercel@latest
 echo "Pulling environment variables for preview environment..."
 vercel pull --yes --environment=preview --token=${VERCEL_TOKEN}
 
-# Build the project
-echo "Building the project..."
-vercel build
-
 # Deploy the prebuilt project
 echo "Deploying the prebuilt project..."
 vercel deploy --prebuilt
 
-echo "Vercel deployment script finished."
+echo "Deployment script finished successfully."

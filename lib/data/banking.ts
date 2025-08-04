@@ -1,103 +1,68 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import type { BankingAccount } from "@/lib/supabase/types"
 
-export async function getBankingTransactions(userId: string) {
-  const supabase = createClient()
+export async function getBankingAccounts(userId: string) {
+  const cookieStore = cookies()
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: any) {
+        cookieStore.delete({ name, ...options })
+      },
+    },
+  })
+
   const { data, error } = await supabase
-    .from("banking_transactions")
+    .from("banking_accounts")
     .select("*")
-    .eq("user_id", userId)
+    .eq("user_id", userId) // Assuming banking accounts are tied to a user
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching banking transactions:", error)
-    return []
+    console.error("Error fetching banking accounts:", error)
+    return { bankingAccounts: null, error }
   }
-  return data
+
+  return { bankingAccounts: data as BankingAccount[], error: null }
 }
 
-export async function getBankingTransactionById(id: string, userId: string) {
-  const supabase = createClient()
+export async function getBankingAccountById(id: string, userId: string) {
+  const cookieStore = cookies()
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: any) {
+        cookieStore.delete({ name, ...options })
+      },
+    },
+  })
+
   const { data, error } = await supabase
-    .from("banking_transactions")
+    .from("banking_accounts")
     .select("*")
     .eq("id", id)
-    .eq("user_id", userId)
+    .eq("user_id", userId) // Ensure user owns the account
     .single()
 
   if (error) {
-    console.error("Error fetching banking transaction:", error)
-    return null
-  }
-  return data
-}
-
-export async function getBankingSummary(userId: string) {
-  const supabase = createClient()
-
-  const { data: incomeData, error: incomeError } = await supabase
-    .from("banking_transactions")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("type", "income")
-
-  if (incomeError) {
-    console.error("Error fetching income:", incomeError)
-    return { totalIncome: 0, totalExpense: 0, netBalance: 0 }
+    console.error("Error fetching banking account by ID:", error)
+    return { bankingAccount: null, error }
   }
 
-  const totalIncome = incomeData.reduce((sum, transaction) => sum + transaction.amount, 0)
-
-  const { data: expenseData, error: expenseError } = await supabase
-    .from("banking_transactions")
-    .select("amount")
-    .eq("user_id", userId)
-    .eq("type", "expense")
-
-  if (expenseError) {
-    console.error("Error fetching expenses:", expenseError)
-    return { totalIncome, totalExpense: 0, netBalance: totalIncome }
-  }
-
-  const totalExpense = expenseData.reduce((sum, transaction) => sum + transaction.amount, 0)
-
-  const netBalance = totalIncome - totalExpense
-
-  return { totalIncome, totalExpense, netBalance }
-}
-
-export async function getBankingChartData(userId: string) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from("banking_transactions")
-    .select("amount, type, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-
-  if (error) {
-    console.error("Error fetching banking chart data:", error)
-    return []
-  }
-
-  const monthlyData: { [key: string]: { income: number; expense: number } } = {}
-
-  data.forEach((transaction) => {
-    const month = new Date(transaction.created_at).toLocaleString("en-US", {
-      month: "short",
-      year: "numeric",
-    })
-    if (!monthlyData[month]) {
-      monthlyData[month] = { income: 0, expense: 0 }
-    }
-    if (transaction.type === "income") {
-      monthlyData[month].income += transaction.amount
-    } else {
-      monthlyData[month].expense += transaction.amount
-    }
-  })
-
-  return Object.keys(monthlyData).map((month) => ({
-    name: month,
-    Income: monthlyData[month].income,
-    Expense: monthlyData[month].expense,
-  }))
+  return { bankingAccount: data as BankingAccount, error: null }
 }

@@ -1,38 +1,54 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { notFound } from "next/navigation"
 import { getPurchaseById } from "@/lib/data/purchases"
 import { getProducts } from "@/lib/data/products"
 import { getSuppliers } from "@/lib/data/suppliers"
+import EditPurchaseForm from "@/components/purchases/edit-purchase-form" // Ensure correct import
 
-export default async function EditPurchasePage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const supabase = createClient()
+export const dynamic = "force-dynamic"
+
+export default async function EditPurchasePage({ params }: { params: { id: string } }) {
+  const cookieStore = cookies()
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: any) {
+        cookieStore.delete({ name, ...options })
+      },
+    },
+  })
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/login")
+    notFound() // Or redirect to login
   }
 
-  const purchase = await getPurchaseById(params.id, user.id)
-  const products = await getProducts(user.id)
-  const suppliers = await getSuppliers(user.id)
+  const { purchase, error: purchaseError } = await getPurchaseById(params.id, user.id)
+  const { products, error: productsError } = await getProducts(user.id)
+  const { suppliers, error: suppliersError } = await getSuppliers(user.id)
 
-  if (!purchase) {
-    redirect("/purchases")
+  if (purchaseError || !purchase || productsError || !products || suppliersError || !suppliers) {
+    console.error("Error fetching data for edit purchase page:", purchaseError || productsError || suppliersError)
+    notFound()
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Edit Purchase</h2>
-        <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
+    <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      <div className="flex items-center">
+        <h1 className="font-semibold text-lg md:text-2xl">Modifier l&apos;Achat</h1>
       </div>
-    </div>
+      <EditPurchaseForm purchase={purchase} products={products} suppliers={suppliers} />
+    </main>
   )
 }

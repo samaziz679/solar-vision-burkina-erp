@@ -1,92 +1,77 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
-export async function getDashboardSummary(userId: string) {
-  const supabase = createClient()
+export async function getDashboardData(userId: string) {
+  const cookieStore = cookies()
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: any) {
+        cookieStore.delete({ name, ...options })
+      },
+    },
+  })
 
-  // Total Products
-  const { count: productCount, error: productError } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
+  let totalSales = 0
+  let totalExpenses = 0
+  let totalProducts = 0
+  let totalClients = 0
+  let error: Error | null = null
 
-  if (productError) console.error("Error fetching product count:", productError)
-
-  // Total Sales
+  // Fetch total sales
   const { data: salesData, error: salesError } = await supabase
     .from("sales")
-    .select("total_price")
+    .select("quantity, unit_price")
     .eq("user_id", userId)
+  if (salesError) {
+    console.error("Error fetching sales data:", salesError)
+    error = salesError
+  } else {
+    totalSales = salesData.reduce((sum, sale) => sum + sale.quantity * sale.unit_price, 0)
+  }
 
-  if (salesError) console.error("Error fetching sales data:", salesError)
-  const totalSales = salesData?.reduce((sum, sale) => sum + sale.total_price, 0) || 0
-
-  // Total Expenses
+  // Fetch total expenses
   const { data: expensesData, error: expensesError } = await supabase
     .from("expenses")
     .select("amount")
     .eq("user_id", userId)
+  if (expensesError) {
+    console.error("Error fetching expenses data:", expensesError)
+    error = expensesError
+  } else {
+    totalExpenses = expensesData.reduce((sum, expense) => sum + expense.amount, 0)
+  }
 
-  if (expensesError) console.error("Error fetching expenses data:", expensesError)
-  const totalExpenses = expensesData?.reduce((sum, expense) => sum + expense.amount, 0) || 0
-
-  // Recent Sales (last 5)
-  const { data: recentSales, error: recentSalesError } = await supabase
-    .from("sales")
-    .select("*, products(name), clients(name)")
-    .eq("user_id", userId)
-    .order("sale_date", { ascending: false })
-    .limit(5)
-
-  if (recentSalesError) console.error("Error fetching recent sales:", recentSalesError)
-
-  // Low Stock Products (quantity < 10)
-  const { data: lowStockProducts, error: lowStockError } = await supabase
+  // Fetch total unique products
+  const { count: productsCount, error: productsError } = await supabase
     .from("products")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("user_id", userId)
-    .lt("quantity_in_stock", 10)
-    .order("quantity_in_stock", { ascending: true })
-    .limit(5)
-
-  if (lowStockError) console.error("Error fetching low stock products:", lowStockError)
-
-  return {
-    totalProducts: productCount || 0,
-    totalSales,
-    totalExpenses,
-    recentSales: recentSales || [],
-    lowStockProducts: lowStockProducts || [],
-  }
-}
-
-export async function getSalesChartData(userId: string) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from("sales")
-    .select("sale_date, total_price")
-    .eq("user_id", userId)
-    .order("sale_date", { ascending: true })
-
-  if (error) {
-    console.error("Error fetching sales chart data:", error)
-    return []
+  if (productsError) {
+    console.error("Error fetching products count:", productsError)
+    error = productsError
+  } else {
+    totalProducts = productsCount || 0
   }
 
-  const monthlySales: { [key: string]: number } = {}
+  // Fetch total unique clients
+  const { count: clientsCount, error: clientsError } = await supabase
+    .from("clients")
+    .select("*", { count: "exact" })
+    .eq("user_id", userId)
+  if (clientsError) {
+    console.error("Error fetching clients count:", clientsError)
+    error = clientsError
+  } else {
+    totalClients = clientsCount || 0
+  }
 
-  data.forEach((sale) => {
-    const month = new Date(sale.sale_date).toLocaleString("en-US", {
-      month: "short",
-      year: "numeric",
-    })
-    if (!monthlySales[month]) {
-      monthlySales[month] = 0
-    }
-    monthlySales[month] += sale.total_price
-  })
-
-  return Object.keys(monthlySales).map((month) => ({
-    name: month,
-    Sales: monthlySales[month],
-  }))
+  return { totalSales, totalExpenses, totalProducts, totalClients, error }
 }

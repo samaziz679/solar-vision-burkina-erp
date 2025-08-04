@@ -1,182 +1,107 @@
 "use client"
 
-import { useActionState } from "react"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { toast } from "sonner"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-
+import { useActionState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
+import { useEffect } from "react"
 import { createPurchase } from "@/app/purchases/actions"
-import type { Tables } from "@/lib/supabase/types"
-
-const formSchema = z.object({
-  product_id: z.string().min(1, "Product is required."),
-  supplier_id: z.string().min(1, "Supplier is required."),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-  purchase_date: z.date({
-    required_error: "Purchase date is required.",
-  }),
-  total_cost: z.coerce.number().min(0.01, "Total cost must be positive."),
-})
-
-type PurchaseFormValues = z.infer<typeof formSchema>
+import type { Product, Supplier } from "@/lib/supabase/types"
 
 interface PurchaseFormProps {
-  products: Tables<"products">[]
-  suppliers: Tables<"suppliers">[]
+  products: Product[]
+  suppliers: Supplier[]
 }
 
-export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
-  const router = useRouter()
-  const [state, formAction] = useActionState(createPurchase, null)
-
-  const form = useForm<PurchaseFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      product_id: "",
-      supplier_id: "",
-      quantity: 1,
-      purchase_date: new Date(),
-      total_cost: 0,
-    },
+export default function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
+  const [state, formAction] = useActionState(createPurchase, {
+    message: "",
+    errors: undefined,
   })
+  const { pending } = useFormStatus()
 
-  async function onSubmit(values: PurchaseFormValues) {
-    const formData = new FormData()
-    formData.append("product_id", values.product_id)
-    formData.append("supplier_id", values.supplier_id)
-    formData.append("quantity", values.quantity.toString())
-    formData.append("purchase_date", format(values.purchase_date, "yyyy-MM-dd"))
-    formData.append("total_cost", values.total_cost.toString())
-
-    const result = await formAction(formData)
-
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Purchase created successfully!")
-      router.push("/purchases")
-      router.refresh()
+  useEffect(() => {
+    if (state.message && !state.errors) {
+      toast.success(state.message)
+    } else if (state.message && state.errors) {
+      toast.error("Erreur de validation", {
+        description: state.message,
+      })
     }
-  }
+  }, [state])
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="product_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Product</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a product" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="supplier_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Supplier</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a supplier" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {suppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="quantity"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Quantity</FormLabel>
-              <FormControl>
-                <Input type="number" step="1" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="purchase_date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Purchase Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                    >
-                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="total_cost"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Total Cost</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full">
-          Create Purchase
-        </Button>
-      </form>
-    </Form>
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>Ajouter un nouvel achat</CardTitle>
+        <CardDescription>Remplissez les détails du nouvel achat.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="product_id">Produit</Label>
+            <Select name="product_id" required>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un produit" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state.errors?.product_id && <p className="text-red-500 text-sm">{state.errors.product_id}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="supplier_id">Fournisseur</Label>
+            <Select name="supplier_id" required>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un fournisseur" />
+              </SelectTrigger>
+              <SelectContent>
+                {suppliers.map((supplier) => (
+                  <SelectItem key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state.errors?.supplier_id && <p className="text-red-500 text-sm">{state.errors.supplier_id}</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="quantity">Quantité</Label>
+              <Input id="quantity" name="quantity" type="number" defaultValue={1} required />
+              {state.errors?.quantity && <p className="text-red-500 text-sm">{state.errors.quantity}</p>}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="unit_cost">Coût Unitaire</Label>
+              <Input id="unit_cost" name="unit_cost" type="number" step="0.01" defaultValue={0} required />
+              {state.errors?.unit_cost && <p className="text-red-500 text-sm">{state.errors.unit_cost}</p>}
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="purchase_date">Date d&apos;achat</Label>
+            <Input
+              id="purchase_date"
+              name="purchase_date"
+              type="date"
+              defaultValue={new Date().toISOString().split("T")[0]}
+              required
+            />
+            {state.errors?.purchase_date && <p className="text-red-500 text-sm">{state.errors.purchase_date}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "Création..." : "Créer l'achat"}
+          </Button>
+          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
+        </form>
+      </CardContent>
+    </Card>
   )
 }

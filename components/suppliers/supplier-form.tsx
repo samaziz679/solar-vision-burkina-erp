@@ -1,126 +1,87 @@
 "use client"
 
-import { useActionState } from "react"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { toast } from "sonner"
-
+import { useActionState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
+import { useEffect } from "react"
 import { createSupplier, updateSupplier } from "@/app/suppliers/actions"
-import type { Tables } from "@/lib/supabase/types"
-
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  email: z.string().email("Invalid email address.").optional().or(z.literal("")),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-})
-
-type SupplierFormValues = z.infer<typeof formSchema>
+import type { Supplier } from "@/lib/supabase/types"
 
 interface SupplierFormProps {
-  initialData?: Tables<"suppliers">
+  initialData?: Supplier | null
 }
 
-export function SupplierForm({ initialData }: SupplierFormProps) {
-  const router = useRouter()
-  const [state, formAction] = useActionState(initialData ? updateSupplier : createSupplier, null)
-
-  const form = useForm<SupplierFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-    },
+export default function SupplierForm({ initialData }: SupplierFormProps) {
+  const isEditing = !!initialData?.id
+  const [state, formAction] = useActionState(isEditing ? updateSupplier.bind(null, initialData.id!) : createSupplier, {
+    message: "",
+    errors: undefined,
   })
+  const { pending } = useFormStatus()
 
-  async function onSubmit(values: SupplierFormValues) {
-    const formData = new FormData()
-    formData.append("name", values.name)
-    formData.append("email", values.email || "")
-    formData.append("phone", values.phone || "")
-    formData.append("address", values.address || "")
-    if (initialData) {
-      formData.append("id", initialData.id)
+  useEffect(() => {
+    if (state.message && !state.errors) {
+      toast.success(state.message)
+    } else if (state.message && state.errors) {
+      toast.error("Erreur de validation", {
+        description: state.message,
+      })
     }
-
-    const result = await formAction(formData)
-
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success(initialData ? "Supplier updated successfully!" : "Supplier created successfully!")
-      router.push("/suppliers")
-      router.refresh()
-    }
-  }
+  }, [state])
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full">
-          {initialData ? "Update Supplier" : "Create Supplier"}
-        </Button>
-      </form>
-    </Form>
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>{isEditing ? "Modifier le fournisseur" : "Ajouter un nouveau fournisseur"}</CardTitle>
+        <CardDescription>
+          {isEditing
+            ? "Mettez à jour les informations de ce fournisseur."
+            : "Remplissez les détails du nouveau fournisseur."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nom du fournisseur</Label>
+            <Input id="name" name="name" defaultValue={initialData?.name || ""} required />
+            {state.errors?.name && <p className="text-red-500 text-sm">{state.errors.name}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="contact_person">Personne de contact</Label>
+            <Input id="contact_person" name="contact_person" defaultValue={initialData?.contact_person || ""} />
+            {state.errors?.contact_person && <p className="text-red-500 text-sm">{state.errors.contact_person}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
+            {state.errors?.email && <p className="text-red-500 text-sm">{state.errors.email}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="phone">Téléphone</Label>
+            <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
+            {state.errors?.phone && <p className="text-red-500 text-sm">{state.errors.phone}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="address">Adresse</Label>
+            <Textarea id="address" name="address" defaultValue={initialData?.address || ""} />
+            {state.errors?.address && <p className="text-red-500 text-sm">{state.errors.address}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending
+              ? isEditing
+                ? "Mise à jour..."
+                : "Création..."
+              : isEditing
+                ? "Mettre à jour le fournisseur"
+                : "Créer le fournisseur"}
+          </Button>
+          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
+        </form>
+      </CardContent>
+    </Card>
   )
 }

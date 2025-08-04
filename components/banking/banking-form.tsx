@@ -1,121 +1,96 @@
 "use client"
 
-import { useActionState } from "react"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { toast } from "sonner"
-
+import { useActionState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { createBankingTransaction, updateBankingTransaction } from "@/app/banking/actions"
-import type { Tables } from "@/lib/supabase/types"
-
-const formSchema = z.object({
-  amount: z.coerce.number().min(0.01, "Amount must be positive"),
-  type: z.enum(["income", "expense"], {
-    required_error: "Transaction type is required",
-  }),
-  description: z.string().optional(),
-})
-
-type BankingFormValues = z.infer<typeof formSchema>
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
+import { useEffect } from "react"
+import { createBankingAccount, updateBankingAccount } from "@/app/banking/actions" // Corrected imports
+import type { BankingAccount } from "@/lib/supabase/types"
 
 interface BankingFormProps {
-  initialData?: Tables<"banking_transactions">
+  initialData?: BankingAccount | null
 }
 
-export function BankingForm({ initialData }: BankingFormProps) {
-  const router = useRouter()
-  const [state, formAction] = useActionState(initialData ? updateBankingTransaction : createBankingTransaction, null)
-
-  const form = useForm<BankingFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      amount: 0,
-      type: "income",
-      description: "",
+export default function BankingForm({ initialData }: BankingFormProps) {
+  const isEditing = !!initialData?.id
+  const [state, formAction] = useActionState(
+    isEditing ? updateBankingAccount.bind(null, initialData.id!) : createBankingAccount,
+    {
+      message: "",
+      errors: undefined,
     },
-  })
+  )
+  const { pending } = useFormStatus()
 
-  async function onSubmit(values: BankingFormValues) {
-    const formData = new FormData()
-    formData.append("amount", values.amount.toString())
-    formData.append("type", values.type)
-    formData.append("description", values.description || "")
-    if (initialData) {
-      formData.append("id", initialData.id)
+  useEffect(() => {
+    if (state.message && !state.errors) {
+      toast.success(state.message)
+    } else if (state.message && state.errors) {
+      toast.error("Erreur de validation", {
+        description: state.message,
+      })
     }
-
-    const result = await formAction(formData)
-
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success(initialData ? "Transaction updated successfully!" : "Transaction created successfully!")
-      router.push("/banking")
-      router.refresh()
-    }
-  }
+  }, [state])
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a transaction type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full">
-          {initialData ? "Update Transaction" : "Create Transaction"}
-        </Button>
-      </form>
-    </Form>
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>{isEditing ? "Modifier le compte bancaire" : "Ajouter un nouveau compte bancaire"}</CardTitle>
+        <CardDescription>
+          {isEditing
+            ? "Mettez à jour les informations de ce compte bancaire."
+            : "Remplissez les détails du nouveau compte bancaire."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="account_name">Nom du compte</Label>
+            <Input id="account_name" name="account_name" defaultValue={initialData?.account_name || ""} required />
+            {state.errors?.account_name && <p className="text-red-500 text-sm">{state.errors.account_name}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="account_number">Numéro de compte</Label>
+            <Input
+              id="account_number"
+              name="account_number"
+              defaultValue={initialData?.account_number || ""}
+              required
+            />
+            {state.errors?.account_number && <p className="text-red-500 text-sm">{state.errors.account_number}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="bank_name">Nom de la banque</Label>
+            <Input id="bank_name" name="bank_name" defaultValue={initialData?.bank_name || ""} required />
+            {state.errors?.bank_name && <p className="text-red-500 text-sm">{state.errors.bank_name}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="balance">Solde</Label>
+            <Input
+              id="balance"
+              name="balance"
+              type="number"
+              step="0.01"
+              defaultValue={initialData?.balance || 0}
+              required
+            />
+            {state.errors?.balance && <p className="text-red-500 text-sm">{state.errors.balance}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending
+              ? isEditing
+                ? "Mise à jour..."
+                : "Création..."
+              : isEditing
+                ? "Mettre à jour le compte"
+                : "Créer le compte"}
+          </Button>
+          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
+        </form>
+      </CardContent>
+    </Card>
   )
 }

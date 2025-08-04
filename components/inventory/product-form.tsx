@@ -1,166 +1,78 @@
 "use client"
 
-import { useActionState } from "react"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { toast } from "sonner"
-
+import { useActionState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
+import { useEffect } from "react"
 import { createProduct } from "@/app/inventory/actions"
 
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  cost_price: z.coerce.number().min(0.01, "Cost price must be positive."),
-  selling_price: z.coerce.number().min(0.01, "Selling price must be positive."),
-  quantity_in_stock: z.coerce.number().min(0, "Quantity cannot be negative."),
-  image_url: z.string().url("Invalid URL").optional().or(z.literal("")),
-})
-
-type ProductFormValues = z.infer<typeof formSchema>
-
-export function ProductForm() {
-  const router = useRouter()
-  const [state, formAction] = useActionState(createProduct, null)
-
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      category: "",
-      cost_price: 0,
-      selling_price: 0,
-      quantity_in_stock: 0,
-      image_url: "",
-    },
+export default function ProductForm() {
+  const [state, formAction] = useActionState(createProduct, {
+    message: "",
+    errors: undefined,
   })
+  const { pending } = useFormStatus()
 
-  async function onSubmit(values: ProductFormValues) {
-    const formData = new FormData()
-    formData.append("name", values.name)
-    formData.append("description", values.description || "")
-    formData.append("category", values.category || "")
-    formData.append("cost_price", values.cost_price.toString())
-    formData.append("selling_price", values.selling_price.toString())
-    formData.append("quantity_in_stock", values.quantity_in_stock.toString())
-    formData.append("image_url", values.image_url || "")
-
-    const result = await formAction(formData)
-
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success("Product created successfully!")
-      router.push("/inventory")
-      router.refresh()
+  useEffect(() => {
+    if (state.message && !state.errors) {
+      toast.success(state.message)
+    } else if (state.message && state.errors) {
+      toast.error("Erreur de validation", {
+        description: state.message,
+      })
     }
-  }
+  }, [state])
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="cost_price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cost Price</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="selling_price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Selling Price</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="quantity_in_stock"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Quantity in Stock</FormLabel>
-              <FormControl>
-                <Input type="number" step="1" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="image_url"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image URL</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full">
-          Create Product
-        </Button>
-      </form>
-    </Form>
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>Ajouter un nouveau produit</CardTitle>
+        <CardDescription>Remplissez les détails du nouveau produit.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nom du produit</Label>
+            <Input id="name" name="name" required />
+            {state.errors?.name && <p className="text-red-500 text-sm">{state.errors.name}</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="stock">Stock</Label>
+              <Input id="stock" name="stock" type="number" defaultValue={0} required />
+              {state.errors?.stock && <p className="text-red-500 text-sm">{state.errors.stock}</p>}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="category">Catégorie</Label>
+              <Input id="category" name="category" required />
+              {state.errors?.category && <p className="text-red-500 text-sm">{state.errors.category}</p>}
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="price">Prix</Label>
+            <Input id="price" name="price" type="number" step="0.01" defaultValue={0} required />
+            {state.errors?.price && <p className="text-red-500 text-sm">{state.errors.price}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" name="description" />
+            {state.errors?.description && <p className="text-red-500 text-sm">{state.errors.description}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="image_url">URL de l&apos;image</Label>
+            <Input id="image_url" name="image_url" type="url" />
+            {state.errors?.image_url && <p className="text-red-500 text-sm">{state.errors.image_url}</p>}
+          </div>
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "Création..." : "Créer le produit"}
+          </Button>
+          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
+        </form>
+      </CardContent>
+    </Card>
   )
 }

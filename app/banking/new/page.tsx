@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { BankingForm } from "@/components/banking/banking-form"
+import { getBankingAccounts } from "@/lib/data/banking"
 
 export default async function NewBankingPage() {
   const supabase = createClient()
@@ -12,11 +13,13 @@ export default async function NewBankingPage() {
     redirect("/login")
   }
 
+  const bankingAccounts = await getBankingAccounts(user.id)
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-center">Add New Transaction</h2>
-        <BankingForm />
+        <BankingForm bankingAccounts={bankingAccounts} />
       </div>
     </div>
   )

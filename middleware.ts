@@ -3,18 +3,24 @@ import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
   try {
-    // Create a Supabase client configured to use cookies
-    const supabase = createClient(request)
+    // This `try/catch` block is only here to catch an error that sometimes happens when Next.js
+    // tries to prerender a page with `supabase.auth.getUser()` and the Supabase client cannot be created.
+    // This can happen if the environment variables are not set correctly or if the Supabase project is not configured.
+    // In a production environment, you should ensure your environment variables are correctly set.
+    const { supabase, response } = createClient(request)
 
-    // Refresh session if expired - this will have a lengthening effect on the session
-    // as long as the user continues to be active.
+    // Refresh session if expired - required for Server Components
+    // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
     await supabase.auth.getSession()
 
-    return NextResponse.next()
+    return response
   } catch (e) {
-    // If a redirect happens, `getNext` won't be called, so we need to handle it here.
-    // The user is probably not logged in, redirect to login page.
-    return NextResponse.redirect(new URL("/login", request.url))
+    // If an error occurs, you can return a custom error page or redirect to a login page
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
   }
 }
 
@@ -26,11 +32,11 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - login (login page)
-     * - auth/callback (Supabase auth callback)
+     * - auth (auth callback)
      * - setup-required (setup page)
-     * - api (API routes)
-     * - public folder (e.g., /public/images)
+     * - api (api routes)
+     * - public (public assets)
      */
-    "/((?!_next/static|_next/image|favicon.ico|login|auth/callback|setup-required|api|.*\\..*).*)",
+    "/((?!_next/static|_next/image|favicon.ico|login|auth|setup-required|api|.*\\..*).*)",
   ],
 }

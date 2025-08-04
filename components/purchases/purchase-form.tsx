@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { createPurchase, updatePurchase } from "@/app/purchases/actions"
+import { createPurchase } from "@/app/purchases/actions"
 import type { Product, Purchase, Supplier } from "@/lib/supabase/types"
 import { useEffect } from "react"
 
@@ -57,12 +57,14 @@ export function PurchaseForm({ initialData, suppliers, products }: PurchaseFormP
   async function onSubmit(values: PurchaseFormValues) {
     try {
       if (initialData) {
-        await updatePurchase(initialData.id, values)
-        toast.success("Purchase updated successfully.")
-      } else {
-        await createPurchase(values)
-        toast.success("Purchase created successfully.")
+        // This form is for creating new purchases, so initialData should not be present.
+        // If you intend to use this form for editing, you'll need to add an updatePurchase action.
+        // For now, we'll just handle creation.
+        toast.error("This form is for creating new purchases only.")
+        return
       }
+      await createPurchase(values)
+      toast.success("Purchase created successfully.")
       router.push("/purchases")
     } catch (error: any) {
       toast.error("Failed to save purchase.", {
@@ -174,7 +176,7 @@ export function PurchaseForm({ initialData, suppliers, products }: PurchaseFormP
             </FormItem>
           )}
         />
-        <Button type="submit">{initialData ? "Update Purchase" : "Create Purchase"}</Button>
+        <Button type="submit">Create Purchase</Button>
       </form>
     </Form>
   )

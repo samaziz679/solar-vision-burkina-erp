@@ -1,77 +1,69 @@
 import { createClient } from "@/lib/supabase/server"
-import type { BankingTransaction, BankingAccount } from "@/lib/supabase/types"
+import { unstable_noStore as noStore } from "next/cache"
+import type { BankingAccount, BankingTransaction } from "@/lib/supabase/types"
 
-export async function getBankingAccounts(): Promise<BankingAccount[]> {
+export async function getBankingAccounts(userId: string): Promise<BankingAccount[]> {
+  noStore()
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return []
-  }
-
   const { data, error } = await supabase
     .from("banking_accounts")
     .select("*")
-    .eq("user_id", user.id)
-    .order("name", { ascending: true })
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
 
   if (error) {
     console.error("Error fetching banking accounts:", error)
-    return []
+    throw new Error("Failed to fetch banking accounts.")
   }
-
-  return data as BankingAccount[]
+  return data
 }
 
-export async function getBankingTransactions(accountId?: string): Promise<BankingTransaction[]> {
+export async function getBankingAccountById(id: string, userId: string): Promise<BankingAccount | null> {
+  noStore()
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from("banking_accounts")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single()
 
-  if (!user) {
-    return []
+  if (error) {
+    console.error("Error fetching banking account:", error)
+    return null
   }
+  return data
+}
 
-  let query = supabase.from("banking_transactions").select("*").eq("user_id", user.id)
-
-  if (accountId) {
-    query = query.eq("account_id", accountId)
-  }
-
-  const { data, error } = await query.order("date", { ascending: false })
+export async function getBankingTransactions(userId: string): Promise<BankingTransaction[]> {
+  noStore()
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("banking_transactions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("date", { ascending: false })
 
   if (error) {
     console.error("Error fetching banking transactions:", error)
-    return []
+    throw new Error("Failed to fetch banking transactions.")
   }
-
-  return data as BankingTransaction[]
+  return data
 }
 
-export async function getBankingTransactionById(id: string): Promise<BankingTransaction | null> {
+export async function getBankingTransactionById(id: string, userId: string): Promise<BankingTransaction | null> {
+  noStore()
   const supabase = createClient()
-  const {
-    data: { user } = { user: null },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return null
-  }
-
   const { data, error } = await supabase
     .from("banking_transactions")
     .select("*")
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .single()
 
   if (error) {
-    console.error("Error fetching banking transaction by ID:", error)
+    console.error("Error fetching banking transaction:", error)
     return null
   }
-
-  return data as BankingTransaction
+  return data
 }

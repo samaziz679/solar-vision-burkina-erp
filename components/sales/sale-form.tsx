@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { createSale, updateSale } from "@/app/sales/actions"
+import { createSale } from "@/app/sales/actions"
 import type { Client, Product, Sale } from "@/lib/supabase/types"
 import { useEffect } from "react"
 
@@ -57,12 +57,14 @@ export function SaleForm({ initialData, clients, products }: SaleFormProps) {
   async function onSubmit(values: SaleFormValues) {
     try {
       if (initialData) {
-        await updateSale(initialData.id, values)
-        toast.success("Sale updated successfully.")
-      } else {
-        await createSale(values)
-        toast.success("Sale created successfully.")
+        // This form is for creating new sales, so initialData should not be present.
+        // If you intend to use this form for editing, you'll need to add an updateSale action.
+        // For now, we'll just handle creation.
+        toast.error("This form is for creating new sales only.")
+        return
       }
+      await createSale(values)
+      toast.success("Sale created successfully.")
       router.push("/sales")
     } catch (error: any) {
       toast.error("Failed to save sale.", {
@@ -174,7 +176,7 @@ export function SaleForm({ initialData, clients, products }: SaleFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">{initialData ? "Update Sale" : "Create Sale"}</Button>
+        <Button type="submit">Create Sale</Button>
       </form>
     </Form>
   )

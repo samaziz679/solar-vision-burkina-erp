@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { createProduct, updateProduct } from "@/app/inventory/actions"
+import { createProduct } from "@/app/inventory/actions"
 import type { Product } from "@/lib/supabase/types"
 import { useEffect } from "react"
 
@@ -19,6 +19,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0.01, "Price must be positive"),
   stock: z.coerce.number().int().min(0, "Stock cannot be negative"),
   category: z.string().min(1, "Category is required").max(100),
+  image_url: z.string().url("Invalid URL").optional().nullable(),
 })
 
 type ProductFormValues = z.infer<typeof formSchema>
@@ -37,6 +38,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       price: 0,
       stock: 0,
       category: "",
+      image_url: "",
     },
   })
 
@@ -49,12 +51,14 @@ export function ProductForm({ initialData }: ProductFormProps) {
   async function onSubmit(values: ProductFormValues) {
     try {
       if (initialData) {
-        await updateProduct(initialData.id, values)
-        toast.success("Product updated successfully.")
-      } else {
-        await createProduct(values)
-        toast.success("Product created successfully.")
+        // This form is for creating new products, so initialData should not be present.
+        // If you intend to use this form for editing, you'll need to add an updateProduct action.
+        // For now, we'll just handle creation.
+        toast.error("This form is for creating new products only.")
+        return
       }
+      await createProduct(values)
+      toast.success("Product created successfully.")
       router.push("/inventory")
     } catch (error: any) {
       toast.error("Failed to save product.", {
@@ -131,7 +135,20 @@ export function ProductForm({ initialData }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">{initialData ? "Update Product" : "Create Product"}</Button>
+        <FormField
+          control={form.control}
+          name="image_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image URL</FormLabel>
+              <FormControl>
+                <Input type="url" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">Create Product</Button>
       </form>
     </Form>
   )

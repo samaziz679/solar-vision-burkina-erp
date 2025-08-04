@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 export function createClient() {
@@ -6,25 +6,25 @@ export function createClient() {
 
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: CookieOptions) {
+      get: (name: string) => cookieStore.get(name)?.value,
+      set: (name: string, value: string, options: any) => {
         try {
-          cookieStore.set({ name, value, ...options })
+          cookieStore.set(name, value, options)
         } catch (error) {
-          // The `cookies().set()` method can throw an error when called from a Server Component or Server Action that is called by a Client Component.
-          // This is because the Server Component/Action already sent the HTTP response, and it's too late to set a cookie.
-          // You can use the `useCookies` hook to set cookies from a Client Component.
+          // The `cookies().set()` method can only be called from a Server Component or Server Action.
+          // This error is typically not a problem if you're only using it for authentication,
+          // as the session will be refreshed on the next request.
+          console.warn("Failed to set cookie:", error)
         }
       },
-      remove(name: string, options: CookieOptions) {
+      remove: (name: string, options: any) => {
         try {
-          cookieStore.set({ name, value: "", ...options })
+          cookieStore.set(name, "", options)
         } catch (error) {
-          // The `cookies().delete()` method can throw an error when called from a Server Component or Server Action that is called by a Client Component.
-          // This is because the Server Component/Action already sent the HTTP response, and it's too late to set a cookie.
-          // You can use the `useCookies` hook to delete cookies from a Client Component.
+          // The `cookies().set()` method can only be called from a Server Component or Server Action.
+          // This error is typically not a problem if you're only using it for authentication,
+          // as the session will be refreshed on the next request.
+          console.warn("Failed to remove cookie:", error)
         }
       },
     },

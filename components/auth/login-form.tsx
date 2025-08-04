@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useFormStatus } from "react-dom" // Changed useFormState to useActionState
+import { useActionState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { login } from "@/lib/auth"
 
 export default function LoginForm() {
-  const [state, formAction] = useActionState(login, {}) // Changed useFormState to useActionState
+  const [state, formAction] = useActionState(login, {})
   const { pending } = useFormStatus()
 
   return (

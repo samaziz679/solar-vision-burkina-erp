@@ -1,93 +1,85 @@
 import { createClient } from "@/lib/supabase/server"
-import type { BankingTransaction } from "@/lib/supabase/types"
+import { unstable_noStore as noStore } from "next/cache"
 
-export async function getDashboardData() {
+export async function getDashboardData(userId: string) {
+  noStore()
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
-  if (!user) {
-    return {
-      totalSales: 0,
-      totalPurchases: 0,
-      totalExpenses: 0,
-      recentTransactions: [],
-      salesByMonth: [],
-      purchasesByMonth: [],
-    }
+  // Fetch total products
+  const { count: totalProducts, error: productsError } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+
+  if (productsError) {
+    console.error("Error fetching total products:", productsError)
+    throw new Error("Failed to fetch total products.")
   }
 
   // Fetch total sales
   const { data: salesData, error: salesError } = await supabase
     .from("sales")
-    .select("total_amount")
-    .eq("user_id", user.id)
+    .select("quantity, unit_price")
+    .eq("user_id", userId)
 
-  const totalSales = salesData?.reduce((sum, sale) => sum + sale.total_amount, 0) || 0
+  if (salesError) {
+    console.error("Error fetching total sales:", salesError)
+    throw new Error("Failed to fetch total sales.")
+  }
+  const totalSales = salesData.reduce((sum, sale) => sum + sale.quantity * sale.unit_price, 0)
 
   // Fetch total purchases
   const { data: purchasesData, error: purchasesError } = await supabase
     .from("purchases")
-    .select("total_amount")
-    .eq("user_id", user.id)
+    .select("quantity, unit_cost")
+    .eq("user_id", userId)
 
-  const totalPurchases = purchasesData?.reduce((sum, purchase) => sum + purchase.total_amount, 0) || 0
+  if (purchasesError) {
+    console.error("Error fetching total purchases:", purchasesError)
+    throw new Error("Failed to fetch total purchases.")
+  }
+  const totalPurchases = purchasesData.reduce((sum, purchase) => sum + purchase.quantity * purchase.unit_cost, 0)
 
   // Fetch total expenses
   const { data: expensesData, error: expensesError } = await supabase
     .from("expenses")
     .select("amount")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
 
-  const totalExpenses = expensesData?.reduce((sum, expense) => sum + expense.amount, 0) || 0
+  if (expensesError) {
+    console.error("Error fetching total expenses:", expensesError)
+    throw new Error("Failed to fetch total expenses.")
+  }
+  const totalExpenses = expensesData.reduce((sum, expense) => sum + expense.amount, 0)
 
-  // Fetch recent banking transactions (last 5)
-  const { data: recentTransactionsData, error: transactionsError } = await supabase
-    .from("banking_transactions")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("date", { ascending: false })
-    .limit(5)
+  // Fetch total clients
+  const { count: totalClients, error: clientsError } = await supabase
+    .from("clients")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
 
-  // Fetch sales by month for the last 12 months
-  const { data: salesByMonthData, error: salesByMonthError } = await supabase.rpc("get_sales_by_month", {
-    user_id_param: user.id,
-  })
+  if (clientsError) {
+    console.error("Error fetching total clients:", clientsError)
+    throw new Error("Failed to fetch total clients.")
+  }
 
-  // Fetch purchases by month for the last 12 months
-  const { data: purchasesByMonthData, error: purchasesByMonthError } = await supabase.rpc("get_purchases_by_month", {
-    user_id_param: user.id,
-  })
+  // Fetch total suppliers
+  const { count: totalSuppliers, error: suppliersError } = await supabase
+    .from("suppliers")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
 
-  if (
-    salesError ||
-    purchasesError ||
-    expensesError ||
-    transactionsError ||
-    salesByMonthError ||
-    purchasesByMonthError
-  ) {
-    console.error(
-      "Error fetching dashboard data:",
-      salesError || purchasesError || expensesError || transactionsError || salesByMonthError || purchasesByMonthError,
-    )
-    return {
-      totalSales: 0,
-      totalPurchases: 0,
-      totalExpenses: 0,
-      recentTransactions: [],
-      salesByMonth: [],
-      purchasesByMonth: [],
-    }
+  if (suppliersError) {
+    console.error("Error fetching total suppliers:", suppliersError)
+    throw new Error("Failed to fetch total suppliers.")
   }
 
   return {
-    totalSales,
-    totalPurchases,
-    totalExpenses,
-    recentTransactions: recentTransactionsData as BankingTransaction[],
-    salesByMonth: salesByMonthData || [],
-    purchasesByMonth: purchasesByMonthData || [],
+    totalProducts: totalProducts || 0,
+    totalSales: totalSales || 0,
+    totalPurchases: totalPurchases || 0,
+    totalExpenses: totalExpenses || 0,
+    totalClients: totalClients || 0,
+    totalSuppliers: totalSuppliers || 0,
   }
 }

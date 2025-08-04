@@ -19,6 +19,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0.01, "Price must be positive"),
   stock: z.coerce.number().int().min(0, "Stock cannot be negative"),
   category: z.string().min(1, "Category is required").max(100),
+  image_url: z.string().url("Invalid URL").optional().nullable(),
 })
 
 type ProductFormValues = z.infer<typeof formSchema>
@@ -115,6 +116,19 @@ export function EditProductForm({ initialData }: EditProductFormProps) {
               <FormLabel>Category</FormLabel>
               <FormControl>
                 <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="image_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image URL</FormLabel>
+              <FormControl>
+                <Input type="url" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

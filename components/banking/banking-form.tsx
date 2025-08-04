@@ -54,10 +54,10 @@ export function BankingForm({ initialData, bankingAccounts }: BankingFormProps) 
   async function onSubmit(values: BankingFormValues) {
     try {
       if (initialData) {
-        await updateBankingTransaction(initialData.id, new FormData(form.getValues() as any))
+        await updateBankingTransaction(initialData.id, values)
         toast.success("Banking transaction updated successfully.")
       } else {
-        await createBankingTransaction(new FormData(form.getValues() as any))
+        await createBankingTransaction(values)
         toast.success("Banking transaction created successfully.")
       }
       router.push("/banking")

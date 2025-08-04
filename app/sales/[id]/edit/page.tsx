@@ -1,29 +1,38 @@
-import { notFound } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getSaleById } from "@/lib/data/sales"
-import { getClients } from "@/lib/data/clients"
-import { getProducts } from "@/lib/data/products"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { EditSaleForm } from "@/components/sales/edit-sale-form"
+import { getSaleById } from "@/lib/data/sales"
+import { getProducts } from "@/lib/data/products"
+import { getClients } from "@/lib/data/clients"
 
-export default async function EditSalePage({ params }: { params: { id: string } }) {
-  const sale = await getSaleById(params.id)
-  const clients = await getClients()
-  const products = await getProducts()
+export default async function EditSalePage({
+  params,
+}: {
+  params: { id: string }
+}) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const sale = await getSaleById(params.id, user.id)
+  const products = await getProducts(user.id)
+  const clients = await getClients(user.id)
 
   if (!sale) {
-    notFound()
+    redirect("/sales")
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Edit Sale</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <EditSaleForm initialData={sale} clients={clients} products={products} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-center">Edit Sale</h2>
+        <EditSaleForm initialData={sale} products={products} clients={clients} />
+      </div>
     </div>
   )
 }

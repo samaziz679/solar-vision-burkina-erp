@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/middleware" // This import now points to the new file
 
 export async function middleware(request: NextRequest) {
   try {
@@ -10,8 +10,8 @@ export async function middleware(request: NextRequest) {
       },
     })
 
-    // Create a Supabase client with the request and response
-    const supabase = createMiddlewareClient({ req: request, res: response })
+    // Create a Supabase client using the helper from the new file
+    const supabase = createClient(request, response)
 
     // Refresh session if expired - required for Server Components
     // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
@@ -19,9 +19,6 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (e) {
-    // This catch block is primarily for local development or specific edge cases
-    // where the middleware might throw before a response can be created.
-    // In production, Supabase auth helpers usually handle errors gracefully.
     console.error("Middleware error:", e)
     return NextResponse.next({
       request: {

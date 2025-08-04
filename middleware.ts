@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/middleware" // This import now points to the new file
+import { createClient } from "@/lib/supabase/middleware" // This import should now resolve correctly
 
 export async function middleware(request: NextRequest) {
   try {

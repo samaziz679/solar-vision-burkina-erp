@@ -3,19 +3,17 @@
 import * as React from "react"
 import type * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
-import {
-  Controller,
-  FormProvider,
-  useFormContext,
-  type FieldValues,
-  type FieldPath,
-  type ControllerProps,
-} from "react-hook-form"
+import { Controller, type ControllerProps, type FieldPath, type FieldValues, useFormContext } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-const Form = FormProvider
+const Form = React.forwardRef<HTMLFormElement, React.ComponentPropsWithoutRef<"form">>(
+  ({ className, ...props }, ref) => {
+    return <form ref={ref} className={cn("space-y-8", className)} {...props} />
+  },
+)
+Form.displayName = "Form"
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -29,9 +27,9 @@ const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFi
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
+>(
+  props: ControllerProps<TFieldValues, TName>,
+) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />
@@ -42,7 +40,6 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-
   const { getFieldState, formState } = useFormContext()
 
   const fieldState = getFieldState(fieldContext.name, formState)
@@ -100,7 +97,7 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
       <Slot
         ref={ref}
         id={formItemId}
-        aria-describedby={!formMessageId ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
+        aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
         aria-invalid={!!error}
         {...props}
       />

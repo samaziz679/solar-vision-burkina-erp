@@ -2,119 +2,84 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import { z } from "zod"
+import { createClient } from "@/lib/supabase/server"
+import type { BankingTransaction } from "@/lib/supabase/types"
 
-const cookieStore = cookies()
-const supabase = createServerClient({
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  cookies: {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(name: string, value: string, options: any) {
-      cookieStore.set({ name, value, ...options })
-    },
-    remove(name: string, options: any) {
-      cookieStore.delete({ name, ...options })
-    },
-  },
-})
+export async function createBankingTransaction(formData: FormData) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-const bankingSchema = z.object({
-  id: z.string().optional(),
-  account_name: z.string().min(1, "Le nom du compte est requis."),
-  account_number: z.string().min(1, "Le numéro de compte est requis."),
-  bank_name: z.string().min(1, "Le nom de la banque est requis."),
-  balance: z.preprocess((val) => Number(val), z.number().min(0, "Le solde doit être un nombre positif.")),
-})
-
-export async function createBankingAccount(
-  prevState: { message: string; errors?: Record<string, string[]> },
-  formData: FormData,
-) {
-  const validatedFields = bankingSchema.safeParse({
-    account_name: formData.get("account_name"),
-    account_number: formData.get("account_number"),
-    bank_name: formData.get("bank_name"),
-    balance: formData.get("balance"),
-  })
-
-  if (!validatedFields.success) {
-    return {
-      message: "Erreurs de validation.",
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+  if (!user) {
+    redirect("/login")
   }
 
-  const { account_name, account_number, bank_name, balance } = validatedFields.data
-
-  const { error } = await supabase.from("banking_accounts").insert({
-    account_name,
-    account_number,
-    bank_name,
-    balance,
+  const { error } = await supabase.from("banking_transactions").insert({
+    user_id: user.id,
+    type: formData.get("type") as BankingTransaction["type"],
+    amount: Number.parseFloat(formData.get("amount") as string),
+    description: formData.get("description") as string,
+    date: formData.get("date") as string,
+    account_id: formData.get("account_id") as string,
   })
 
   if (error) {
-    console.error("Error creating banking account:", error)
-    return { message: "Échec de la création du compte bancaire." }
+    console.error("Error creating banking transaction:", error)
+    throw new Error("Failed to create banking transaction.")
   }
 
   revalidatePath("/banking")
   redirect("/banking")
 }
 
-export async function updateBankingAccount(
-  id: string,
-  prevState: { message: string; errors?: Record<string, string[]> },
-  formData: FormData,
-) {
-  const validatedFields = bankingSchema.safeParse({
-    account_name: formData.get("account_name"),
-    account_number: formData.get("account_number"),
-    bank_name: formData.get("bank_name"),
-    balance: formData.get("balance"),
-  })
+export async function updateBankingTransaction(id: string, formData: FormData) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!validatedFields.success) {
-    return {
-      message: "Erreurs de validation.",
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+  if (!user) {
+    redirect("/login")
   }
-
-  const { account_name, account_number, bank_name, balance } = validatedFields.data
 
   const { error } = await supabase
-    .from("banking_accounts")
+    .from("banking_transactions")
     .update({
-      account_name,
-      account_number,
-      bank_name,
-      balance,
+      type: formData.get("type") as BankingTransaction["type"],
+      amount: Number.parseFloat(formData.get("amount") as string),
+      description: formData.get("description") as string,
+      date: formData.get("date") as string,
+      account_id: formData.get("account_id") as string,
     })
     .eq("id", id)
+    .eq("user_id", user.id)
 
   if (error) {
-    console.error("Error updating banking account:", error)
-    return { message: "Échec de la mise à jour du compte bancaire." }
+    console.error("Error updating banking transaction:", error)
+    throw new Error("Failed to update banking transaction.")
   }
 
   revalidatePath("/banking")
   redirect("/banking")
 }
 
-export async function deleteBankingAccount(id: string) {
-  const { error } = await supabase.from("banking_accounts").delete().eq("id", id)
+export async function deleteBankingTransaction(id: string) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { error } = await supabase.from("banking_transactions").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error deleting banking account:", error)
-    return { message: "Échec de la suppression du compte bancaire." }
+    console.error("Error deleting banking transaction:", error)
+    throw new Error("Failed to delete banking transaction.")
   }
 
   revalidatePath("/banking")
-  return { message: "Compte bancaire supprimé avec succès." }
 }

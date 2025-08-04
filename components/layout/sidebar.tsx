@@ -1,206 +1,130 @@
 "use client"
 
 import Link from "next/link"
-import { Package2, Home, DollarSign, Users, Package, Banknote, ShoppingBag, Settings } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePathname } from "next/navigation"
+import { Home, DollarSign, ShoppingCart, Package, Users, Truck, Banknote, LogOut, Settings, Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { createClientComponentClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
-export default function Sidebar() {
+export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClientComponentClient()
-  const [user, setUser] = useState<any>(null)
 
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      toast.error("Failed to sign out", { description: error.message })
+    } else {
+      router.push("/login")
     }
-    getUser()
-  }, [supabase])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
   }
 
+  const navItems = [
+    { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/sales", icon: DollarSign, label: "Sales" },
+    { href: "/purchases", icon: ShoppingCart, label: "Purchases" },
+    { href: "/inventory", icon: Package, label: "Inventory" },
+    { href: "/clients", icon: Users, label: "Clients" },
+    { href: "/suppliers", icon: Truck, label: "Suppliers" },
+    { href: "/expenses", icon: Banknote, label: "Expenses" },
+    { href: "/banking", icon: Banknote, label: "Banking" },
+  ]
+
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-      <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-        <Link
-          href="#"
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-        >
-          <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-          <span className="sr-only">Solar Vision ERP</span>
-        </Link>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/dashboard"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname === "/dashboard" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Home className="h-5 w-5" />
-                <span className="sr-only">Tableau de Bord</span>
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col h-full border-r bg-background p-4">
+        <div className="flex items-center justify-center h-16 border-b px-4">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <img src="/placeholder-logo.svg" alt="Solar Vision ERP Logo" className="h-6 w-6" />
+            <span>Solar Vision ERP</span>
+          </Link>
+        </div>
+        <nav className="flex-1 grid items-start gap-2 py-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+                pathname === item.href ? "bg-muted text-primary" : ""
+              }`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-auto pt-4 border-t">
+          <Link
+            href="/settings"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+              pathname === "/settings" ? "bg-muted text-primary" : ""
+            }`}
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
+          <Button variant="ghost" className="w-full justify-start mt-2" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4 mr-3" />
+            Sign Out
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <header className="flex md:hidden h-16 items-center gap-4 border-b bg-background px-4">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="shrink-0 bg-transparent">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="flex flex-col">
+            <nav className="grid gap-2 text-lg font-medium">
+              <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
+                <img src="/placeholder-logo.svg" alt="Solar Vision ERP Logo" className="h-6 w-6" />
+                <span>Solar Vision ERP</span>
               </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Tableau de Bord</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/sales"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/sales") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <DollarSign className="h-5 w-5" />
-                <span className="sr-only">Ventes</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Ventes</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/purchases"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/purchases") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <ShoppingBag className="h-5 w-5" />
-                <span className="sr-only">Achats</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Achats</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/inventory"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/inventory") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Package className="h-5 w-5" />
-                <span className="sr-only">Inventaire</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Inventaire</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/clients"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/clients") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Users className="h-5 w-5" />
-                <span className="sr-only">Clients</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Clients</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/suppliers"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/suppliers") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Users className="h-5 w-5" />
-                <span className="sr-only">Fournisseurs</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Fournisseurs</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/expenses"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/expenses") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Banknote className="h-5 w-5" />
-                <span className="sr-only">Dépenses</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Dépenses</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/banking"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/banking") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
-              >
-                <Banknote className="h-5 w-5" />
-                <span className="sr-only">Comptes Bancaires</span>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Comptes Bancaires</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </nav>
-      <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground ${
+                    pathname === item.href ? "bg-muted text-foreground" : ""
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="mt-auto pt-4 border-t">
               <Link
                 href="/settings"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  pathname.startsWith("/settings") ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                } transition-colors hover:text-foreground md:h-8 md:w-8`}
+                className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground ${
+                  pathname === "/settings" ? "bg-muted text-foreground" : ""
+                }`}
               >
                 <Settings className="h-5 w-5" />
-                <span className="sr-only">Paramètres</span>
+                Settings
               </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Paramètres</TooltipContent>
-          </Tooltip>
-          {user ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleLogout}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide lucide-log-out h-5 w-5"
-                  >
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="17 16 22 12 17 8" />
-                    <line x1="22" x2="10" y1="12" y2="12" />
-                  </svg>
-                  <span className="sr-only">Déconnexion</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Déconnexion</TooltipContent>
-            </Tooltip>
-          ) : null}
-        </TooltipProvider>
-      </nav>
-    </aside>
+              <Button variant="ghost" className="w-full justify-start mt-2 mx-[-0.65rem]" onClick={handleSignOut}>
+                <LogOut className="h-5 w-5 mr-3" />
+                Sign Out
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <img src="/placeholder-logo.svg" alt="Solar Vision ERP Logo" className="h-6 w-6" />
+          <span>Solar Vision ERP</span>
+        </Link>
+      </header>
+    </>
   )
 }

@@ -1,93 +1,126 @@
 "use client"
 
-import { useActionState, useFormStatus } from "react-dom"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { createExpense, updateExpense } from "@/app/expenses/actions"
 import type { Expense } from "@/lib/supabase/types"
+import { useEffect } from "react"
+
+const formSchema = z.object({
+  description: z.string().min(1, "Description is required").max(255),
+  amount: z.coerce.number().min(0.01, "Amount must be positive"),
+  date: z.string().min(1, "Date is required"),
+  category: z.string().min(1, "Category is required").max(100),
+})
+
+type ExpenseFormValues = z.infer<typeof formSchema>
 
 interface ExpenseFormProps {
   initialData?: Expense | null
 }
 
-export default function ExpenseForm({ initialData }: ExpenseFormProps) {
-  const isEditing = !!initialData?.id
-  const [state, formAction] = useActionState(isEditing ? updateExpense.bind(null, initialData.id!) : createExpense, {
-    message: "",
-    errors: undefined,
+export function ExpenseForm({ initialData }: ExpenseFormProps) {
+  const router = useRouter()
+  const form = useForm<ExpenseFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialData || {
+      description: "",
+      amount: 0,
+      date: new Date().toISOString().split("T")[0],
+      category: "",
+    },
   })
-  const { pending } = useFormStatus()
 
   useEffect(() => {
-    if (state.message && !state.errors) {
-      toast.success(state.message)
-    } else if (state.message && state.errors) {
-      toast.error("Erreur de validation", {
-        description: state.message,
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        date: initialData.date.split("T")[0], // Format date for input type="date"
       })
     }
-  }, [state])
+  }, [initialData, form])
+
+  async function onSubmit(values: ExpenseFormValues) {
+    try {
+      if (initialData) {
+        await updateExpense(initialData.id, values)
+        toast.success("Expense updated successfully.")
+      } else {
+        await createExpense(values)
+        toast.success("Expense created successfully.")
+      }
+      router.push("/expenses")
+    } catch (error: any) {
+      toast.error("Failed to save expense.", {
+        description: error.message || "An unexpected error occurred.",
+      })
+    }
+  }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>{isEditing ? "Modifier la dépense" : "Ajouter une nouvelle dépense"}</CardTitle>
-        <CardDescription>
-          {isEditing ? "Mettez à jour les détails de cette dépense." : "Remplissez les détails de la nouvelle dépense."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" defaultValue={initialData?.description || ""} required />
-            {state.errors?.description && <p className="text-red-500 text-sm">{state.errors.description}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="amount">Montant</Label>
-            <Input
-              id="amount"
-              name="amount"
-              type="number"
-              step="0.01"
-              defaultValue={initialData?.amount || 0}
-              required
-            />
-            {state.errors?.amount && <p className="text-red-500 text-sm">{state.errors.amount}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="category">Catégorie</Label>
-            <Input id="category" name="category" defaultValue={initialData?.category || ""} />
-            {state.errors?.category && <p className="text-red-500 text-sm">{state.errors.category}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="expense_date">Date de dépense</Label>
-            <Input
-              id="expense_date"
-              name="expense_date"
-              type="date"
-              defaultValue={initialData?.expense_date || ""}
-              required
-            />
-            {state.errors?.expense_date && <p className="text-red-500 text-sm">{state.errors.expense_date}</p>}
-          </div>
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending
-              ? isEditing
-                ? "Mise à jour..."
-                : "Création..."
-              : isEditing
-                ? "Mettre à jour la dépense"
-                : "Créer la dépense"}
-          </Button>
-          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
-        </form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">{initialData ? "Update Expense" : "Create Expense"}</Button>
+      </form>
+    </Form>
   )
 }

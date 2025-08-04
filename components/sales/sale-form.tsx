@@ -1,107 +1,181 @@
 "use client"
 
-import { useActionState, useFormStatus } from "react-dom"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { createSale, updateSale } from "@/app/sales/actions"
+import type { Client, Product, Sale } from "@/lib/supabase/types"
 import { useEffect } from "react"
-import { createSale } from "@/app/sales/actions"
-import type { Product, Client } from "@/lib/supabase/types"
+
+const formSchema = z.object({
+  client_id: z.string().min(1, "Client is required"),
+  product_id: z.string().min(1, "Product is required"),
+  quantity: z.coerce.number().int().min(1, "Quantity must be at least 1"),
+  unit_price: z.coerce.number().min(0.01, "Unit price must be positive"),
+  sale_date: z.string().min(1, "Sale date is required"),
+  notes: z.string().max(255).optional().nullable(),
+})
+
+type SaleFormValues = z.infer<typeof formSchema>
 
 interface SaleFormProps {
-  products: Product[]
+  initialData?: Sale | null
   clients: Client[]
+  products: Product[]
 }
 
-export default function SaleForm({ products, clients }: SaleFormProps) {
-  const [state, formAction] = useActionState(createSale, {
-    message: "",
-    errors: undefined,
+export function SaleForm({ initialData, clients, products }: SaleFormProps) {
+  const router = useRouter()
+  const form = useForm<SaleFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialData || {
+      client_id: clients[0]?.id || "",
+      product_id: products[0]?.id || "",
+      quantity: 1,
+      unit_price: 0,
+      sale_date: new Date().toISOString().split("T")[0],
+      notes: "",
+    },
   })
-  const { pending } = useFormStatus()
 
   useEffect(() => {
-    if (state.message && !state.errors) {
-      toast.success(state.message)
-    } else if (state.message && state.errors) {
-      toast.error("Erreur de validation", {
-        description: state.message,
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        sale_date: initialData.sale_date.split("T")[0], // Format date for input type="date"
       })
     }
-  }, [state])
+  }, [initialData, form])
+
+  async function onSubmit(values: SaleFormValues) {
+    try {
+      if (initialData) {
+        await updateSale(initialData.id, values)
+        toast.success("Sale updated successfully.")
+      } else {
+        await createSale(values)
+        toast.success("Sale created successfully.")
+      }
+      router.push("/sales")
+    } catch (error: any) {
+      toast.error("Failed to save sale.", {
+        description: error.message || "An unexpected error occurred.",
+      })
+    }
+  }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>Ajouter une nouvelle vente</CardTitle>
-        <CardDescription>Remplissez les détails de la nouvelle vente.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="product_id">Produit</Label>
-            <Select name="product_id" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un produit" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {state.errors?.product_id && <p className="text-red-500 text-sm">{state.errors.product_id}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="client_id">Client</Label>
-            <Select name="client_id" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {state.errors?.client_id && <p className="text-red-500 text-sm">{state.errors.client_id}</p>}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="quantity">Quantité</Label>
-              <Input id="quantity" name="quantity" type="number" defaultValue={1} required />
-              {state.errors?.quantity && <p className="text-red-500 text-sm">{state.errors.quantity}</p>}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="unit_price">Prix Unitaire</Label>
-              <Input id="unit_price" name="unit_price" type="number" step="0.01" defaultValue={0} required />
-              {state.errors?.unit_price && <p className="text-red-500 text-sm">{state.errors.unit_price}</p>}
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="sale_date">Date de vente</Label>
-            <Input
-              id="sale_date"
-              name="sale_date"
-              type="date"
-              defaultValue={new Date().toISOString().split("T")[0]}
-              required
-            />
-            {state.errors?.sale_date && <p className="text-red-500 text-sm">{state.errors.sale_date}</p>}
-          </div>
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Création..." : "Créer la vente"}
-          </Button>
-          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
-        </form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="client_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Client</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="product_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Product</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a product" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="quantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantity</FormLabel>
+              <FormControl>
+                <Input type="number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="unit_price"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Unit Price</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="sale_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Sale Date</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes (Optional)</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">{initialData ? "Update Sale" : "Create Sale"}</Button>
+      </form>
+    </Form>
   )
 }

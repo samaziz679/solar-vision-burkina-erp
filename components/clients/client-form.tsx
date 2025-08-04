@@ -1,85 +1,138 @@
 "use client"
 
-import { useActionState, useFormStatus } from "react-dom"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { createClient, updateClient } from "@/app/clients/actions"
 import type { Client } from "@/lib/supabase/types"
+import { useEffect } from "react"
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required").max(255),
+  contact_person: z.string().min(1, "Contact person is required").max(255),
+  email: z.string().email("Invalid email address").min(1, "Email is required").max(255),
+  phone: z.string().min(1, "Phone is required").max(20),
+  address: z.string().min(1, "Address is required").max(255),
+})
+
+type ClientFormValues = z.infer<typeof formSchema>
 
 interface ClientFormProps {
   initialData?: Client | null
 }
 
-export default function ClientForm({ initialData }: ClientFormProps) {
-  const isEditing = !!initialData?.id
-  const [state, formAction] = useActionState(isEditing ? updateClient.bind(null, initialData.id!) : createClient, {
-    message: "",
-    errors: undefined,
+export function ClientForm({ initialData }: ClientFormProps) {
+  const router = useRouter()
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialData || {
+      name: "",
+      contact_person: "",
+      email: "",
+      phone: "",
+      address: "",
+    },
   })
-  const { pending } = useFormStatus()
 
   useEffect(() => {
-    if (state.message && !state.errors) {
-      toast.success(state.message)
-    } else if (state.message && state.errors) {
-      toast.error("Erreur de validation", {
-        description: state.message,
+    if (initialData) {
+      form.reset(initialData)
+    }
+  }, [initialData, form])
+
+  async function onSubmit(values: ClientFormValues) {
+    try {
+      if (initialData) {
+        await updateClient(initialData.id, values)
+        toast.success("Client updated successfully.")
+      } else {
+        await createClient(values)
+        toast.success("Client created successfully.")
+      }
+      router.push("/clients")
+    } catch (error: any) {
+      toast.error("Failed to save client.", {
+        description: error.message || "An unexpected error occurred.",
       })
     }
-  }, [state])
+  }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>{isEditing ? "Modifier le client" : "Ajouter un nouveau client"}</CardTitle>
-        <CardDescription>
-          {isEditing ? "Mettez à jour les informations de ce client." : "Remplissez les détails du nouveau client."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Nom du client</Label>
-            <Input id="name" name="name" defaultValue={initialData?.name || ""} required />
-            {state.errors?.name && <p className="text-red-500 text-sm">{state.errors.name}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="contact_person">Personne de contact</Label>
-            <Input id="contact_person" name="contact_person" defaultValue={initialData?.contact_person || ""} />
-            {state.errors?.contact_person && <p className="text-red-500 text-sm">{state.errors.contact_person}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" defaultValue={initialData?.email || ""} />
-            {state.errors?.email && <p className="text-red-500 text-sm">{state.errors.email}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone || ""} />
-            {state.errors?.phone && <p className="text-red-500 text-sm">{state.errors.phone}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="address">Adresse</Label>
-            <Textarea id="address" name="address" defaultValue={initialData?.address || ""} />
-            {state.errors?.address && <p className="text-red-500 text-sm">{state.errors.address}</p>}
-          </div>
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending
-              ? isEditing
-                ? "Mise à jour..."
-                : "Création..."
-              : isEditing
-                ? "Mettre à jour le client"
-                : "Créer le client"}
-          </Button>
-          {state.message && !state.errors && <p className="text-green-500 text-sm mt-2">{state.message}</p>}
-        </form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="contact_person"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Person</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">{initialData ? "Update Client" : "Create Client"}</Button>
+      </form>
+    </Form>
   )
 }

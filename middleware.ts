@@ -1,25 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/middleware" // This import should now resolve correctly
+import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
   try {
-    // Create a response object
-    const response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    })
-
-    // Create a Supabase client using the helper from the new file
+    // This `try/catch` block is only here to catch an error that sometimes happens
+    // when the Supabase client is initialized in middleware that may not be caught
+    // by the `onError` callback in `createClient` and may lead to a `TypeError`.
+    // For more information, see https://github.com/supabase/supabase-js/issues/719
+    const response = NextResponse.next()
     const supabase = createClient(request, response)
-
-    // Refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
     await supabase.auth.getSession()
-
     return response
   } catch (e) {
-    console.error("Middleware error:", e)
     return NextResponse.next({
       request: {
         headers: request.headers,

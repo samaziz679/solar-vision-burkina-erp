@@ -2,29 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { z } from "zod"
 
-const loginSchema = z.object({
-  email: z.string().email("Veuillez entrer une adresse email valide."),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères."),
-})
+export async function login(prevState: any, formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
 
-export async function login(prevState: { message?: string; error?: string }, formData: FormData) {
-  const validatedFields = loginSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  })
-
-  if (!validatedFields.success) {
-    return {
-      error:
-        validatedFields.error.flatten().fieldErrors.email?.[0] ||
-        validatedFields.error.flatten().fieldErrors.password?.[0] ||
-        "Erreurs de validation.",
-    }
-  }
-
-  const { email, password } = validatedFields.data
   const supabase = createClient()
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -33,7 +15,6 @@ export async function login(prevState: { message?: string; error?: string }, for
   })
 
   if (error) {
-    console.error("Login error:", error)
     return { error: error.message }
   }
 
@@ -42,26 +23,6 @@ export async function login(prevState: { message?: string; error?: string }, for
 
 export async function logout() {
   const supabase = createClient()
-
-  const { error } = await supabase.auth.signOut()
-
-  if (error) {
-    console.error("Logout error:", error)
-    return { error: error.message }
-  }
-
+  await supabase.auth.signOut()
   redirect("/login")
-}
-
-export async function getUser() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  return user
 }

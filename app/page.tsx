@@ -1,21 +1,18 @@
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
 
-export default async function HomePage() {
-  const supabase = createServerClient({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    cookies: cookies,
-  })
+export default async function IndexPage() {
+  const supabase = createClient()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (user) {
-    redirect("/dashboard")
-  } else {
+  if (!user) {
     redirect("/login")
+  } else {
+    redirect("/dashboard")
   }
+
+  return null
 }

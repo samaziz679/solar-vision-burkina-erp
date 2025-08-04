@@ -2,26 +2,12 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { z } from "zod"
+import { cookies } from "next/headers"
 
 const cookieStore = cookies()
-const supabase = createServerClient({
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  cookies: {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(name: string, value: string, options: any) {
-      cookieStore.set({ name, value, ...options })
-    },
-    remove(name: string, options: any) {
-      cookieStore.delete({ name, ...options })
-    },
-  },
-})
+const supabase = createClient()
 
 const saleSchema = z.object({
   id: z.string().optional(),
@@ -54,7 +40,30 @@ export async function createSale(
   const { product_id, client_id, quantity, unit_price, sale_date } = validatedFields.data
   const total_amount = quantity * unit_price
 
-  // Check if enough stock is available
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { error } = await supabase.from("sales").insert({
+    product_id,
+    client_id,
+    quantity,
+    unit_price,
+    total_amount,
+    sale_date,
+    user_id: user.id,
+  })
+
+  if (error) {
+    console.error("Error creating sale:", error)
+    return { message: "Échec de la création de la vente." }
+  }
+
+  // Decrease product stock
   const { data: product, error: productFetchError } = await supabase
     .from("products")
     .select("stock")
@@ -68,29 +77,6 @@ export async function createSale(
 
   if (product.stock < quantity) {
     return { message: "Stock insuffisant pour cette vente." }
-  }
-
-  const { error } = await supabase.from("sales").insert({
-    product_id,
-    client_id,
-    quantity,
-    unit_price,
-    total_amount,
-    sale_date,
-  })
-
-  if (error) {
-    console.error("Error creating sale:", error)
-    return { message: "Échec de la création de la vente." }
-  }
-
-  // Decrease product stock
-  const newStock = product.stock - quantity
-  const { error: updateError } = await supabase.from("products").update({ stock: newStock }).eq("id", product_id)
-
-  if (updateError) {
-    console.error("Error updating product stock:", updateError)
-    return { message: "Échec de la mise à jour du stock du produit." }
   }
 
   revalidatePath("/sales")
@@ -120,6 +106,14 @@ export async function updateSale(
 
   const { product_id, client_id, quantity, unit_price, sale_date } = validatedFields.data
   const total_amount = quantity * unit_price
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
 
   // Fetch old quantity to adjust stock correctly
   const { data: oldSale, error: fetchError } = await supabase
@@ -185,6 +179,7 @@ export async function updateSale(
       sale_date,
     })
     .eq("id", id)
+    .eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating sale:", error)
@@ -256,6 +251,21 @@ export async function updateSale(
 }
 
 export async function deleteSale(id: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { error } = await supabase.from("sales").delete().eq("id", id).eq("user_id", user.id)
+
+  if (error) {
+    console.error("Error deleting sale:", error)
+    return { message: "Échec de la suppression de la vente." }
+  }
+
   // Fetch sale details to revert stock
   const { data: sale, error: fetchError } = await supabase
     .from("sales")
@@ -265,13 +275,6 @@ export async function deleteSale(id: string) {
 
   if (fetchError) {
     console.error("Error fetching sale for deletion:", fetchError)
-    return { message: "Échec de la suppression de la vente." }
-  }
-
-  const { error } = await supabase.from("sales").delete().eq("id", id)
-
-  if (error) {
-    console.error("Error deleting sale:", error)
     return { message: "Échec de la suppression de la vente." }
   }
 

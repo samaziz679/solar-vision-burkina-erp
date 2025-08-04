@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
+import type { Product } from "@/lib/supabase/types"
 
-export async function createProduct(formData: FormData) {
+export async function createProduct(values: Omit<Product, "id" | "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -15,29 +15,20 @@ export async function createProduct(formData: FormData) {
     redirect("/login")
   }
 
-  const newProduct: TablesInsert<"products"> = {
+  const { error } = await supabase.from("products").insert({
+    ...values,
     user_id: user.id,
-    name: formData.get("name") as string,
-    description: formData.get("description") as string,
-    category: formData.get("category") as string,
-    cost_price: Number.parseFloat(formData.get("cost_price") as string),
-    selling_price: Number.parseFloat(formData.get("selling_price") as string),
-    quantity_in_stock: Number.parseInt(formData.get("quantity_in_stock") as string),
-    image_url: formData.get("image_url") as string,
-  }
-
-  const { error } = await supabase.from("products").insert(newProduct)
+  })
 
   if (error) {
     console.error("Error creating product:", error)
-    return { error: error.message }
+    throw new Error("Failed to create product.")
   }
 
   revalidatePath("/inventory")
-  return { success: true }
 }
 
-export async function updateProduct(formData: FormData) {
+export async function updateProduct(id: string, values: Omit<Product, "user_id" | "created_at">) {
   const supabase = createClient()
   const {
     data: { user },
@@ -47,29 +38,17 @@ export async function updateProduct(formData: FormData) {
     redirect("/login")
   }
 
-  const id = formData.get("id") as string
-  const updatedProduct: TablesUpdate<"products"> = {
-    name: formData.get("name") as string,
-    description: formData.get("description") as string,
-    category: formData.get("category") as string,
-    cost_price: Number.parseFloat(formData.get("cost_price") as string),
-    selling_price: Number.parseFloat(formData.get("selling_price") as string),
-    quantity_in_stock: Number.parseInt(formData.get("quantity_in_stock") as string),
-    image_url: formData.get("image_url") as string,
-  }
-
-  const { error } = await supabase.from("products").update(updatedProduct).eq("id", id).eq("user_id", user.id)
+  const { error } = await supabase.from("products").update(values).eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error updating product:", error)
-    return { error: error.message }
+    throw new Error("Failed to update product.")
   }
 
   revalidatePath("/inventory")
-  return { success: true }
 }
 
-export async function deleteProduct(formData: FormData) {
+export async function deleteProduct(id: string) {
   const supabase = createClient()
   const {
     data: { user },
@@ -78,16 +57,13 @@ export async function deleteProduct(formData: FormData) {
   if (!user) {
     redirect("/login")
   }
-
-  const id = formData.get("id") as string
 
   const { error } = await supabase.from("products").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error deleting product:", error)
-    return { error: error.message }
+    throw new Error("Failed to delete product.")
   }
 
   revalidatePath("/inventory")
-  return { success: true }
 }

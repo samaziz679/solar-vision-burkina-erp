@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
 import { getPurchaseById } from "@/lib/data/purchases"
-import { getProducts } from "@/lib/data/products"
 import { getSuppliers } from "@/lib/data/suppliers"
+import { getProducts } from "@/lib/data/products"
 
 export default async function EditPurchasePage({
   params,
@@ -20,8 +20,8 @@ export default async function EditPurchasePage({
   }
 
   const purchase = await getPurchaseById(params.id, user.id)
-  const products = await getProducts(user.id)
   const suppliers = await getSuppliers(user.id)
+  const products = await getProducts(user.id)
 
   if (!purchase) {
     redirect("/purchases")
@@ -31,7 +31,7 @@ export default async function EditPurchasePage({
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-center">Edit Purchase</h2>
-        <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
+        <EditPurchaseForm initialData={purchase} suppliers={suppliers} products={products} />
       </div>
     </div>
   )

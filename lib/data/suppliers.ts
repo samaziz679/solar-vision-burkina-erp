@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
+import { unstable_noStore as noStore } from "next/cache"
+import type { Supplier } from "@/lib/supabase/types"
 
-export async function getSuppliers(userId: string) {
+export async function getSuppliers(userId: string): Promise<Supplier[]> {
+  noStore()
   const supabase = createClient()
   const { data, error } = await supabase
     .from("suppliers")
@@ -10,12 +13,13 @@ export async function getSuppliers(userId: string) {
 
   if (error) {
     console.error("Error fetching suppliers:", error)
-    return []
+    throw new Error("Failed to fetch suppliers.")
   }
   return data
 }
 
-export async function getSupplierById(id: string, userId: string) {
+export async function getSupplierById(id: string, userId: string): Promise<Supplier | null> {
+  noStore()
   const supabase = createClient()
   const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).eq("user_id", userId).single()
 

@@ -3,10 +3,6 @@ import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
   try {
-    // This `try/catch` block is only here to catch an error that sometimes happens when Next.js
-    // tries to prerender a page with `supabase.auth.getUser()` and the Supabase client cannot be created.
-    // This can happen if the environment variables are not set correctly or if the Supabase project is not configured.
-    // In a production environment, you should ensure your environment variables are correctly set.
     const { supabase, response } = createClient(request)
 
     // Refresh session if expired - required for Server Components

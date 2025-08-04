@@ -2,78 +2,104 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Package, ShoppingCart, Users, Banknote, Receipt, LogOut, Package2 } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { createClientComponentClient } from "@/lib/supabase/client"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+  Package2,
+  LayoutDashboard,
+  DollarSign,
+  ShoppingCart,
+  Receipt,
+  Users,
+  Truck,
+  LineChart,
+  LogOut,
+} from "lucide-react"
+import { logout } from "@/lib/auth"
+import { useActionState } from "react-dom"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const supabase = createClientComponentClient()
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/login" // Redirect to login page after sign out
-  }
+  const [state, formAction] = useActionState(logout, undefined)
 
   const navItems = [
-    { href: "/dashboard", icon: Home, label: "Dashboard" },
-    { href: "/inventory", icon: Package, label: "Inventory" },
-    { href: "/sales", icon: ShoppingCart, label: "Sales" },
-    { href: "/purchases", icon: Receipt, label: "Purchases" },
-    { href: "/clients", icon: Users, label: "Clients" },
-    { href: "/suppliers", icon: Users, label: "Suppliers" },
-    { href: "/banking", icon: Banknote, label: "Banking" },
-    { href: "/expenses", icon: Receipt, label: "Expenses" },
+    {
+      href: "/dashboard",
+      icon: LayoutDashboard,
+      label: "Dashboard",
+    },
+    {
+      href: "/banking",
+      icon: DollarSign,
+      label: "Banking",
+    },
+    {
+      href: "/inventory",
+      icon: Package2,
+      label: "Inventory",
+    },
+    {
+      href: "/purchases",
+      icon: ShoppingCart,
+      label: "Purchases",
+    },
+    {
+      href: "/sales",
+      icon: Receipt,
+      label: "Sales",
+    },
+    {
+      href: "/clients",
+      icon: Users,
+      label: "Clients",
+    },
+    {
+      href: "/suppliers",
+      icon: Truck,
+      label: "Suppliers",
+    },
+    {
+      href: "/expenses",
+      icon: LineChart,
+      label: "Expenses",
+    },
   ]
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-      <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-        <Link
-          href="#"
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-        >
-          <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-          <span className="sr-only">Acme Inc</span>
-        </Link>
-        <TooltipProvider>
-          {navItems.map((item) => (
-            <Tooltip key={item.href}>
-              <TooltipTrigger asChild>
-                <Link
-                  href={item.href}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:text-foreground md:h-8 md:w-8 ${
-                    pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="sr-only">{item.label}</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
-            </Tooltip>
-          ))}
-        </TooltipProvider>
-      </nav>
-      <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleSignOut}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                variant="ghost"
-                size="icon"
+    <div className="hidden border-r bg-muted/40 md:block">
+      <div className="flex h-full max-h-screen flex-col gap-2">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <Package2 className="h-6 w-6" />
+            <span className="">Solar Vision ERP</span>
+          </Link>
+        </div>
+        <div className="flex-1">
+          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                  pathname === item.href && "bg-muted text-primary",
+                )}
               >
-                <LogOut className="h-5 w-5" />
-                <span className="sr-only">Sign Out</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Sign Out</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </nav>
-    </aside>
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="mt-auto p-4">
+          <form action={formAction}>
+            <Button type="submit" className="w-full" variant="secondary">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
   )
 }

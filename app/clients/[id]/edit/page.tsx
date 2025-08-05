@@ -1,33 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { notFound } from "next/navigation"
 import { getClientById } from "@/lib/data/clients"
 import { ClientForm } from "@/components/clients/client-form"
-import { notFound, redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function EditClientPage({ params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const client = await getClientById(params.id, user.id)
+  const id = params.id
+  const client = await getClientById(id)
 
   if (!client) {
     notFound()
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Edit Client</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ClientForm initialData={client} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Edit Client</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ClientForm initialData={client} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

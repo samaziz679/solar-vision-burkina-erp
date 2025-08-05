@@ -1,28 +1,18 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
+import type React from "react"
+
+import { useActionState, useState } from "react"
 import { useRouter } from "next/navigation"
-import { updateProduct } from "@/app/inventory/actions"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import type { Product } from "@/lib/supabase/types"
-import { useEffect } from "react"
-
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
-  description: z.string().min(1, "Description is required").max(255),
-  price: z.coerce.number().min(0.01, "Price must be positive"),
-  stock: z.coerce.number().int().min(0, "Stock cannot be negative"),
-  category: z.string().min(1, "Category is required").max(100),
-  image_url: z.string().url("Invalid URL").optional().nullable(),
-})
-
-type ProductFormValues = z.infer<typeof formSchema>
+import { updateProduct } from "@/app/inventory/actions"
+import { toast } from "sonner"
+import Image from "next/image"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface EditProductFormProps {
   initialData: Product
@@ -30,112 +20,105 @@ interface EditProductFormProps {
 
 export function EditProductForm({ initialData }: EditProductFormProps) {
   const router = useRouter()
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData,
-  })
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData.image_url)
+  const [removeImage, setRemoveImage] = useState<boolean>(false)
 
-  useEffect(() => {
-    if (initialData) {
-      form.reset(initialData)
-    }
-  }, [initialData, form])
-
-  async function onSubmit(values: ProductFormValues) {
-    try {
-      await updateProduct(initialData.id, values)
-      toast.success("Product updated successfully.")
-      router.push("/inventory")
-    } catch (error: any) {
-      toast.error("Failed to update product.", {
-        description: error.message || "An unexpected error occurred.",
-      })
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+        setRemoveImage(false) // If new image is selected, don't remove
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setImagePreview(initialData.image_url) // Revert to initial if no file selected
     }
   }
 
+  const handleRemoveImageChange = (checked: boolean) => {
+    setRemoveImage(checked)
+    if (checked) {
+      setImagePreview(null) // Clear preview if removing
+    } else {
+      setImagePreview(initialData.image_url) // Restore original preview if unchecking
+    }
+  }
+
+  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+    formData.set("existing_image_url", initialData.image_url || "")
+    formData.set("remove_image", removeImage.toString())
+
+    const result = await updateProduct(initialData.id, formData)
+    if (result.success) {
+      toast.success("Product updated successfully!")
+      router.push("/inventory")
+    } else {
+      toast.error(result.error)
+    }
+    return result
+  }, null)
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form action={formAction} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" name="name" defaultValue={initialData.name} required />
+      </div>
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea id="description" name="description" defaultValue={initialData.description} required />
+      </div>
+      <div>
+        <Label htmlFor="category">Category</Label>
+        <Input id="category" name="category" defaultValue={initialData.category} required />
+      </div>
+      <div>
+        <Label htmlFor="price">Price</Label>
+        <Input id="price" name="price" type="number" step="0.01" defaultValue={initialData.price} required />
+      </div>
+      <div>
+        <Label htmlFor="stock">Stock</Label>
+        <Input id="stock" name="stock" type="number" defaultValue={initialData.stock} required />
+      </div>
+      <div>
+        <Label htmlFor="image">Product Image</Label>
+        <Input
+          id="image"
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          disabled={removeImage}
         />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Price</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="stock"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Stock</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="image_url"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image URL</FormLabel>
-              <FormControl>
-                <Input type="url" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Update Product</Button>
-      </form>
-    </Form>
+        {imagePreview && (
+          <div className="mt-2">
+            <Image
+              src={imagePreview || "/placeholder.png"}
+              alt="Image Preview"
+              width={100}
+              height={100}
+              className="rounded-md object-cover"
+            />
+          </div>
+        )}
+        {initialData.image_url && (
+          <div className="flex items-center space-x-2 mt-2">
+            <Checkbox id="remove_image" checked={removeImage} onCheckedChange={handleRemoveImageChange} />
+            <label
+              htmlFor="remove_image"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Remove existing image
+            </label>
+          </div>
+        )}
+      </div>
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Updating..." : "Update Product"}
+      </Button>
+      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+    </form>
   )
 }

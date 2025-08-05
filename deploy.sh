@@ -1,28 +1,16 @@
 #!/bin/bash
 
-# Exit immediately if a command exits with a non-zero status.
-set -e
+# This script is for deploying the application to Vercel.
+# It assumes you have the Vercel CLI installed and configured.
 
-echo "Starting deployment script..."
+echo "Deploying Solar Vision ERP to Vercel..."
 
-# Install dependencies
-echo "Installing dependencies..."
-npm install --prefer-offline --no-audit --progress=false || { echo "npm install failed"; exit 1; }
+# Build the project
+echo "Building the project..."
+npm run build
 
-# Run build
-echo "Running build..."
-npm run build || { echo "npm run build failed"; exit 1; }
+# Deploy to Vercel
+echo "Deploying to Vercel..."
+vercel --prod
 
-# Install Vercel CLI globally
-echo "Installing Vercel CLI..."
-npm install --global vercel@latest
-
-# Pull environment variables for the preview environment
-echo "Pulling environment variables for preview environment..."
-vercel pull --yes --environment=preview --token=${VERCEL_TOKEN}
-
-# Deploy the prebuilt project
-echo "Deploying the prebuilt project..."
-vercel deploy --prebuilt
-
-echo "Deployment script finished successfully."
+echo "Deployment complete!"

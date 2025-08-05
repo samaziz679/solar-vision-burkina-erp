@@ -1,35 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SaleForm } from "@/components/sales/sale-form"
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { getClients } from "@/lib/data/clients"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getProducts } from "@/lib/data/products"
+import { getClients } from "@/lib/data/clients"
 
 export default async function NewSalePage() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const clients = await getClients(user.id)
-  const products = await getProducts(user.id)
-
-  if (clients.length === 0 || products.length === 0) {
-    redirect("/setup-required?message=Please add at least one client and one product before creating sales.")
-  }
+  const products = await getProducts()
+  const clients = await getClients()
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create New Sale</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <SaleForm clients={clients} products={products} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Add New Sale</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SaleForm products={products} clients={clients} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

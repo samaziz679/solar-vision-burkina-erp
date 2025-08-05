@@ -1,95 +1,162 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
-import type { BankingTransaction } from "@/lib/supabase/types"
+import { createClient } from "@/lib/supabase/server"
+import { getUser } from "@/lib/auth"
+import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
 
-export async function createBankingTransaction(formData: Omit<BankingTransaction, "id" | "user_id" | "created_at">) {
+export async function createBankingAccount(formData: FormData) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const name = formData.get("name") as string
+
+  if (!name) {
+    return { success: false, error: "Account name is required." }
   }
 
-  const { error } = await supabase.from("banking_transactions").insert({
-    ...formData,
+  const newAccount: TablesInsert<"banking_accounts"> = {
     user_id: user.id,
-  })
+    name,
+  }
+
+  const { error } = await supabase.from("banking_accounts").insert(newAccount)
 
   if (error) {
-    console.error("Error creating banking transaction:", error)
-    throw new Error("Failed to create banking transaction.")
+    console.error("Error creating banking account:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/banking")
+  return { success: true }
 }
 
-export async function updateBankingTransaction(
-  id: string,
-  formData: Omit<BankingTransaction, "id" | "user_id" | "created_at">,
-) {
+export async function updateBankingAccount(id: string, formData: FormData) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const name = formData.get("name") as string
+
+  if (!name) {
+    return { success: false, error: "Account name is required." }
   }
 
-  const { error } = await supabase.from("banking_transactions").update(formData).eq("id", id).eq("user_id", user.id)
+  const updatedAccount: TablesUpdate<"banking_accounts"> = {
+    name,
+  }
+
+  const { error } = await supabase.from("banking_accounts").update(updatedAccount).eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error updating banking transaction:", error)
-    throw new Error("Failed to update banking transaction.")
+    console.error("Error updating banking account:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/banking")
+  revalidatePath(`/banking/${id}/edit`)
+  return { success: true }
 }
 
-export async function deleteBankingTransaction(id: string) {
+export async function deleteBankingAccount(id: string) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const { error } = await supabase.from("banking_accounts").delete().eq("id", id).eq("user_id", user.id)
+
+  if (error) {
+    console.error("Error deleting banking account:", error.message)
+    return { success: false, error: error.message }
   }
+
+  revalidatePath("/banking")
+  return { success: true }
+}
+
+export async function createBankingTransaction(formData: FormData) {
+  const supabase = createClient()
+  const user = await getUser()
+
+  const account_id = formData.get("account_id") as string
+  const type = formData.get("type") as TablesInsert<"banking_transactions">["type"]
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const description = formData.get("description") as string
+  const date = formData.get("date") as string
+
+  if (!account_id || !type || isNaN(amount) || amount <= 0 || !description || !date) {
+    return { success: false, error: "All fields are required and amount must be positive." }
+  }
+
+  const newTransaction: TablesInsert<"banking_transactions"> = {
+    user_id: user.id,
+    account_id,
+    type,
+    amount,
+    description,
+    date,
+  }
+
+  const { error } = await supabase.from("banking_transactions").insert(newTransaction)
+
+  if (error) {
+    console.error("Error creating banking transaction:", error.message)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath("/banking")
+  revalidatePath(`/banking/${account_id}/edit`)
+  return { success: true }
+}
+
+export async function updateBankingTransaction(id: string, formData: FormData) {
+  const supabase = createClient()
+  const user = await getUser()
+
+  const account_id = formData.get("account_id") as string
+  const type = formData.get("type") as TablesUpdate<"banking_transactions">["type"]
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const description = formData.get("description") as string
+  const date = formData.get("date") as string
+
+  if (!account_id || !type || isNaN(amount) || amount <= 0 || !description || !date) {
+    return { success: false, error: "All fields are required and amount must be positive." }
+  }
+
+  const updatedTransaction: TablesUpdate<"banking_transactions"> = {
+    account_id,
+    type,
+    amount,
+    description,
+    date,
+  }
+
+  const { error } = await supabase
+    .from("banking_transactions")
+    .update(updatedTransaction)
+    .eq("id", id)
+    .eq("user_id", user.id)
+
+  if (error) {
+    console.error("Error updating banking transaction:", error.message)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath("/banking")
+  revalidatePath(`/banking/${account_id}/edit`)
+  return { success: true }
+}
+
+export async function deleteBankingTransaction(id: string, accountId: string) {
+  const supabase = createClient()
+  const user = await getUser()
 
   const { error } = await supabase.from("banking_transactions").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error deleting banking transaction:", error)
-    throw new Error("Failed to delete banking transaction.")
+    console.error("Error deleting banking transaction:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/banking")
-}
-
-export async function createBankingAccount(name: string) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const { error } = await supabase.from("banking_accounts").insert({
-    name,
-    user_id: user.id,
-  })
-
-  if (error) {
-    console.error("Error creating banking account:", error)
-    throw new Error("Failed to create banking account.")
-  }
-
-  revalidatePath("/banking")
+  revalidatePath(`/banking/${accountId}/edit`)
+  return { success: true }
 }

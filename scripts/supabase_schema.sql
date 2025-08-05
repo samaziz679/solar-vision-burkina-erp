@@ -1,4 +1,4 @@
--- This is a basic Supabase schema script.
+-- This is a basic Supabase schema script for the Solar Vision ERP application.
 -- It sets up the initial tables and RLS policies.
 
 -- Enable Row Level Security (RLS) for all tables
@@ -31,10 +31,20 @@ CREATE TYPE public.transaction_type AS ENUM ('income', 'expense', 'transfer');
 
 -- Create users table
 CREATE TABLE public.users (
-    id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
+    id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL,
     email text UNIQUE NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    PRIMARY KEY (id)
 );
+
+-- Enable Row Level Security (RLS) for 'users' table
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for 'users' table
+CREATE POLICY "Users can view their own user data." ON public.users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own user data." ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update their own user data." ON public.users FOR UPDATE USING (auth.uid() = id);
+-- No DELETE policy for users, as user deletion is handled by auth.users CASCADE
 
 -- Create banking_accounts table
 CREATE TABLE public.banking_accounts (
@@ -129,12 +139,6 @@ CREATE TABLE public.sales (
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
-
--- RLS Policies for users table
-CREATE POLICY "Allow all authenticated users to view their own user data" ON public.users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Allow authenticated users to insert their own user data" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Allow authenticated users to update their own user data" ON public.users FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Allow authenticated users to delete their own user data" ON public.users FOR DELETE USING (auth.uid() = id);
 
 -- RLS Policies for banking_accounts table
 CREATE POLICY "Allow all authenticated users to view their own banking accounts" ON public.banking_accounts FOR SELECT USING (auth.uid() = user_id);

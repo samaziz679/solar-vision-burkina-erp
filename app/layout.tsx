@@ -8,16 +8,16 @@ import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Solar Vision Burkina ERP",
-  description: "ERP system for Solar Vision Burkina",
+  title: "Solar Vision ERP",
+  description: "Enterprise Resource Planning for Solar Businesses",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>

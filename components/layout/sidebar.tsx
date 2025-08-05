@@ -3,74 +3,89 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { DollarSign, Users, Package, ShoppingCart, Truck, Banknote, LayoutDashboard, LogOut } from "lucide-react"
+import {
+  Home,
+  DollarSign,
+  Users,
+  Package,
+  ShoppingCart,
+  Receipt,
+  Truck,
+  Banknote,
+  LogOut,
+  Settings,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { createClientComponentClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 import Image from "next/image"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
-  const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Banking", href: "/banking", icon: Banknote },
-    { name: "Clients", href: "/clients", icon: Users },
-    { name: "Expenses", href: "/expenses", icon: DollarSign },
-    { name: "Inventory", href: "/inventory", icon: Package },
-    { name: "Purchases", href: "/purchases", icon: ShoppingCart },
-    { name: "Sales", href: "/sales", icon: Truck },
-    { name: "Suppliers", href: "/suppliers", icon: Users },
-  ]
-
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) {
-      toast.error("Failed to log out.", {
-        description: error.message,
-      })
+      toast.error("Failed to sign out.")
+      console.error("Error signing out:", error.message)
     } else {
-      toast.success("Logged out successfully.")
-      router.push("/login")
+      toast.success("Signed out successfully!")
+      window.location.href = "/login" // Redirect to login page
     }
   }
 
+  const navItems = [
+    { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/banking", icon: Banknote, label: "Banking" },
+    { href: "/clients", icon: Users, label: "Clients" },
+    { href: "/expenses", icon: DollarSign, label: "Expenses" },
+    { href: "/inventory", icon: Package, label: "Inventory" },
+    { href: "/purchases", icon: ShoppingCart, label: "Purchases" },
+    { href: "/sales", icon: Receipt, label: "Sales" },
+    { href: "/suppliers", icon: Truck, label: "Suppliers" },
+  ]
+
   return (
-    <div className="hidden border-r bg-background/95 lg:block">
-      <div className="flex h-full max-h-screen flex-col gap-2">
-        <div className="flex h-[60px] items-center border-b px-6">
-          <Link className="flex items-center gap-2 font-semibold" href="/dashboard">
-            <Image src="/placeholder-logo.png" alt="Solar Vision ERP Logo" width={24} height={24} className="h-6 w-6" />
-            <span className="">Solar Vision ERP</span>
-          </Link>
-        </div>
-        <div className="flex-1 overflow-auto py-2">
-          <nav className="grid items-start gap-2 px-4 text-sm font-medium">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                  pathname.startsWith(item.href) && "bg-muted text-primary",
-                )}
-                href={item.href}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="mt-auto p-4">
-          <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
-            <LogOut className="mr-3 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
+    <aside className="w-64 bg-gray-900 text-white flex flex-col h-full">
+      <div className="p-4 flex items-center justify-center border-b border-gray-800">
+        <Image src="/placeholder-logo.png" alt="Solar Vision ERP Logo" width={40} height={40} className="mr-2" />
+        <h1 className="text-2xl font-bold">Solar Vision ERP</h1>
       </div>
-    </div>
+      <nav className="flex-1 p-4 space-y-2">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center p-2 rounded-md text-lg font-medium transition-colors hover:bg-gray-700",
+              pathname === item.href ? "bg-gray-700 text-primary-foreground" : "text-gray-300",
+            )}
+          >
+            <item.icon className="mr-3 h-5 w-5" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-gray-800 space-y-2">
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center p-2 rounded-md text-lg font-medium transition-colors hover:bg-gray-700",
+            pathname === "/settings" ? "bg-gray-700 text-primary-foreground" : "text-gray-300",
+          )}
+        >
+          <Settings className="mr-3 h-5 w-5" />
+          Settings
+        </Link>
+        <Button
+          onClick={handleSignOut}
+          className="w-full flex items-center justify-start p-2 rounded-md text-lg font-medium transition-colors hover:bg-gray-700 text-gray-300 bg-transparent"
+        >
+          <LogOut className="mr-3 h-5 w-5" />
+          Sign Out
+        </Button>
+      </div>
+    </aside>
   )
 }

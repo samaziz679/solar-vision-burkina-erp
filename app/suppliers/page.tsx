@@ -1,38 +1,25 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { SupplierList } from "@/components/suppliers/supplier-list"
 import { getSuppliers } from "@/lib/data/suppliers"
+import { SupplierList } from "@/components/suppliers/supplier-list"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { PlusCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function SuppliersPage() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const suppliers = await getSuppliers(user.id)
+  const suppliers = await getSuppliers()
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-2xl font-bold">Suppliers</CardTitle>
-        <Button asChild>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-4xl">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-2xl font-bold">Suppliers</CardTitle>
           <Link href="/suppliers/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add New Supplier
+            <Button>Add New Supplier</Button>
           </Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <SupplierList suppliers={suppliers} />
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <SupplierList suppliers={suppliers} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

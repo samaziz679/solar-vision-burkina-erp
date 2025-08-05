@@ -1,138 +1,71 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
+import { useActionState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient, updateClient } from "@/app/clients/actions"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import type { Client } from "@/lib/supabase/types"
-import { useEffect } from "react" // Corrected import
-
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
-  contact_person: z.string().min(1, "Contact person is required").max(255),
-  email: z.string().email("Invalid email address").min(1, "Email is required").max(255),
-  phone: z.string().min(1, "Phone is required").max(20),
-  address: z.string().min(1, "Address is required").max(255),
-})
-
-type ClientFormValues = z.infer<typeof formSchema>
+import { createClient, updateClient } from "@/app/clients/actions"
+import { toast } from "sonner"
 
 interface ClientFormProps {
-  initialData?: Client | null
+  initialData?: Client
 }
 
 export function ClientForm({ initialData }: ClientFormProps) {
   const router = useRouter()
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      contact_person: "",
-      email: "",
-      phone: "",
-      address: "",
-    },
-  })
+  const isEditing = !!initialData
 
-  useEffect(() => {
-    if (initialData) {
-      form.reset(initialData)
-    }
-  }, [initialData, form])
-
-  async function onSubmit(values: ClientFormValues) {
-    try {
-      if (initialData) {
-        await updateClient(initialData.id, values)
-        toast.success("Client updated successfully.")
+  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+    if (isEditing && initialData) {
+      const result = await updateClient(initialData.id, formData)
+      if (result.success) {
+        toast.success("Client updated successfully!")
+        router.push("/clients")
       } else {
-        await createClient(values)
-        toast.success("Client created successfully.")
+        toast.error(result.error)
       }
-      router.push("/clients")
-    } catch (error: any) {
-      toast.error("Failed to save client.", {
-        description: error.message || "An unexpected error occurred.",
-      })
+      return result
+    } else {
+      const result = await createClient(formData)
+      if (result.success) {
+        toast.success("Client created successfully!")
+        router.push("/clients")
+      } else {
+        toast.error(result.error)
+      }
+      return result
     }
-  }
+  }, null)
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="contact_person"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contact Person</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">{initialData ? "Update Client" : "Create Client"}</Button>
-      </form>
-    </Form>
+    <form action={formAction} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" name="name" defaultValue={initialData?.name} required />
+      </div>
+      <div>
+        <Label htmlFor="contact_person">Contact Person</Label>
+        <Input id="contact_person" name="contact_person" defaultValue={initialData?.contact_person} required />
+      </div>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={initialData?.email} required />
+      </div>
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input id="phone" name="phone" type="tel" defaultValue={initialData?.phone} required />
+      </div>
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Textarea id="address" name="address" defaultValue={initialData?.address} required />
+      </div>
+      <Button type="submit" disabled={isPending}>
+        {isEditing ? (isPending ? "Updating..." : "Update Client") : isPending ? "Creating..." : "Create Client"}
+      </Button>
+      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+    </form>
   )
 }

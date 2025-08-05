@@ -1,98 +1,89 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { z } from "zod"
+import { getUser } from "@/lib/auth"
+import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
 
-const supplierSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
-  contact_person: z.string().min(1, "Contact person is required").max(255),
-  email: z.string().email("Invalid email address").min(1, "Email is required").max(255),
-  phone: z.string().min(1, "Phone is required").max(20),
-  address: z.string().min(1, "Address is required").max(255),
-})
-
-export async function createSupplier(values: z.infer<typeof supplierSchema>) {
+export async function createSupplier(formData: FormData) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const name = formData.get("name") as string
+  const contact_person = formData.get("contact_person") as string
+  const email = formData.get("email") as string
+  const phone = formData.get("phone") as string
+  const address = formData.get("address") as string
+
+  if (!name || !contact_person || !email || !phone || !address) {
+    return { success: false, error: "All fields are required." }
   }
 
-  const validatedFields = supplierSchema.safeParse(values)
-
-  if (!validatedFields.success) {
-    throw new Error("Invalid fields for supplier creation.")
+  const newSupplier: TablesInsert<"suppliers"> = {
+    user_id: user.id,
+    name,
+    contact_person,
+    email,
+    phone,
+    address,
   }
 
-  const { data, error } = await supabase
-    .from("suppliers")
-    .insert({ ...validatedFields.data, user_id: user.id })
-    .select()
-    .single()
+  const { error } = await supabase.from("suppliers").insert(newSupplier)
 
   if (error) {
-    console.error("Error creating supplier:", error)
-    throw new Error("Failed to create supplier.")
+    console.error("Error creating supplier:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/suppliers")
-  return data
+  return { success: true }
 }
 
-export async function updateSupplier(id: string, values: z.infer<typeof supplierSchema>) {
+export async function updateSupplier(id: string, formData: FormData) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const name = formData.get("name") as string
+  const contact_person = formData.get("contact_person") as string
+  const email = formData.get("email") as string
+  const phone = formData.get("phone") as string
+  const address = formData.get("address") as string
+
+  if (!name || !contact_person || !email || !phone || !address) {
+    return { success: false, error: "All fields are required." }
   }
 
-  const validatedFields = supplierSchema.safeParse(values)
-
-  if (!validatedFields.success) {
-    throw new Error("Invalid fields for supplier update.")
+  const updatedSupplier: TablesUpdate<"suppliers"> = {
+    name,
+    contact_person,
+    email,
+    phone,
+    address,
   }
 
-  const { data, error } = await supabase
-    .from("suppliers")
-    .update(validatedFields.data)
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select()
-    .single()
+  const { error } = await supabase.from("suppliers").update(updatedSupplier).eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error updating supplier:", error)
-    throw new Error("Failed to update supplier.")
+    console.error("Error updating supplier:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/suppliers")
-  return data
+  revalidatePath(`/suppliers/${id}/edit`)
+  return { success: true }
 }
 
 export async function deleteSupplier(id: string) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
+  const user = await getUser()
 
   const { error } = await supabase.from("suppliers").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error deleting supplier:", error)
-    throw new Error("Failed to delete supplier.")
+    console.error("Error deleting supplier:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/suppliers")
+  return { success: true }
 }

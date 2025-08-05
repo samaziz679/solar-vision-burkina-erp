@@ -1,38 +1,60 @@
 "use client"
 
-import { useActionState } from "react" // Corrected import
-import { useFormStatus } from "react-dom"
+import { useActionState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { login } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
 
-export default function LoginForm() {
-  const [state, formAction] = useActionState(login, {})
-  const { pending } = useFormStatus()
+export function LoginForm() {
+  const supabase = createClient()
+
+  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+
+    if (!email || !password) {
+      return { success: false, error: "Email and password are required." }
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      toast.error(error.message)
+      return { success: false, error: error.message }
+    }
+
+    toast.success("Logged in successfully!")
+    // Redirect handled by middleware
+    return { success: true }
+  }, null)
 
   return (
-    <form action={formAction} className="grid gap-4">
-      <div className="grid gap-2">
+    <form action={formAction} className="space-y-4">
+      <div>
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" placeholder="m@example.com" required />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="password">Mot de passe</Label>
+      <div>
+        <Label htmlFor="password">Password</Label>
         <Input id="password" name="password" type="password" required />
       </div>
-      {state?.error && (
-        <Alert variant="destructive">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <AlertTitle>Erreur de connexion</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      )}
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Connexion en cours..." : "Se connecter"}
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Logging in...
+          </>
+        ) : (
+          "Login"
+        )}
       </Button>
+      {state?.error && <p className="text-red-500 text-sm mt-2">{state.error}</p>}
     </form>
   )
 }

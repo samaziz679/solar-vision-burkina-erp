@@ -1,34 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getBankingAccounts, getBankingTransactionById } from "@/lib/data/banking"
+import { notFound } from "next/navigation"
+import { getBankingAccountById } from "@/lib/data/banking"
 import { BankingForm } from "@/components/banking/banking-form"
-import { notFound, redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function EditBankingTransactionPage({ params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default async function EditBankingAccountPage({ params }: { params: { id: string } }) {
+  const id = params.id
+  const account = await getBankingAccountById(id)
 
-  if (!user) {
-    redirect("/login")
-  }
-
-  const transaction = await getBankingTransactionById(params.id, user.id)
-  const bankingAccounts = await getBankingAccounts(user.id)
-
-  if (!transaction) {
+  if (!account) {
     notFound()
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Edit Banking Transaction</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <BankingForm initialData={transaction} bankingAccounts={bankingAccounts} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Edit Banking Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BankingForm initialData={account} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

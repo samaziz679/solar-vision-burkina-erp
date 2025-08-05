@@ -1,118 +1,78 @@
 "use client"
 
 import { useState } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { BankingTransaction } from "@/lib/supabase/types"
-import { DataTable } from "@/components/ui/data-table"
+import type { BankingAccount } from "@/lib/supabase/types"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
-import { DeleteBankingDialog } from "./delete-banking-dialog"
-
-export const columns: ColumnDef<BankingTransaction>[] = [
-  {
-    accessorKey: "date",
-    header: ({ column }) => {
-      return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("date"))
-      return date.toLocaleDateString()
-    },
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-  },
-  {
-    accessorKey: "amount",
-    header: ({ column }) => {
-      return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const amount = Number.parseFloat(row.getValue("amount"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(amount)
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-    cell: ({ row }) => {
-      const type: string = row.getValue("type")
-      const colorClass = type === "income" ? "text-green-600" : type === "expense" ? "text-red-600" : "text-blue-600"
-      return <span className={colorClass}>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-    },
-  },
-  {
-    accessorKey: "account_name",
-    header: "Account",
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const transaction = row.original
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href={`/banking/${transaction.id}/edit`}>Edit</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DeleteBankingDialog
-            open={showDeleteDialog}
-            onOpenChange={setShowDeleteDialog}
-            transactionId={transaction.id}
-          />
-        </>
-      )
-    },
-  },
-]
+import { DeleteBankingAccountDialog } from "./delete-banking-dialog"
 
 interface BankingListProps {
-  transactions: BankingTransaction[]
+  accounts: BankingAccount[]
 }
 
-export function BankingList({ transactions }: BankingListProps) {
+export function BankingList({ accounts }: BankingListProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
+
+  const handleDeleteClick = (accountId: string) => {
+    setSelectedAccountId(accountId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setIsDeleteDialogOpen(false)
+    setSelectedAccountId(null)
+  }
+
   return (
-    <div className="w-full">
-      <DataTable columns={columns} data={transactions} filterColumnId="description" />
-    </div>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Account Name</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {accounts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center py-4">
+                No banking accounts found.
+              </TableCell>
+            </TableRow>
+          ) : (
+            accounts.map((account) => (
+              <TableRow key={account.id}>
+                <TableCell className="font-medium">{account.name}</TableCell>
+                <TableCell>{new Date(account.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    <Link href={`/banking/${account.id}/edit`}>
+                      <Button variant="outline" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(account.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {selectedAccountId && (
+        <DeleteBankingAccountDialog
+          accountId={selectedAccountId}
+          isOpen={isDeleteDialogOpen}
+          onClose={handleCloseDialog}
+        />
+      )}
+    </>
   )
 }

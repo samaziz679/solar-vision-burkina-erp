@@ -1,41 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { notFound } from "next/navigation"
 import { getSaleById } from "@/lib/data/sales"
-import { EditSaleForm } from "@/components/sales/edit-sale-form"
-import { notFound, redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { getClients } from "@/lib/data/clients"
+import { SaleForm } from "@/components/sales/sale-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getProducts } from "@/lib/data/products"
+import { getClients } from "@/lib/data/clients"
 
 export default async function EditSalePage({ params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const sale = await getSaleById(params.id, user.id)
-  const clients = await getClients(user.id)
-  const products = await getProducts(user.id)
+  const id = params.id
+  const sale = await getSaleById(id)
+  const products = await getProducts()
+  const clients = await getClients()
 
   if (!sale) {
     notFound()
   }
 
-  if (clients.length === 0 || products.length === 0) {
-    redirect("/setup-required?message=Please add at least one client and one product before editing sales.")
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Edit Sale</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <EditSaleForm initialData={sale} clients={clients} products={products} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Edit Sale</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SaleForm initialData={sale} products={products} clients={clients} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

@@ -1,69 +1,85 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
-import type { Expense } from "@/lib/supabase/types"
+import { createClient } from "@/lib/supabase/server"
+import { getUser } from "@/lib/auth"
+import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
 
-export async function createExpense(formData: Omit<Expense, "id" | "user_id" | "created_at">) {
+export async function createExpense(formData: FormData) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const category = formData.get("category") as string
+  const description = formData.get("description") as string
+  const date = formData.get("date") as string
+
+  if (isNaN(amount) || amount <= 0 || !category || !description || !date) {
+    return { success: false, error: "All fields are required and amount must be positive." }
   }
 
-  const { error } = await supabase.from("expenses").insert({
-    ...formData,
+  const newExpense: TablesInsert<"expenses"> = {
     user_id: user.id,
-  })
+    amount,
+    category,
+    description,
+    date,
+  }
+
+  const { error } = await supabase.from("expenses").insert(newExpense)
 
   if (error) {
-    console.error("Error creating expense:", error)
-    throw new Error("Failed to create expense.")
+    console.error("Error creating expense:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/expenses")
+  return { success: true }
 }
 
-export async function updateExpense(id: string, formData: Omit<Expense, "id" | "user_id" | "created_at">) {
+export async function updateExpense(id: string, formData: FormData) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
 
-  if (!user) {
-    redirect("/login")
+  const amount = Number.parseFloat(formData.get("amount") as string)
+  const category = formData.get("category") as string
+  const description = formData.get("description") as string
+  const date = formData.get("date") as string
+
+  if (isNaN(amount) || amount <= 0 || !category || !description || !date) {
+    return { success: false, error: "All fields are required and amount must be positive." }
   }
 
-  const { error } = await supabase.from("expenses").update(formData).eq("id", id).eq("user_id", user.id)
+  const updatedExpense: TablesUpdate<"expenses"> = {
+    amount,
+    category,
+    description,
+    date,
+  }
+
+  const { error } = await supabase.from("expenses").update(updatedExpense).eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error updating expense:", error)
-    throw new Error("Failed to update expense.")
+    console.error("Error updating expense:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/expenses")
+  revalidatePath(`/expenses/${id}/edit`)
+  return { success: true }
 }
 
 export async function deleteExpense(id: string) {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
+  const user = await getUser()
 
   const { error } = await supabase.from("expenses").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error deleting expense:", error)
-    throw new Error("Failed to delete expense.")
+    console.error("Error deleting expense:", error.message)
+    return { success: false, error: error.message }
   }
 
   revalidatePath("/expenses")
+  return { success: true }
 }

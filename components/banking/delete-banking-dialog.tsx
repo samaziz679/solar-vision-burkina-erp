@@ -10,44 +10,50 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { deleteBankingTransaction } from "@/app/banking/actions"
+import { deleteBankingAccount } from "@/app/banking/actions"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useTransition } from "react"
 
-interface DeleteBankingDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  transactionId: string
+interface DeleteBankingAccountDialogProps {
+  accountId: string
+  isOpen: boolean
+  onClose: () => void
 }
 
-export function DeleteBankingDialog({ open, onOpenChange, transactionId }: DeleteBankingDialogProps) {
-  const router = useRouter()
+export function DeleteBankingAccountDialog({ accountId, isOpen, onClose }: DeleteBankingAccountDialogProps) {
+  const [isPending, startTransition] = useTransition()
 
-  const handleDelete = async () => {
-    try {
-      await deleteBankingTransaction(transactionId)
-      toast.success("Transaction deleted successfully.")
-      onOpenChange(false)
-      router.refresh() // Refresh the list after deletion
-    } catch (error: any) {
-      toast.error("Failed to delete transaction.", {
-        description: error.message || "An unexpected error occurred.",
-      })
-    }
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteBankingAccount(accountId)
+      if (result.success) {
+        toast.success("Banking account deleted successfully!")
+        onClose()
+      } else {
+        toast.error(result.error)
+      }
+    })
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your banking transaction.
+            This action cannot be undone. This will permanently delete your banking account and all associated
+            transactions.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isPending ? "Deleting..." : "Delete"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

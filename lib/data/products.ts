@@ -1,28 +1,33 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Product } from "@/lib/supabase/types"
+import { getUser } from "@/lib/auth"
 
-export async function getProducts(userId: string): Promise<Product[]> {
+export async function getProducts(): Promise<Product[]> {
   const supabase = createClient()
+  const user = await getUser()
+
   const { data, error } = await supabase
     .from("products")
     .select("*")
-    .eq("user_id", userId)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching products:", error)
+    console.error("Error fetching products:", error.message)
     return []
   }
-  return data
+  return data || []
 }
 
-export async function getProductById(productId: string, userId: string): Promise<Product | null> {
+export async function getProductById(id: string): Promise<Product | null> {
   const supabase = createClient()
-  const { data, error } = await supabase.from("products").select("*").eq("id", productId).eq("user_id", userId).single()
+  const user = await getUser()
+
+  const { data, error } = await supabase.from("products").select("*").eq("id", id).eq("user_id", user.id).single()
 
   if (error) {
-    console.error("Error fetching product by ID:", error)
+    console.error("Error fetching product by ID:", error.message)
     return null
   }
-  return data
+  return data || null
 }

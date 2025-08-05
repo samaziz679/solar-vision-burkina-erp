@@ -23,7 +23,8 @@ BEGIN
         ('prod_004', user_uuid, 'Mounting Kit', 'Universal mounting kit for rooftop solar panels', 'Accessories', 50.00, 90.00, 100, 'https://example.com/mounting-kit.jpg', NOW(), NOW()),
         ('prod_005', user_uuid, 'Charge Controller 60A', 'MPPT solar charge controller', 'Controllers', 80.00, 140.00, 40, 'https://example.com/charge-controller-60a.jpg', NOW(), NOW()),
         ('prod_006', user_uuid, 'Mounting Kit (Roof)', 'Aluminum mounting kit for roof installations', 'Mounting Systems', 80.00, 120.00, 150, 'https://example.com/mounting-kit-roof.jpg', NOW(), NOW()),
-        ('prod_007', user_uuid, 'Solar Cable 6mm²', 'UV resistant solar cable', 1.50, 1000, 'Cables', 'https://example.com/solar-cable.jpg', NOW(), NOW())
+        ('prod_007', user_uuid, 'Solar Cable 6mm²', 'UV resistant solar cable', 1.50, 1000, 'Cables', 'https://example.com/solar-cable.jpg', NOW(), NOW()),
+        ('prod_008', user_uuid, 'Solar Battery 10kWh', 'Lithium-ion battery for energy storage', 'Batteries', 5000.00, 5000.00, 20, '/placeholder.png?height=400&width=600&query=solar%20battery', NOW(), NOW())
     ON CONFLICT (id) DO UPDATE SET
         user_id = EXCLUDED.user_id,
         name = EXCLUDED.name,

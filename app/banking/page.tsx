@@ -1,38 +1,25 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { getBankingAccounts } from "@/lib/data/banking"
 import { BankingList } from "@/components/banking/banking-list"
-import { getBankingTransactions } from "@/lib/data/banking"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { PlusCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function BankingPage() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const transactions = await getBankingTransactions(user.id)
+  const accounts = await getBankingAccounts()
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-2xl font-bold">Banking Transactions</CardTitle>
-        <Button asChild>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-4xl">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-2xl font-bold">Banking Accounts</CardTitle>
           <Link href="/banking/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add New Transaction
+            <Button>Add New Account</Button>
           </Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <BankingList transactions={transactions} />
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <BankingList accounts={accounts} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

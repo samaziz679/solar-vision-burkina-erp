@@ -1,47 +1,38 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Purchase } from "@/lib/supabase/types"
+import { getUser } from "@/lib/auth"
 
-export async function getPurchases(userId: string): Promise<Purchase[]> {
+export async function getPurchases(): Promise<Purchase[]> {
   const supabase = createClient()
+  const user = await getUser()
+
   const { data, error } = await supabase
     .from("purchases")
-    .select("*, suppliers(name), products(name)")
-    .eq("user_id", userId)
+    .select("*, products(name), suppliers(name)")
+    .eq("user_id", user.id)
     .order("purchase_date", { ascending: false })
-    .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching purchases:", error)
+    console.error("Error fetching purchases:", error.message)
     return []
   }
-
-  return data.map((purchase) => ({
-    ...purchase,
-    supplier_name: (purchase.suppliers as { name: string }).name,
-    product_name: (purchase.products as { name: string }).name,
-  })) as Purchase[]
+  return data || []
 }
 
-export async function getPurchaseById(purchaseId: string, userId: string): Promise<Purchase | null> {
+export async function getPurchaseById(id: string): Promise<Purchase | null> {
   const supabase = createClient()
+  const user = await getUser()
+
   const { data, error } = await supabase
     .from("purchases")
-    .select("*, suppliers(name), products(name)")
-    .eq("id", purchaseId)
-    .eq("user_id", userId)
+    .select("*, products(name), suppliers(name)")
+    .eq("id", id)
+    .eq("user_id", user.id)
     .single()
 
   if (error) {
-    console.error("Error fetching purchase by ID:", error)
+    console.error("Error fetching purchase by ID:", error.message)
     return null
   }
-
-  if (data) {
-    return {
-      ...data,
-      supplier_name: (data.suppliers as { name: string }).name,
-      product_name: (data.products as { name: string }).name,
-    } as Purchase
-  }
-  return null
+  return data || null
 }

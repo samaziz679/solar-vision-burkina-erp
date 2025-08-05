@@ -1,163 +1,54 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
+import { useActionState } from "react"
 import { useRouter } from "next/navigation"
-import { createBankingTransaction, updateBankingTransaction } from "@/app/banking/actions"
-import type { BankingAccount, BankingTransaction } from "@/lib/supabase/types"
-import { useEffect } from "react" // Corrected import
-
-const formSchema = z.object({
-  type: z.enum(["income", "expense", "transfer"]),
-  amount: z.coerce.number().min(0.01, "Amount must be positive"),
-  description: z.string().min(1, "Description is required").max(255),
-  date: z.string().min(1, "Date is required"),
-  account_id: z.string().min(1, "Account is required"),
-})
-
-type BankingFormValues = z.infer<typeof formSchema>
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import type { BankingAccount } from "@/lib/supabase/types"
+import { createBankingAccount, updateBankingAccount } from "@/app/banking/actions"
+import { toast } from "sonner"
 
 interface BankingFormProps {
-  initialData?: BankingTransaction | null
-  bankingAccounts: BankingAccount[]
+  initialData?: BankingAccount
 }
 
-export function BankingForm({ initialData, bankingAccounts }: BankingFormProps) {
+export function BankingForm({ initialData }: BankingFormProps) {
   const router = useRouter()
-  const form = useForm<BankingFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      type: "expense",
-      amount: 0,
-      description: "",
-      date: new Date().toISOString().split("T")[0],
-      account_id: bankingAccounts[0]?.id || "",
-    },
-  })
+  const isEditing = !!initialData
 
-  useEffect(() => {
-    if (initialData) {
-      form.reset({
-        ...initialData,
-        date: initialData.date.split("T")[0], // Format date for input type="date"
-      })
-    }
-  }, [initialData, form])
-
-  async function onSubmit(values: BankingFormValues) {
-    try {
-      if (initialData) {
-        await updateBankingTransaction(initialData.id, values)
-        toast.success("Banking transaction updated successfully.")
+  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+    if (isEditing && initialData) {
+      const result = await updateBankingAccount(initialData.id, formData)
+      if (result.success) {
+        toast.success("Banking account updated successfully!")
+        router.push("/banking")
       } else {
-        await createBankingTransaction(values)
-        toast.success("Banking transaction created successfully.")
+        toast.error(result.error)
       }
-      router.push("/banking")
-    } catch (error: any) {
-      toast.error("Failed to save banking transaction.", {
-        description: error.message || "An unexpected error occurred.",
-      })
+      return result
+    } else {
+      const result = await createBankingAccount(formData)
+      if (result.success) {
+        toast.success("Banking account created successfully!")
+        router.push("/banking")
+      } else {
+        toast.error(result.error)
+      }
+      return result
     }
-  }
+  }, null)
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a transaction type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="transfer">Transfer</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="account_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Account</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an account" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {bankingAccounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">{initialData ? "Update Transaction" : "Create Transaction"}</Button>
-      </form>
-    </Form>
+    <form action={formAction} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Account Name</Label>
+        <Input id="name" name="name" defaultValue={initialData?.name} required />
+      </div>
+      <Button type="submit" disabled={isPending}>
+        {isEditing ? (isPending ? "Updating..." : "Update Account") : isPending ? "Creating..." : "Create Account"}
+      </Button>
+      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+    </form>
   )
 }

@@ -421,7 +421,10 @@ export type TablesInsert<
   PublicTableNameOrOptions extends
     | keyof PublicSchema["Tables"]
     | { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] },
-> = PublicTableNameOrOptions extends { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] }
+> = PublicTableNameOrOptions extends {
+  schema: keyof Database
+  table: keyof Database[keyof Database]["Tables"]
+}
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][PublicTableNameOrOptions["table"]] extends {
       Insert: infer I
     }
@@ -439,7 +442,10 @@ export type TablesUpdate<
   PublicTableNameOrOptions extends
     | keyof PublicSchema["Tables"]
     | { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] },
-> = PublicTableNameOrOptions extends { schema: keyof Database; table: keyof Database[keyof Database]["Tables"] }
+> = PublicTableNameOrOptions extends {
+  schema: keyof Database
+  table: keyof Database[keyof Database]["Tables"]
+}
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][PublicTableNameOrOptions["table"]] extends {
       Update: infer U
     }
@@ -457,7 +463,10 @@ export type Enums<
   PublicEnumNameOrOptions extends
     | keyof PublicSchema["Enums"]
     | { schema: keyof Database; enum: keyof Database[keyof Database]["Enums"] },
-> = PublicEnumNameOrOptions extends { schema: keyof Database; enum: keyof Database[keyof Database]["Enums"] }
+> = PublicEnumNameOrOptions extends {
+  schema: keyof Database
+  enum: keyof Database[keyof Database]["Enums"]
+}
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][PublicEnumNameOrOptions["enum"]]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]

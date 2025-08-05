@@ -1,11 +1,10 @@
-import LoginForm from "@/components/auth/login-form"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LoginForm } from "@/components/auth/login-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 export default async function LoginPage() {
   const supabase = createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -15,11 +14,10 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
-      <Card className="mx-auto max-w-sm">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
-          <CardDescription>Enter your email and password to login to your account</CardDescription>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center text-3xl font-bold">Login</CardTitle>
         </CardHeader>
         <CardContent>
           <LoginForm />

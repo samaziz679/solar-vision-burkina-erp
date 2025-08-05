@@ -1,90 +1,80 @@
 "use client"
 
 import { useState } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
 import type { Client } from "@/lib/supabase/types"
-import { DataTable } from "@/components/ui/data-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { DeleteClientDialog } from "./delete-client-dialog"
-
-export const columns: ColumnDef<Client>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-  },
-  {
-    accessorKey: "contact_person",
-    header: "Contact Person",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "phone",
-    header: "Phone",
-  },
-  {
-    accessorKey: "address",
-    header: "Address",
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const client = row.original
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href={`/clients/${client.id}/edit`}>Edit</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DeleteClientDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} clientId={client.id} />
-        </>
-      )
-    },
-  },
-]
 
 interface ClientListProps {
   clients: Client[]
 }
 
 export function ClientList({ clients }: ClientListProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+
+  const handleDeleteClick = (clientId: string) => {
+    setSelectedClientId(clientId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setIsDeleteDialogOpen(false)
+    setSelectedClientId(null)
+  }
+
   return (
-    <div className="w-full">
-      <DataTable columns={columns} data={clients} filterColumnId="name" />
-    </div>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Contact Person</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Address</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {clients.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-4">
+                No clients found.
+              </TableCell>
+            </TableRow>
+          ) : (
+            clients.map((client) => (
+              <TableRow key={client.id}>
+                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell>{client.contact_person}</TableCell>
+                <TableCell>{client.email}</TableCell>
+                <TableCell>{client.phone}</TableCell>
+                <TableCell>{client.address}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    <Link href={`/clients/${client.id}/edit`}>
+                      <Button variant="outline" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(client.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {selectedClientId && (
+        <DeleteClientDialog clientId={selectedClientId} isOpen={isDeleteDialogOpen} onClose={handleCloseDialog} />
+      )}
+    </>
   )
 }

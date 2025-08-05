@@ -1,22 +1,20 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  const origin = requestUrl.origin
 
   if (code) {
-    const cookieStore = cookies()
     const supabase = createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      // Redirect to the dashboard after successful login
-      return NextResponse.redirect(`${origin}/dashboard`)
+    if (error) {
+      console.error("Error exchanging code for session:", error.message)
+      // Redirect to an error page or login with an error message
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=auth_failed`)
     }
   }
 
-  // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?message=Could not log in. Please try again.`)
+  // URL to redirect to after sign in process completes
+  return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
 }

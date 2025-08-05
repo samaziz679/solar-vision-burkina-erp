@@ -1,34 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BankingForm } from "@/components/banking/banking-form"
-import { getBankingAccounts } from "@/lib/data/banking"
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function NewBankingTransactionPage() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const bankingAccounts = await getBankingAccounts(user.id)
-
-  if (bankingAccounts.length === 0) {
-    // Redirect to a page where they can create an account first
-    redirect("/setup-required?message=Please create at least one banking account before adding transactions.")
-  }
-
+export default function NewBankingAccountPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>New Banking Transaction</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <BankingForm bankingAccounts={bankingAccounts} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Add New Banking Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BankingForm />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

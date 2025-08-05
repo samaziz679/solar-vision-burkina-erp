@@ -1,47 +1,38 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Sale } from "@/lib/supabase/types"
+import { getUser } from "@/lib/auth"
 
-export async function getSales(userId: string): Promise<Sale[]> {
+export async function getSales(): Promise<Sale[]> {
   const supabase = createClient()
+  const user = await getUser()
+
   const { data, error } = await supabase
     .from("sales")
-    .select("*, clients(name), products(name)")
-    .eq("user_id", userId)
+    .select("*, products(name), clients(name)")
+    .eq("user_id", user.id)
     .order("sale_date", { ascending: false })
-    .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching sales:", error)
+    console.error("Error fetching sales:", error.message)
     return []
   }
-
-  return data.map((sale) => ({
-    ...sale,
-    client_name: (sale.clients as { name: string }).name,
-    product_name: (sale.products as { name: string }).name,
-  })) as Sale[]
+  return data || []
 }
 
-export async function getSaleById(saleId: string, userId: string): Promise<Sale | null> {
+export async function getSaleById(id: string): Promise<Sale | null> {
   const supabase = createClient()
+  const user = await getUser()
+
   const { data, error } = await supabase
     .from("sales")
-    .select("*, clients(name), products(name)")
-    .eq("id", saleId)
-    .eq("user_id", userId)
+    .select("*, products(name), clients(name)")
+    .eq("id", id)
+    .eq("user_id", user.id)
     .single()
 
   if (error) {
-    console.error("Error fetching sale by ID:", error)
+    console.error("Error fetching sale by ID:", error.message)
     return null
   }
-
-  if (data) {
-    return {
-      ...data,
-      client_name: (data.clients as { name: string }).name,
-      product_name: (data.products as { name: string }).name,
-    } as Sale
-  }
-  return null
+  return data || null
 }

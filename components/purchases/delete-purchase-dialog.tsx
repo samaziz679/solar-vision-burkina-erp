@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deletePurchase } from "@/app/purchases/actions"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface DeletePurchaseDialogProps {
   open: boolean
@@ -20,11 +21,14 @@ interface DeletePurchaseDialogProps {
 }
 
 export function DeletePurchaseDialog({ open, onOpenChange, purchaseId }: DeletePurchaseDialogProps) {
+  const router = useRouter()
+
   const handleDelete = async () => {
     try {
       await deletePurchase(purchaseId)
       toast.success("Purchase deleted successfully.")
       onOpenChange(false)
+      router.refresh() // Refresh the list after deletion
     } catch (error: any) {
       toast.error("Failed to delete purchase.", {
         description: error.message || "An unexpected error occurred.",

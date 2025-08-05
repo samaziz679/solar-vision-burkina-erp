@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteSupplier } from "@/app/suppliers/actions"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface DeleteSupplierDialogProps {
   open: boolean
@@ -20,11 +21,14 @@ interface DeleteSupplierDialogProps {
 }
 
 export function DeleteSupplierDialog({ open, onOpenChange, supplierId }: DeleteSupplierDialogProps) {
+  const router = useRouter()
+
   const handleDelete = async () => {
     try {
       await deleteSupplier(supplierId)
       toast.success("Supplier deleted successfully.")
       onOpenChange(false)
+      router.refresh() // Refresh the list after deletion
     } catch (error: any) {
       toast.error("Failed to delete supplier.", {
         description: error.message || "An unexpected error occurred.",

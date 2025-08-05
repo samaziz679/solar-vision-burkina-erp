@@ -31,13 +31,7 @@ export function EditSupplierForm({ initialData }: EditSupplierFormProps) {
   const router = useRouter()
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      contact_person: "",
-      email: "",
-      phone: "",
-      address: "",
-    },
+    defaultValues: initialData,
   })
 
   useEffect(() => {

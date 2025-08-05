@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteExpense } from "@/app/expenses/actions"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface DeleteExpenseDialogProps {
   open: boolean
@@ -20,11 +21,14 @@ interface DeleteExpenseDialogProps {
 }
 
 export function DeleteExpenseDialog({ open, onOpenChange, expenseId }: DeleteExpenseDialogProps) {
+  const router = useRouter()
+
   const handleDelete = async () => {
     try {
       await deleteExpense(expenseId)
       toast.success("Expense deleted successfully.")
       onOpenChange(false)
+      router.refresh() // Refresh the list after deletion
     } catch (error: any) {
       toast.error("Failed to delete expense.", {
         description: error.message || "An unexpected error occurred.",

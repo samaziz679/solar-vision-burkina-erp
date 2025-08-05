@@ -35,14 +35,7 @@ export function EditPurchaseForm({ initialData, suppliers, products }: EditPurch
   const router = useRouter()
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      supplier_id: suppliers[0]?.id || "",
-      product_id: products[0]?.id || "",
-      quantity: 1,
-      unit_price: 0,
-      purchase_date: new Date().toISOString().split("T")[0],
-      notes: "",
-    },
+    defaultValues: initialData,
   })
 
   useEffect(() => {

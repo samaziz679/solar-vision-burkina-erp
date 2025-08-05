@@ -35,14 +35,7 @@ export function EditSaleForm({ initialData, clients, products }: EditSaleFormPro
   const router = useRouter()
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      client_id: clients[0]?.id || "",
-      product_id: products[0]?.id || "",
-      quantity: 1,
-      unit_price: 0,
-      sale_date: new Date().toISOString().split("T")[0],
-      notes: "",
-    },
+    defaultValues: initialData,
   })
 
   useEffect(() => {

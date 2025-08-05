@@ -32,14 +32,7 @@ export function EditProductForm({ initialData }: EditProductFormProps) {
   const router = useRouter()
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      description: "",
-      price: 0,
-      stock: 0,
-      category: "",
-      image_url: "",
-    },
+    defaultValues: initialData,
   })
 
   useEffect(() => {

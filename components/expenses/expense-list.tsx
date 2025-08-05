@@ -1,75 +1,105 @@
 "use client"
 
 import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal } from "lucide-react"
-import Link from "next/link"
-import { formatCurrency } from "@/lib/utils"
-import { DeleteExpenseDialog } from "./delete-expense-dialog"
+import type { ColumnDef } from "@tanstack/react-table"
 import type { Expense } from "@/lib/supabase/types"
+import { DataTable } from "@/components/ui/data-table"
+import { Button } from "@/components/ui/button"
+import { ArrowUpDown, MoreHorizontal } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import Link from "next/link"
+import { DeleteExpenseDialog } from "./delete-expense-dialog"
+
+export const columns: ColumnDef<Expense>[] = [
+  {
+    accessorKey: "date",
+    header: ({ column }) => {
+      return (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("date"))
+      return date.toLocaleDateString()
+    },
+  },
+  {
+    accessorKey: "description",
+    header: "Description",
+  },
+  {
+    accessorKey: "amount",
+    header: ({ column }) => {
+      return (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const amount = Number.parseFloat(row.getValue("amount"))
+      const formatted = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(amount)
+      return <div className="text-right font-medium">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "category",
+    header: "Category",
+  },
+  {
+    id: "actions",
+    enableHiding: false,
+    cell: ({ row }) => {
+      const expense = row.original
+      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+      return (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href={`/expenses/${expense.id}/edit`}>Edit</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DeleteExpenseDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} expenseId={expense.id} />
+        </>
+      )
+    },
+  },
+]
 
 interface ExpenseListProps {
   expenses: Expense[]
 }
 
 export function ExpenseList({ expenses }: ExpenseListProps) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
-
-  const handleDeleteClick = (id: string) => {
-    setSelectedExpenseId(id)
-    setIsDeleteDialogOpen(true)
-  }
-
   return (
-    <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Description</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead className="sr-only">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {expenses.map((expense) => (
-            <TableRow key={expense.id}>
-              <TableCell className="font-medium">{expense.description}</TableCell>
-              <TableCell>{formatCurrency(expense.amount)}</TableCell>
-              <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-              <TableCell>{expense.category}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/expenses/${expense.id}/edit`}>Edit</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDeleteClick(expense.id)}>Delete</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      {selectedExpenseId && (
-        <DeleteExpenseDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          expenseId={selectedExpenseId}
-        />
-      )}
-    </>
+    <div className="w-full">
+      <DataTable columns={columns} data={expenses} filterColumnId="description" />
+    </div>
   )
 }

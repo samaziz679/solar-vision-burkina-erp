@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 
 export default async function IndexPage() {
   const supabase = createClient()
@@ -10,9 +10,7 @@ export default async function IndexPage() {
 
   if (!user) {
     redirect("/login")
-  } else {
-    redirect("/dashboard")
   }
 
-  return null
+  redirect("/dashboard")
 }

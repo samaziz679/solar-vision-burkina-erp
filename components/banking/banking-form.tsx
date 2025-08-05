@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,31 +18,41 @@ interface BankingFormProps {
 export function BankingForm({ initialData }: BankingFormProps) {
   const router = useRouter()
   const isEditing = !!initialData
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
-    if (isEditing && initialData) {
-      const result = await updateBankingAccount(initialData.id, formData)
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
+
+    const formData = new FormData(event.currentTarget)
+
+    try {
+      let result
+      if (isEditing && initialData) {
+        result = await updateBankingAccount(initialData.id, formData)
+      } else {
+        result = await createBankingAccount(formData)
+      }
+
       if (result.success) {
-        toast.success("Banking account updated successfully!")
+        toast.success(isEditing ? "Banking account updated successfully!" : "Banking account created successfully!")
         router.push("/banking")
       } else {
         toast.error(result.error)
+        setError(result.error)
       }
-      return result
-    } else {
-      const result = await createBankingAccount(formData)
-      if (result.success) {
-        toast.success("Banking account created successfully!")
-        router.push("/banking")
-      } else {
-        toast.error(result.error)
-      }
-      return result
+    } catch (e: any) {
+      toast.error("An unexpected error occurred.", { description: e.message })
+      setError(e.message)
+    } finally {
+      setIsPending(false)
     }
-  }, null)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="name">Account Name</Label>
         <Input id="name" name="name" defaultValue={initialData?.name} required />
@@ -48,7 +60,7 @@ export function BankingForm({ initialData }: BankingFormProps) {
       <Button type="submit" disabled={isPending}>
         {isEditing ? (isPending ? "Updating..." : "Update Account") : isPending ? "Creating..." : "Create Account"}
       </Button>
-      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
   )
 }

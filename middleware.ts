@@ -65,4 +65,5 @@ export const config = {
      */
     "/((?!_next/static|_next/image|favicon.ico|auth/callback|api|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|mp4|webm|ogg|mp3|wav|flac|aac|woff2|woff|eot|ttf|otf)$).*)",
   ],
+  runtime: "nodejs", // Explicitly set runtime to Node.js
 }

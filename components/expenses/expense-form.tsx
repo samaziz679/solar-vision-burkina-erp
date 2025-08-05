@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,38 +24,49 @@ interface ExpenseFormProps {
 export function ExpenseForm({ initialData }: ExpenseFormProps) {
   const router = useRouter()
   const isEditing = !!initialData
-
   const [date, setDate] = useState<Date | undefined>(initialData ? new Date(initialData.date) : undefined)
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
+
     if (!date) {
-      return { success: false, error: "Date is required." }
+      setError("Date is required.")
+      setIsPending(false)
+      return
     }
+
+    const formData = new FormData(event.currentTarget)
     formData.set("date", format(date, "yyyy-MM-dd"))
 
-    if (isEditing && initialData) {
-      const result = await updateExpense(initialData.id, formData)
+    try {
+      let result
+      if (isEditing && initialData) {
+        result = await updateExpense(initialData.id, formData)
+      } else {
+        result = await createExpense(formData)
+      }
+
       if (result.success) {
-        toast.success("Expense updated successfully!")
+        toast.success(isEditing ? "Expense updated successfully!" : "Expense created successfully!")
         router.push("/expenses")
       } else {
         toast.error(result.error)
+        setError(result.error)
       }
-      return result
-    } else {
-      const result = await createExpense(formData)
-      if (result.success) {
-        toast.success("Expense created successfully!")
-        router.push("/expenses")
-      } else {
-        toast.error(result.error)
-      }
-      return result
+    } catch (e: any) {
+      toast.error("An unexpected error occurred.", { description: e.message })
+      setError(e.message)
+    } finally {
+      setIsPending(false)
     }
-  }, null)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="amount">Amount</Label>
         <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount} required />
@@ -87,7 +100,7 @@ export function ExpenseForm({ initialData }: ExpenseFormProps) {
       <Button type="submit" disabled={isPending}>
         {isEditing ? (isPending ? "Updating..." : "Update Expense") : isPending ? "Creating..." : "Create Expense"}
       </Button>
-      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
   )
 }

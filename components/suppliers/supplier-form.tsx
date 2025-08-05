@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,31 +19,41 @@ interface SupplierFormProps {
 export function SupplierForm({ initialData }: SupplierFormProps) {
   const router = useRouter()
   const isEditing = !!initialData
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
-    if (isEditing && initialData) {
-      const result = await updateSupplier(initialData.id, formData)
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
+
+    const formData = new FormData(event.currentTarget)
+
+    try {
+      let result
+      if (isEditing && initialData) {
+        result = await updateSupplier(initialData.id, formData)
+      } else {
+        result = await createSupplier(formData)
+      }
+
       if (result.success) {
-        toast.success("Supplier updated successfully!")
+        toast.success(isEditing ? "Supplier updated successfully!" : "Supplier created successfully!")
         router.push("/suppliers")
       } else {
         toast.error(result.error)
+        setError(result.error)
       }
-      return result
-    } else {
-      const result = await createSupplier(formData)
-      if (result.success) {
-        toast.success("Supplier created successfully!")
-        router.push("/suppliers")
-      } else {
-        toast.error(result.error)
-      }
-      return result
+    } catch (e: any) {
+      toast.error("An unexpected error occurred.", { description: e.message })
+      setError(e.message)
+    } finally {
+      setIsPending(false)
     }
-  }, null)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="name">Name</Label>
         <Input id="name" name="name" defaultValue={initialData?.name} required />
@@ -65,7 +77,7 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
       <Button type="submit" disabled={isPending}>
         {isEditing ? (isPending ? "Updating..." : "Update Supplier") : isPending ? "Creating..." : "Create Supplier"}
       </Button>
-      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
   )
 }

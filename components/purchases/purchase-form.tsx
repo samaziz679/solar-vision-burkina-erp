@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,43 +27,54 @@ interface PurchaseFormProps {
 export function PurchaseForm({ initialData, products, suppliers }: PurchaseFormProps) {
   const router = useRouter()
   const isEditing = !!initialData
-
   const [selectedProduct, setSelectedProduct] = useState<string>(initialData?.product_id || "")
   const [selectedSupplier, setSelectedSupplier] = useState<string>(initialData?.supplier_id || "")
   const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(
     initialData ? new Date(initialData.purchase_date) : undefined,
   )
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
+
     if (!purchaseDate) {
-      return { success: false, error: "Purchase date is required." }
+      setError("Purchase date is required.")
+      setIsPending(false)
+      return
     }
+
+    const formData = new FormData(event.currentTarget)
     formData.set("purchase_date", format(purchaseDate, "yyyy-MM-dd"))
 
-    if (isEditing && initialData) {
-      formData.set("original_quantity", initialData.quantity.toString()) // Pass original quantity for stock adjustment
-      const result = await updatePurchase(initialData.id, formData)
+    try {
+      let result
+      if (isEditing && initialData) {
+        formData.set("original_quantity", initialData.quantity.toString()) // Pass original quantity for stock adjustment
+        result = await updatePurchase(initialData.id, formData)
+      } else {
+        result = await createPurchase(formData)
+      }
+
       if (result.success) {
-        toast.success("Purchase updated successfully!")
+        toast.success(isEditing ? "Purchase updated successfully!" : "Purchase created successfully!")
         router.push("/purchases")
       } else {
         toast.error(result.error)
+        setError(result.error)
       }
-      return result
-    } else {
-      const result = await createPurchase(formData)
-      if (result.success) {
-        toast.success("Purchase created successfully!")
-        router.push("/purchases")
-      } else {
-        toast.error(result.error)
-      }
-      return result
+    } catch (e: any) {
+      toast.error("An unexpected error occurred.", { description: e.message })
+      setError(e.message)
+    } finally {
+      setIsPending(false)
     }
-  }, null)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="product_id">Product</Label>
         <Select name="product_id" value={selectedProduct} onValueChange={setSelectedProduct} required>
@@ -132,7 +145,7 @@ export function PurchaseForm({ initialData, products, suppliers }: PurchaseFormP
       <Button type="submit" disabled={isPending}>
         {isEditing ? (isPending ? "Updating..." : "Update Purchase") : isPending ? "Creating..." : "Create Purchase"}
       </Button>
-      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
   )
 }

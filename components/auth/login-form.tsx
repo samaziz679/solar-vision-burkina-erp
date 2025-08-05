@@ -1,41 +1,51 @@
 "use client"
 
-import { useActionState } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import { login } from "@/lib/auth" // Assuming this is your server action for login
 
 export function LoginForm() {
   const supabase = createClient()
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
+
+    const formData = new FormData(event.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
     if (!email || !password) {
-      return { success: false, error: "Email and password are required." }
+      setError("Email and password are required.")
+      setIsPending(false)
+      return
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    // Call your server action or direct Supabase login
+    const { success, error: loginError } = await login(formData)
 
-    if (error) {
-      toast.error(error.message)
-      return { success: false, error: error.message }
+    if (loginError) {
+      toast.error(loginError)
+      setError(loginError)
+    } else {
+      toast.success("Logged in successfully!")
+      // Redirection is handled by middleware
     }
-
-    toast.success("Logged in successfully!")
-    // Redirect handled by middleware
-    return { success: true }
-  }, null)
+    setIsPending(false)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" placeholder="m@example.com" required />
@@ -54,7 +64,7 @@ export function LoginForm() {
           "Login"
         )}
       </Button>
-      {state?.error && <p className="text-red-500 text-sm mt-2">{state.error}</p>}
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
     </form>
   )
 }

@@ -1,27 +1,16 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { updateSupplier } from "@/app/suppliers/actions"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import type { Supplier } from "@/lib/supabase/types"
-import { useEffect } from "react"
-
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
-  contact_person: z.string().min(1, "Contact person is required").max(255),
-  email: z.string().email("Invalid email address").min(1, "Email is required").max(255),
-  phone: z.string().min(1, "Phone is required").max(20),
-  address: z.string().min(1, "Address is required").max(255),
-})
-
-type SupplierFormValues = z.infer<typeof formSchema>
+import { updateSupplier } from "@/app/suppliers/actions"
+import { toast } from "sonner"
 
 interface EditSupplierFormProps {
   initialData: Supplier
@@ -29,99 +18,59 @@ interface EditSupplierFormProps {
 
 export function EditSupplierForm({ initialData }: EditSupplierFormProps) {
   const router = useRouter()
-  const form = useForm<SupplierFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData,
-  })
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (initialData) {
-      form.reset(initialData)
-    }
-  }, [initialData, form])
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
 
-  async function onSubmit(values: SupplierFormValues) {
+    const formData = new FormData(event.currentTarget)
+
     try {
-      await updateSupplier(initialData.id, values)
-      toast.success("Supplier updated successfully.")
-      router.push("/suppliers")
-    } catch (error: any) {
-      toast.error("Failed to update supplier.", {
-        description: error.message || "An unexpected error occurred.",
-      })
+      const result = await updateSupplier(initialData.id, formData)
+      if (result.success) {
+        toast.success("Supplier updated successfully!")
+        router.push("/suppliers")
+      } else {
+        toast.error(result.error)
+        setError(result.error)
+      }
+    } catch (e: any) {
+      toast.error("An unexpected error occurred.", { description: e.message })
+      setError(e.message)
+    } finally {
+      setIsPending(false)
     }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="contact_person"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contact Person</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Update Supplier</Button>
-      </form>
-    </Form>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" name="name" defaultValue={initialData.name} required />
+      </div>
+      <div>
+        <Label htmlFor="contact_person">Contact Person</Label>
+        <Input id="contact_person" name="contact_person" defaultValue={initialData.contact_person} required />
+      </div>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={initialData.email} required />
+      </div>
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input id="phone" name="phone" type="tel" defaultValue={initialData.phone} required />
+      </div>
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Textarea id="address" name="address" defaultValue={initialData.address} required />
+      </div>
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Updating..." : "Update Supplier"}
+      </Button>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+    </form>
   )
 }

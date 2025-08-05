@@ -5,8 +5,13 @@ export function createClient() {
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+  // Ensure server-side environment variables are available.
+  // This check is crucial for server components and API routes.
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase environment variables in server.ts")
+    // Log a warning or throw an error if critical environment variables are missing.
+    // This helps in debugging deployment issues.
+    console.error("Missing Supabase environment variables in lib/supabase/server.ts")
+    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be defined for server-side operations.")
   }
 
   const cookieStore = cookies()
@@ -20,14 +25,15 @@ export function createClient() {
         try {
           cookieStore.set({ name, value, ...options })
         } catch {
-          // OK: set() only works in Route Handlers / Server Actions
+          // The cookies().set() method can only be called in a Server Action or Route Handler.
+          // This error is typically ignored if we're just reading cookies in a Server Component.
         }
       },
       remove(name: string, options: CookieOptions) {
         try {
           cookieStore.set({ name, value: "", ...options })
         } catch {
-          // OK: same reason
+          // Same as above, typically ignored if just reading.
         }
       },
     },

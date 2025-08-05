@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useActionState, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,8 @@ export function EditProductForm({ initialData }: EditProductFormProps) {
   const router = useRouter()
   const [imagePreview, setImagePreview] = useState<string | null>(initialData.image_url)
   const [removeImage, setRemoveImage] = useState<boolean>(false)
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -46,22 +48,34 @@ export function EditProductForm({ initialData }: EditProductFormProps) {
     }
   }
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsPending(true)
+    setError(null)
+
+    const formData = new FormData(event.currentTarget)
     formData.set("existing_image_url", initialData.image_url || "")
     formData.set("remove_image", removeImage.toString())
 
-    const result = await updateProduct(initialData.id, formData)
-    if (result.success) {
-      toast.success("Product updated successfully!")
-      router.push("/inventory")
-    } else {
-      toast.error(result.error)
+    try {
+      const result = await updateProduct(initialData.id, formData)
+      if (result.success) {
+        toast.success("Product updated successfully!")
+        router.push("/inventory")
+      } else {
+        toast.error(result.error)
+        setError(result.error)
+      }
+    } catch (e: any) {
+      toast.error("An unexpected error occurred.", { description: e.message })
+      setError(e.message)
+    } finally {
+      setIsPending(false)
     }
-    return result
-  }, null)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="name">Name</Label>
         <Input id="name" name="name" defaultValue={initialData.name} required />
@@ -118,7 +132,7 @@ export function EditProductForm({ initialData }: EditProductFormProps) {
       <Button type="submit" disabled={isPending}>
         {isPending ? "Updating..." : "Update Product"}
       </Button>
-      {state?.error && <p className="text-red-500 text-sm">{state.error}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
   )
 }

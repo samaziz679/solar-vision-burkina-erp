@@ -5,7 +5,7 @@ export function createClient() {
     if (typeof window === "undefined") {
       // Prevent build-time error on server/static generation
       console.warn("Supabase env vars are not available at build time on server. Skipping client creation.")
-      return null as any // Return null or throw an error, depending on desired behavior
+      return null as any
     }
     throw new Error("Missing Supabase environment variables in client.ts")
   }

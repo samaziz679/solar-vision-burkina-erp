@@ -2,9 +2,8 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export function createClient(request: NextRequest) {
-  // Fallback safely if running in unsupported Edge context
   const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY // Use this instead of NEXT_PUBLIC_...
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("Missing Supabase env variables in middleware.")

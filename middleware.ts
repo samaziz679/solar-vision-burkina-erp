@@ -3,20 +3,17 @@ import { createClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
   try {
-    // This `try/catch` block is only for logging errors in development.
-    // In production, you might want to use a more robust error handling strategy.
     const { supabase, response } = createClient(request)
 
-    // Refresh session if expired - required for Server Components
-    // and Route Handlers
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser()
 
-    if (error) {
-      console.error("Error getting user in middleware:", error.message)
-      // Optionally redirect to an error page or login
+    // Only log an error if it's not the expected "Auth session missing!" for unauthenticated users
+    if (error && error.message !== "Auth session missing!") {
+      console.error("Unexpected error getting user in middleware:", error.message)
+      // Optionally redirect to an error page or login for unexpected errors
       // return NextResponse.redirect(new URL('/login?error=auth_failed', request.url))
     }
 

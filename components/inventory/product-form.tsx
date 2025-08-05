@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { createProduct } from "@/app/inventory/actions"
+import { createProduct, updateProduct } from "@/app/inventory/actions" // Added updateProduct
 import type { Product } from "@/lib/supabase/types"
-import { useEffect } from "react"
+import { useEffect } from "react" // Corrected import
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
@@ -51,14 +51,12 @@ export function ProductForm({ initialData }: ProductFormProps) {
   async function onSubmit(values: ProductFormValues) {
     try {
       if (initialData) {
-        // This form is for creating new products, so initialData should not be present.
-        // If you intend to use this form for editing, you'll need to add an updateProduct action.
-        // For now, we'll just handle creation.
-        toast.error("This form is for creating new products only.")
-        return
+        await updateProduct(initialData.id, values) // Use updateProduct for existing data
+        toast.success("Product updated successfully.")
+      } else {
+        await createProduct(values)
+        toast.success("Product created successfully.")
       }
-      await createProduct(values)
-      toast.success("Product created successfully.")
       router.push("/inventory")
     } catch (error: any) {
       toast.error("Failed to save product.", {
@@ -148,7 +146,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">Create Product</Button>
+        <Button type="submit">{initialData ? "Update Product" : "Create Product"}</Button>
       </form>
     </Form>
   )

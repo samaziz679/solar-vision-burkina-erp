@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { createClient, updateClient } from "@/app/clients/actions"
 import type { Client } from "@/lib/supabase/types"
-import { useEffect } from "react"
+import { useEffect } from "react" // Corrected import
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),

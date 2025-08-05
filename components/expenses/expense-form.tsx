@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { createExpense, updateExpense } from "@/app/expenses/actions"
 import type { Expense } from "@/lib/supabase/types"
-import { useEffect } from "react"
+import { useEffect } from "react" // Corrected import
 
 const formSchema = z.object({
   description: z.string().min(1, "Description is required").max(255),

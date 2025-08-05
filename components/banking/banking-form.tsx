@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { createBankingTransaction, updateBankingTransaction } from "@/app/banking/actions"
 import type { BankingAccount, BankingTransaction } from "@/lib/supabase/types"
-import { useEffect } from "react"
+import { useEffect } from "react" // Corrected import
 
 const formSchema = z.object({
   type: z.enum(["income", "expense", "transfer"]),

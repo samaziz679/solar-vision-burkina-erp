@@ -1,89 +1,147 @@
-"use server"
+'use server';
 
-import { revalidatePath } from "next/cache"
-import { createClient as createSupabaseClient } from "@/lib/supabase/server"
-import { getUser } from "@/lib/auth"
-import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { getAuthUser } from '@/lib/auth';
 
-export async function createClient(formData: FormData) {
-  const supabase = createSupabaseClient()
-  const user = await getUser()
+const FormSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Name is required.'),
+  contact_person: z.string().optional().nullable(),
+  email: z.string().email('Invalid email address.').optional().nullable(),
+  phone_number: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  created_at: z.string().optional(),
+  user_id: z.string().optional(),
+});
 
-  const name = formData.get("name") as string
-  const contact_person = formData.get("contact_person") as string
-  const email = formData.get("email") as string
-  const phone = formData.get("phone") as string
-  const address = formData.get("address") as string
+const CreateClient = FormSchema.omit({ id: true, created_at: true, user_id: true });
+const UpdateClient = FormSchema.omit({ created_at: true, user_id: true });
 
-  if (!name || !contact_person || !email || !phone || !address) {
-    return { success: false, error: "All fields are required." }
+export type State = {
+  errors?: {
+    name?: string[];
+    contact_person?: string[];
+    email?: string[];
+    phone_number?: string[];
+    address?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createClientAction(prevState: State, formData: FormData) {
+  const validatedFields = CreateClient.safeParse({
+    name: formData.get('name'),
+    contact_person: formData.get('contact_person'),
+    email: formData.get('email'),
+    phone_number: formData.get('phone_number'),
+    address: formData.get('address'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Client.',
+    };
   }
 
-  const newClient: TablesInsert<"clients"> = {
-    user_id: user.id,
-    name,
-    contact_person,
-    email,
-    phone,
-    address,
+  const { name, contact_person, email, phone_number, address } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
+
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .insert({
+        name,
+        contact_person,
+        email,
+        phone_number,
+        address,
+        user_id: user.id,
+      });
+
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Create Client.' };
+    }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Create Client.' };
   }
 
-  const { error } = await supabase.from("clients").insert(newClient)
-
-  if (error) {
-    console.error("Error creating client:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/clients")
-  return { success: true }
+  revalidatePath('/clients');
+  redirect('/clients');
 }
 
-export async function updateClient(id: string, formData: FormData) {
-  const supabase = createSupabaseClient()
-  const user = await getUser()
+export async function updateClientAction(id: string, prevState: State, formData: FormData) {
+  const validatedFields = UpdateClient.safeParse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+    contact_person: formData.get('contact_person'),
+    email: formData.get('email'),
+    phone_number: formData.get('phone_number'),
+    address: formData.get('address'),
+  });
 
-  const name = formData.get("name") as string
-  const contact_person = formData.get("contact_person") as string
-  const email = formData.get("email") as string
-  const phone = formData.get("phone") as string
-  const address = formData.get("address") as string
-
-  if (!name || !contact_person || !email || !phone || !address) {
-    return { success: false, error: "All fields are required." }
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Client.',
+    };
   }
 
-  const updatedClient: TablesUpdate<"clients"> = {
-    name,
-    contact_person,
-    email,
-    phone,
-    address,
+  const { name, contact_person, email, phone_number, address } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
+
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        name,
+        contact_person,
+        email,
+        phone_number,
+        address,
+      })
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Update Client.' };
+    }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Update Client.' };
   }
 
-  const { error } = await supabase.from("clients").update(updatedClient).eq("id", id).eq("user_id", user.id)
-
-  if (error) {
-    console.error("Error updating client:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/clients")
-  revalidatePath(`/clients/${id}/edit`)
-  return { success: true }
+  revalidatePath('/clients');
+  redirect('/clients');
 }
 
-export async function deleteClient(id: string) {
-  const supabase = createSupabaseClient()
-  const user = await getUser()
+export async function deleteClientAction(id: string) {
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-  const { error } = await supabase.from("clients").delete().eq("id", id).eq("user_id", user.id)
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
 
-  if (error) {
-    console.error("Error deleting client:", error.message)
-    return { success: false, error: error.message }
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Delete Client.' };
+    }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Delete Client.' };
   }
 
-  revalidatePath("/clients")
-  return { success: true }
+  revalidatePath('/clients');
 }

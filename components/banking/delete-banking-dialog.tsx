@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   AlertDialog,
@@ -9,31 +9,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { deleteBankingAccount } from "@/app/banking/actions"
-import { toast } from "sonner"
-import { useTransition } from "react"
+} from '@/components/ui/alert-dialog';
+import { deleteBankingAccount } from '@/app/banking/actions';
+import { toast } from 'sonner';
 
 interface DeleteBankingAccountDialogProps {
-  accountId: string
-  isOpen: boolean
-  onClose: () => void
+  accountId: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function DeleteBankingAccountDialog({ accountId, isOpen, onClose }: DeleteBankingAccountDialogProps) {
-  const [isPending, startTransition] = useTransition()
-
-  const handleDelete = () => {
-    startTransition(async () => {
-      const result = await deleteBankingAccount(accountId)
-      if (result.success) {
-        toast.success("Banking account deleted successfully!")
-        onClose()
-      } else {
-        toast.error(result.error)
-      }
-    })
-  }
+export default function DeleteBankingAccountDialog({
+  accountId,
+  isOpen,
+  onClose,
+}: DeleteBankingAccountDialogProps) {
+  const handleDelete = async () => {
+    const result = await deleteBankingAccount(accountId);
+    if (result?.message) {
+      toast.error(result.message);
+    } else {
+      toast.success('Banking account deleted successfully!');
+    }
+    onClose();
+  };
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -41,21 +40,15 @@ export function DeleteBankingAccountDialog({ accountId, isOpen, onClose }: Delet
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your banking account and all associated
-            transactions.
+            This action cannot be undone. This will permanently delete your banking account
+            and remove its data from our servers.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleDelete}
-            disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {isPending ? "Deleting..." : "Delete"}
-          </AlertDialogAction>
+          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

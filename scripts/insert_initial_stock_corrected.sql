@@ -35,6 +35,38 @@ BEGIN
         quantity_in_stock = EXCLUDED.quantity_in_stock,
         image_url = EXCLUDED.image_url,
         updated_at = NOW();
+
+    -- Insert initial stock data into the products table
+    INSERT INTO public.products (name, description, price, stock_quantity, sku, user_id)
+    VALUES
+        ('Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 250.00, 100, 'SP300W', user_uuid),
+        ('Inverter 5kW', 'Hybrid solar inverter with battery support', 1200.00, 50, 'INV5KW', user_uuid),
+        ('Solar Battery 100Ah', 'Deep cycle gel battery for solar systems', 300.00, 200, 'BAT100AH', user_uuid),
+        ('Mounting Kit - Roof', 'Universal roof mounting kit for solar panels', 80.00, 150, 'MK-ROOF', user_uuid),
+        ('Charge Controller 60A', 'MPPT solar charge controller', 150.00, 75, 'CC60A', user_uuid)
+    ON CONFLICT (sku) DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        name = EXCLUDED.name,
+        description = EXCLUDED.description,
+        price = EXCLUDED.price,
+        stock_quantity = EXCLUDED.stock_quantity,
+        updated_at = NOW();
+
+    -- Insert Inventory
+    INSERT INTO public.inventory (user_id, name, description, price, stock, category)
+    VALUES
+        (user_uuid, 'Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 250.00, 100, 'Solar Panels'),
+        (user_uuid, 'Inverter 5kW', 'Hybrid solar inverter with battery support', 1200.00, 50, 'Inverters'),
+        (user_uuid, 'Solar Battery 100Ah', 'Deep cycle gel battery for solar systems', 150.00, 200, 'Batteries'),
+        (user_uuid, 'Mounting Kit (Roof)', 'Aluminum mounting kit for pitched roofs', 80.00, 75, 'Mounting Hardware'),
+        (user_uuid, 'Charge Controller 60A', 'MPPT solar charge controller', 90.00, 120, 'Charge Controllers')
+    ON CONFLICT (name) DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        description = EXCLUDED.description,
+        price = EXCLUDED.price,
+        stock = EXCLUDED.stock,
+        category = EXCLUDED.category,
+        updated_at = NOW();
 END $$;
 
 -- Insert Clients

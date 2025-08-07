@@ -1,26 +1,47 @@
-import { notFound } from "next/navigation"
-import { getSupplierById } from "@/lib/data/suppliers"
-import { SupplierForm } from "@/components/suppliers/supplier-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchSupplierById } from '@/lib/data/suppliers';
+import EditSupplierForm from '@/components/suppliers/edit-supplier-form';
+import { notFound } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import Link from 'next/link';
 
 export default async function EditSupplierPage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const supplier = await getSupplierById(id)
+  const id = params.id;
+  const supplier = await fetchSupplierById(id);
 
   if (!supplier) {
-    notFound()
+    notFound();
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl">
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/suppliers">Suppliers</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink>Edit Supplier</BreadcrumbLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <Card>
         <CardHeader>
           <CardTitle>Edit Supplier</CardTitle>
         </CardHeader>
         <CardContent>
-          <SupplierForm initialData={supplier} />
+          <EditSupplierForm supplier={supplier} />
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 }

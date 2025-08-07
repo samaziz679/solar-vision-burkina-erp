@@ -1,68 +1,64 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import type { BankingAccount } from "@/lib/supabase/types"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Edit, Trash2 } from "lucide-react"
-import Link from "next/link"
-import { DeleteBankingAccountDialog } from "./delete-banking-dialog"
+import { useState } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { BankingAccount } from '@/lib/supabase/types';
+import Link from 'next/link';
+import { PencilIcon, TrashIcon } from 'lucide-react';
+import DeleteBankingAccountDialog from './delete-banking-dialog';
 
 interface BankingListProps {
-  accounts: BankingAccount[]
+  bankingAccounts: BankingAccount[];
 }
 
-export function BankingList({ accounts }: BankingListProps) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
+export default function BankingList({ bankingAccounts }: BankingListProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
-  const handleDeleteClick = (accountId: string) => {
-    setSelectedAccountId(accountId)
-    setIsDeleteDialogOpen(true)
-  }
+  const handleDeleteClick = (id: string) => {
+    setSelectedAccountId(id);
+    setIsDeleteDialogOpen(true);
+  };
 
   const handleCloseDialog = () => {
-    setIsDeleteDialogOpen(false)
-    setSelectedAccountId(null)
-  }
+    setIsDeleteDialogOpen(false);
+    setSelectedAccountId(null);
+  };
 
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Bank Name</TableHead>
             <TableHead>Account Name</TableHead>
-            <TableHead>Created At</TableHead>
+            <TableHead>Account Number</TableHead>
+            <TableHead>Balance</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {accounts.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={3} className="text-center py-4">
-                No banking accounts found.
+          {bankingAccounts.map((account) => (
+            <TableRow key={account.id}>
+              <TableCell className="font-medium">{account.bank_name}</TableCell>
+              <TableCell>{account.account_name}</TableCell>
+              <TableCell>{account.account_number}</TableCell>
+              <TableCell>${account.balance.toFixed(2)}</TableCell>
+              <TableCell className="flex justify-end gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/banking/${account.id}/edit`}>
+                    <PencilIcon className="h-4 w-4" />
+                    <span className="sr-only">Edit</span>
+                  </Link>
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(account.id)}>
+                  <TrashIcon className="h-4 w-4" />
+                  <span className="sr-only">Delete</span>
+                </Button>
               </TableCell>
             </TableRow>
-          ) : (
-            accounts.map((account) => (
-              <TableRow key={account.id}>
-                <TableCell className="font-medium">{account.name}</TableCell>
-                <TableCell>{new Date(account.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Link href={`/banking/${account.id}/edit`}>
-                      <Button variant="outline" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(account.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
+          ))}
         </TableBody>
       </Table>
 
@@ -74,5 +70,5 @@ export function BankingList({ accounts }: BankingListProps) {
         />
       )}
     </>
-  )
+  );
 }

@@ -1,89 +1,147 @@
-"use server"
+'use server';
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
-import { getUser } from "@/lib/auth"
-import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { getAuthUser } from '@/lib/auth';
 
-export async function createSupplier(formData: FormData) {
-  const supabase = createClient()
-  const user = await getUser()
+const FormSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Name is required.'),
+  contact_person: z.string().optional().nullable(),
+  email: z.string().email('Invalid email address.').optional().nullable(),
+  phone_number: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  created_at: z.string().optional(),
+  user_id: z.string().optional(),
+});
 
-  const name = formData.get("name") as string
-  const contact_person = formData.get("contact_person") as string
-  const email = formData.get("email") as string
-  const phone = formData.get("phone") as string
-  const address = formData.get("address") as string
+const CreateSupplier = FormSchema.omit({ id: true, created_at: true, user_id: true });
+const UpdateSupplier = FormSchema.omit({ created_at: true, user_id: true });
 
-  if (!name || !contact_person || !email || !phone || !address) {
-    return { success: false, error: "All fields are required." }
+export type State = {
+  errors?: {
+    name?: string[];
+    contact_person?: string[];
+    email?: string[];
+    phone_number?: string[];
+    address?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createSupplier(prevState: State, formData: FormData) {
+  const validatedFields = CreateSupplier.safeParse({
+    name: formData.get('name'),
+    contact_person: formData.get('contact_person'),
+    email: formData.get('email'),
+    phone_number: formData.get('phone_number'),
+    address: formData.get('address'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Supplier.',
+    };
   }
 
-  const newSupplier: TablesInsert<"suppliers"> = {
-    user_id: user.id,
-    name,
-    contact_person,
-    email,
-    phone,
-    address,
+  const { name, contact_person, email, phone_number, address } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
+
+  try {
+    const { error } = await supabase
+      .from('suppliers')
+      .insert({
+        name,
+        contact_person,
+        email,
+        phone_number,
+        address,
+        user_id: user.id,
+      });
+
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Create Supplier.' };
+    }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Create Supplier.' };
   }
 
-  const { error } = await supabase.from("suppliers").insert(newSupplier)
-
-  if (error) {
-    console.error("Error creating supplier:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/suppliers")
-  return { success: true }
+  revalidatePath('/suppliers');
+  redirect('/suppliers');
 }
 
-export async function updateSupplier(id: string, formData: FormData) {
-  const supabase = createClient()
-  const user = await getUser()
+export async function updateSupplier(id: string, prevState: State, formData: FormData) {
+  const validatedFields = UpdateSupplier.safeParse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+    contact_person: formData.get('contact_person'),
+    email: formData.get('email'),
+    phone_number: formData.get('phone_number'),
+    address: formData.get('address'),
+  });
 
-  const name = formData.get("name") as string
-  const contact_person = formData.get("contact_person") as string
-  const email = formData.get("email") as string
-  const phone = formData.get("phone") as string
-  const address = formData.get("address") as string
-
-  if (!name || !contact_person || !email || !phone || !address) {
-    return { success: false, error: "All fields are required." }
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Supplier.',
+    };
   }
 
-  const updatedSupplier: TablesUpdate<"suppliers"> = {
-    name,
-    contact_person,
-    email,
-    phone,
-    address,
+  const { name, contact_person, email, phone_number, address } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
+
+  try {
+    const { error } = await supabase
+      .from('suppliers')
+      .update({
+        name,
+        contact_person,
+        email,
+        phone_number,
+        address,
+      })
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Update Supplier.' };
+    }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Update Supplier.' };
   }
 
-  const { error } = await supabase.from("suppliers").update(updatedSupplier).eq("id", id).eq("user_id", user.id)
-
-  if (error) {
-    console.error("Error updating supplier:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/suppliers")
-  revalidatePath(`/suppliers/${id}/edit`)
-  return { success: true }
+  revalidatePath('/suppliers');
+  redirect('/suppliers');
 }
 
 export async function deleteSupplier(id: string) {
-  const supabase = createClient()
-  const user = await getUser()
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-  const { error } = await supabase.from("suppliers").delete().eq("id", id).eq("user_id", user.id)
+  try {
+    const { error } = await supabase
+      .from('suppliers')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
 
-  if (error) {
-    console.error("Error deleting supplier:", error.message)
-    return { success: false, error: error.message }
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Delete Supplier.' };
+    }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Delete Supplier.' };
   }
 
-  revalidatePath("/suppliers")
-  return { success: true }
+  revalidatePath('/suppliers');
 }

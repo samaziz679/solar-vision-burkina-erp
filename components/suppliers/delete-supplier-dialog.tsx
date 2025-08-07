@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import {
   AlertDialog,
@@ -9,10 +9,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { deleteSupplier } from "@/app/suppliers/actions"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+} from '@/components/ui/alert-dialog'
+import { deleteSupplier } from '@/app/suppliers/actions'
+import { toast } from 'sonner'
+import { useState } from 'react'
 
 interface DeleteSupplierDialogProps {
   open: boolean
@@ -21,19 +21,18 @@ interface DeleteSupplierDialogProps {
 }
 
 export function DeleteSupplierDialog({ open, onOpenChange, supplierId }: DeleteSupplierDialogProps) {
-  const router = useRouter()
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-    try {
-      await deleteSupplier(supplierId)
-      toast.success("Supplier deleted successfully.")
-      onOpenChange(false)
-      router.refresh() // Refresh the list after deletion
-    } catch (error: any) {
-      toast.error("Failed to delete supplier.", {
-        description: error.message || "An unexpected error occurred.",
-      })
+    setIsDeleting(true)
+    const result = await deleteSupplier(supplierId)
+    if (result?.message) {
+      toast.error(result.message)
+    } else {
+      toast.success('Supplier deleted successfully!')
     }
+    setIsDeleting(false)
+    onOpenChange(false)
   }
 
   return (
@@ -42,12 +41,14 @@ export function DeleteSupplierDialog({ open, onOpenChange, supplierId }: DeleteS
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your supplier.
+            This action cannot be undone. This will permanently delete this supplier.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? 'Deleting...' : 'Continue'}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

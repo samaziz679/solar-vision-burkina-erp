@@ -1,26 +1,47 @@
-import { notFound } from "next/navigation"
-import { getExpenseById } from "@/lib/data/expenses"
-import { ExpenseForm } from "@/components/expenses/expense-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchExpenseById } from '@/lib/data/expenses';
+import ExpenseForm from '@/components/expenses/expense-form';
+import { notFound } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import Link from 'next/link';
 
 export default async function EditExpensePage({ params }: { params: { id: string } }) {
-  const id = params.id
-  const expense = await getExpenseById(id)
+  const id = params.id;
+  const expense = await fetchExpenseById(id);
 
   if (!expense) {
-    notFound()
+    notFound();
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl">
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/expenses">Expenses</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink>Edit Expense</BreadcrumbLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <Card>
         <CardHeader>
           <CardTitle>Edit Expense</CardTitle>
         </CardHeader>
         <CardContent>
-          <ExpenseForm initialData={expense} />
+          <ExpenseForm expense={expense} />
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 }

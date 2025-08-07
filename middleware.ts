@@ -1,55 +1,57 @@
-import { NextResponse, type NextRequest } from "next/server"
-import { createClient } from "@/lib/supabase/middleware"
+import { updateSession } from '@/lib/supabase/middleware'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr' // Import createServerClient
 
 export async function middleware(request: NextRequest) {
-  try {
-    const { supabase, response } = createClient(request)
+  const { pathname } = request.nextUrl
 
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
+  // Step 1: Update the session and get the response with updated cookies.
+  // This call ensures the session is refreshed and cookies are set on the response.
+  const response = await updateSession(request)
 
-    // Only log an error if it's not the expected "Auth session missing!" for unauthenticated users
-    if (error && error.message !== "Auth session missing!") {
-      console.error("Unexpected error getting user in middleware:", error.message)
-      // Optionally redirect to an error page or login for unexpected errors
-      // return NextResponse.redirect(new URL('/login?error=auth_failed', request.url))
+  // Step 2: Create a new Supabase client within the middleware.
+  // This client will use the cookies from the request, which should now be updated
+  // by the previous call to updateSession.
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // These set/remove operations are primarily for internal Supabase client use
+          // within the middleware. They ensure consistency between request and response cookies.
+          request.cookies.set({ name, value, ...options })
+          response.cookies.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: '', ...options })
+          response.cookies.set({ name, value: '', ...options })
+        },
+      },
     }
+  )
 
-    // If user is not logged in and trying to access a protected route, redirect to login
-    if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-      return NextResponse.redirect(new URL("/login", request.url))
-    }
+  // Step 3: Get the user from the newly created Supabase client.
+  const { data: { user } } = await supabase.auth.getUser()
 
-    // If user is logged in and trying to access login page, redirect to dashboard
-    if (user && request.nextUrl.pathname === "/login") {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
-    }
-
-    // Check if the public.users table has an entry for the current user
-    // This is a basic check to ensure the database schema is set up
-    if (user) {
-      const { data: userData, error: userError } = await supabase.from("users").select("id").eq("id", user.id).single()
-
-      if (userError || !userData) {
-        console.warn("User entry not found in public.users table. Redirecting to setup-required.")
-        // Redirect to a setup page if the user's entry is missing from public.users
-        if (!request.nextUrl.pathname.startsWith("/setup-required")) {
-          return NextResponse.redirect(new URL("/setup-required", request.url))
-        }
-      } else if (request.nextUrl.pathname.startsWith("/setup-required")) {
-        // If user data exists and they are on the setup-required page, redirect to dashboard
-        return NextResponse.redirect(new URL("/dashboard", request.url))
-      }
-    }
-
-    return response
-  } catch (e) {
-    console.error("Middleware error:", e)
-    // In case of any unexpected error, redirect to a generic error page or login
-    return NextResponse.redirect(new URL("/login?error=middleware_failed", request.url))
+  // Allow access to /login and /auth/callback without authentication
+  if (pathname.startsWith('/login') || pathname.startsWith('/auth/callback') || pathname === '/') {
+    return response // Return the response with updated session
   }
+
+  // For all other routes, check authentication
+  if (!user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/login'
+    redirectUrl.searchParams.set(`redirectedFrom`, request.nextUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  return response
 }
 
 export const config = {
@@ -59,11 +61,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - auth/callback (Supabase auth callback)
-     * - api (API routes)
-     * - public folder (e.g., images, fonts)
+     * - any files in the public folder (e.g. /vercel.svg)
      */
-    "/((?!_next/static|_next/image|favicon.ico|auth/callback|api|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|mp4|webm|ogg|mp3|wav|flac|aac|woff2|woff|eot|ttf|otf)$).*)",
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-  runtime: "nodejs", // Explicitly set runtime to Node.js
 }

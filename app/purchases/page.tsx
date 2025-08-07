@@ -1,25 +1,41 @@
-import { getPurchases } from "@/lib/data/purchases"
-import { PurchaseList } from "@/components/purchases/purchase-list"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchPurchases } from '@/lib/data/purchases';
+import PurchaseList from '@/components/purchases/purchase-list';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 export default async function PurchasesPage() {
-  const purchases = await getPurchases()
+  const purchases = await fetchPurchases();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-4xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">Purchases</CardTitle>
-          <Link href="/purchases/new">
-            <Button>Add New Purchase</Button>
-          </Link>
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <div className="flex items-center">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink>Purchases</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <Button asChild className="ml-auto">
+          <Link href="/purchases/new">Add New Purchase</Link>
+        </Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Purchases</CardTitle>
         </CardHeader>
         <CardContent>
           <PurchaseList purchases={purchases} />
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 }

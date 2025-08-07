@@ -1,66 +1,113 @@
-"use client"
+'use client';
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import type { BankingAccount } from "@/lib/supabase/types"
-import { createBankingAccount, updateBankingAccount } from "@/app/banking/actions"
-import { toast } from "sonner"
+import { useActionState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { createBankingAccount, updateBankingAccount, State } from '@/app/banking/actions';
+import { BankingAccount } from '@/lib/supabase/types';
+import { toast } from 'sonner';
 
 interface BankingFormProps {
-  initialData?: BankingAccount
+  bankingAccount?: BankingAccount;
 }
 
-export function BankingForm({ initialData }: BankingFormProps) {
-  const router = useRouter()
-  const isEditing = !!initialData
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export default function BankingForm({ bankingAccount }: BankingFormProps) {
+  const initialState: State = { message: null, errors: {} };
+  const updateBankingAccountWithId = updateBankingAccount.bind(null, bankingAccount?.id || '');
+  const [state, formAction] = useActionState(
+    bankingAccount ? updateBankingAccountWithId : createBankingAccount,
+    initialState
+  );
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsPending(true)
-    setError(null)
-
-    const formData = new FormData(event.currentTarget)
-
-    try {
-      let result
-      if (isEditing && initialData) {
-        result = await updateBankingAccount(initialData.id, formData)
-      } else {
-        result = await createBankingAccount(formData)
-      }
-
-      if (result.success) {
-        toast.success(isEditing ? "Banking account updated successfully!" : "Banking account created successfully!")
-        router.push("/banking")
-      } else {
-        toast.error(result.error)
-        setError(result.error)
-      }
-    } catch (e: any) {
-      toast.error("An unexpected error occurred.", { description: e.message })
-      setError(e.message)
-    } finally {
-      setIsPending(false)
+  // Show toast messages for success or error
+  if (state?.message) {
+    if (state.message.includes('Failed')) {
+      toast.error(state.message);
+    } else {
+      toast.success(state.message);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="name">Account Name</Label>
-        <Input id="name" name="name" defaultValue={initialData?.name} required />
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="id" value={bankingAccount?.id} />
+      <div className="grid gap-2">
+        <Label htmlFor="bank_name">Bank Name</Label>
+        <Input
+          id="bank_name"
+          name="bank_name"
+          type="text"
+          defaultValue={bankingAccount?.bank_name || ''}
+          required
+          aria-describedby="bank-name-error"
+        />
+        {state?.errors?.bank_name && (
+          <div id="bank-name-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.bank_name.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
-      <Button type="submit" disabled={isPending}>
-        {isEditing ? (isPending ? "Updating..." : "Update Account") : isPending ? "Creating..." : "Create Account"}
+      <div className="grid gap-2">
+        <Label htmlFor="account_name">Account Name</Label>
+        <Input
+          id="account_name"
+          name="account_name"
+          type="text"
+          defaultValue={bankingAccount?.account_name || ''}
+          required
+          aria-describedby="account-name-error"
+        />
+        {state?.errors?.account_name && (
+          <div id="account-name-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.account_name.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="account_number">Account Number</Label>
+        <Input
+          id="account_number"
+          name="account_number"
+          type="text"
+          defaultValue={bankingAccount?.account_number || ''}
+          required
+          aria-describedby="account-number-error"
+        />
+        {state?.errors?.account_number && (
+          <div id="account-number-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.account_number.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="balance">Balance</Label>
+        <Input
+          id="balance"
+          name="balance"
+          type="number"
+          step="0.01"
+          defaultValue={bankingAccount?.balance || 0}
+          required
+          aria-describedby="balance-error"
+        />
+        {state?.errors?.balance && (
+          <div id="balance-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.balance.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <Button type="submit" className="w-full">
+        {bankingAccount ? 'Update Account' : 'Create Account'}
       </Button>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
-  )
+  );
 }

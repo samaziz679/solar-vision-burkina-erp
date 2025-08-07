@@ -1,162 +1,147 @@
-"use server"
+'use server';
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
-import { getUser } from "@/lib/auth"
-import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { getAuthUser } from '@/lib/auth';
 
-export async function createProduct(formData: FormData) {
-  const supabase = createClient()
-  const user = await getUser()
+const FormSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Product Name is required.'),
+  description: z.string().optional().nullable(),
+  price: z.coerce.number().gt(0, 'Price must be greater than 0.'),
+  stock_quantity: z.coerce.number().int().min(0, 'Stock quantity cannot be negative.'),
+  sku: z.string().optional().nullable(),
+  created_at: z.string().optional(),
+  user_id: z.string().optional(),
+});
 
-  const name = formData.get("name") as string
-  const description = formData.get("description") as string
-  const category = formData.get("category") as string
-  const price = Number.parseFloat(formData.get("price") as string)
-  const stock = Number.parseInt(formData.get("stock") as string)
-  const imageFile = formData.get("image") as File
+const CreateProduct = FormSchema.omit({ id: true, created_at: true, user_id: true });
+const UpdateProduct = FormSchema.omit({ created_at: true, user_id: true });
 
-  if (!name || !description || !category || isNaN(price) || price <= 0 || isNaN(stock) || stock < 0) {
-    return { success: false, error: "All fields are required and values must be valid." }
+export type State = {
+  errors?: {
+    name?: string[];
+    description?: string[];
+    price?: string[];
+    stock_quantity?: string[];
+    sku?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createProduct(prevState: State, formData: FormData) {
+  const validatedFields = CreateProduct.safeParse({
+    name: formData.get('name'),
+    description: formData.get('description'),
+    price: formData.get('price'),
+    stock_quantity: formData.get('stock_quantity'),
+    sku: formData.get('sku'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Product.',
+    };
   }
 
-  let imageUrl: string | null = null
-  if (imageFile && imageFile.size > 0) {
-    const filePath = `${user.id}/${Date.now()}-${imageFile.name}`
-    const { data, error: uploadError } = await supabase.storage.from("product_images").upload(filePath, imageFile, {
-      cacheControl: "3600",
-      upsert: false,
-    })
+  const { name, description, price, stock_quantity, sku } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-    if (uploadError) {
-      console.error("Error uploading image:", uploadError.message)
-      return { success: false, error: `Failed to upload image: ${uploadError.message}` }
+  try {
+    const { error } = await supabase
+      .from('products')
+      .insert({
+        name,
+        description,
+        price,
+        stock_quantity,
+        sku,
+        user_id: user.id,
+      });
+
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Create Product.' };
     }
-    const { data: publicUrlData } = supabase.storage.from("product_images").getPublicUrl(filePath)
-    imageUrl = publicUrlData.publicUrl
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Create Product.' };
   }
 
-  const newProduct: TablesInsert<"products"> = {
-    user_id: user.id,
-    name,
-    description,
-    category,
-    price,
-    stock,
-    image_url: imageUrl,
-  }
-
-  const { error } = await supabase.from("products").insert(newProduct)
-
-  if (error) {
-    console.error("Error creating product:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/inventory")
-  return { success: true }
+  revalidatePath('/inventory');
+  redirect('/inventory');
 }
 
-export async function updateProduct(id: string, formData: FormData) {
-  const supabase = createClient()
-  const user = await getUser()
+export async function updateProduct(id: string, prevState: State, formData: FormData) {
+  const validatedFields = UpdateProduct.safeParse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+    description: formData.get('description'),
+    price: formData.get('price'),
+    stock_quantity: formData.get('stock_quantity'),
+    sku: formData.get('sku'),
+  });
 
-  const name = formData.get("name") as string
-  const description = formData.get("description") as string
-  const category = formData.get("category") as string
-  const price = Number.parseFloat(formData.get("price") as string)
-  const stock = Number.parseInt(formData.get("stock") as string)
-  const imageFile = formData.get("image") as File
-  const existingImageUrl = formData.get("existing_image_url") as string | null
-
-  if (!name || !description || !category || isNaN(price) || price <= 0 || isNaN(stock) || stock < 0) {
-    return { success: false, error: "All fields are required and values must be valid." }
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Product.',
+    };
   }
 
-  let imageUrl: string | null = existingImageUrl
-  if (imageFile && imageFile.size > 0) {
-    // Delete old image if it exists and is different
-    if (existingImageUrl && existingImageUrl.includes("supabase.co/storage/v1/object/public/product_images")) {
-      const oldPath = existingImageUrl.split("product_images/")[1]
-      await supabase.storage.from("product_images").remove([oldPath])
+  const { name, description, price, stock_quantity, sku } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
+
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({
+        name,
+        description,
+        price,
+        stock_quantity,
+        sku,
+      })
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Update Product.' };
     }
-
-    const filePath = `${user.id}/${Date.now()}-${imageFile.name}`
-    const { data, error: uploadError } = await supabase.storage.from("product_images").upload(filePath, imageFile, {
-      cacheControl: "3600",
-      upsert: false,
-    })
-
-    if (uploadError) {
-      console.error("Error uploading image:", uploadError.message)
-      return { success: false, error: `Failed to upload new image: ${uploadError.message}` }
-    }
-    const { data: publicUrlData } = supabase.storage.from("product_images").getPublicUrl(filePath)
-    imageUrl = publicUrlData.publicUrl
-  } else if (formData.get("remove_image") === "true") {
-    // If remove_image is checked and no new image is provided
-    if (existingImageUrl && existingImageUrl.includes("supabase.co/storage/v1/object/public/product_images")) {
-      const oldPath = existingImageUrl.split("product_images/")[1]
-      await supabase.storage.from("product_images").remove([oldPath])
-    }
-    imageUrl = null
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Update Product.' };
   }
 
-  const updatedProduct: TablesUpdate<"products"> = {
-    name,
-    description,
-    category,
-    price,
-    stock,
-    image_url: imageUrl,
-  }
-
-  const { error } = await supabase.from("products").update(updatedProduct).eq("id", id).eq("user_id", user.id)
-
-  if (error) {
-    console.error("Error updating product:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/inventory")
-  revalidatePath(`/inventory/${id}/edit`)
-  return { success: true }
+  revalidatePath('/inventory');
+  redirect('/inventory');
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = createClient()
-  const user = await getUser()
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-  // First, get the product to check for an image URL
-  const { data: product, error: fetchError } = await supabase
-    .from("products")
-    .select("image_url")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single()
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
 
-  if (fetchError) {
-    console.error("Error fetching product for deletion:", fetchError.message)
-    return { success: false, error: fetchError.message }
-  }
-
-  // If an image exists, delete it from storage
-  if (product?.image_url && product.image_url.includes("supabase.co/storage/v1/object/public/product_images")) {
-    const imagePath = product.image_url.split("product_images/")[1]
-    const { error: storageError } = await supabase.storage.from("product_images").remove([imagePath])
-    if (storageError) {
-      console.error("Error deleting product image from storage:", storageError.message)
-      // Continue with product deletion even if image deletion fails
+    if (error) {
+      console.error('Database Error:', error);
+      return { message: 'Database Error: Failed to Delete Product.' };
     }
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Delete Product.' };
   }
 
-  const { error } = await supabase.from("products").delete().eq("id", id).eq("user_id", user.id)
-
-  if (error) {
-    console.error("Error deleting product:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  revalidatePath("/inventory")
-  return { success: true }
+  revalidatePath('/inventory');
 }

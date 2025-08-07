@@ -1,13 +1,20 @@
--- This script inserts initial stock data into the 'products' table.
--- This is for demonstration purposes and should be adjusted for production.
+-- This script inserts initial stock data into the 'inventory' table.
+-- It's intended for seeding your database with some sample products.
+-- Ensure that the 'inventory' table and its RLS policies are already set up
+-- by running the 'complete_supabase_schema.sql' script first.
 
-INSERT INTO public.products (user_id, name, description, category, price, stock, image_url)
+-- IMPORTANT: Replace 'YOUR_USER_ID' with the actual user_id (UUID)
+-- that these products should be associated with.
+-- You can find your user_id in the 'auth.users' table after a user signs up.
+
+INSERT INTO public.products (name, description, price, stock_quantity, sku, user_id)
 VALUES
-    ('YOUR_USER_ID_HERE', 'Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 'Solar Panels', 250.00, 100, '/placeholder.png?height=400&width=600&query=solar%20panel'),
-    ('YOUR_USER_ID_HERE', 'Inverter 5kW', 'Hybrid inverter with battery storage capability', 'Inverters', 1500.00, 50, '/placeholder.png?height=400&width=600&query=solar%20inverter'),
-    ('YOUR_USER_ID_HERE', 'Mounting Kit (Roof)', 'Universal roof mounting system for solar panels', 'Mounting Systems', 120.00, 200, '/placeholder.png?height=400&width=600&query=solar%20mounting%20kit'),
-    ('YOUR_USER_ID_HERE', 'Solar Battery 10kWh', 'Lithium-ion battery for energy storage', 'Batteries', 5000.00, 20, '/placeholder.png?height=400&width=600&query=solar%20battery'),
-    ('YOUR_USER_ID_HERE', 'Charge Controller 60A', 'MPPT charge controller for solar systems', 'Controllers', 180.00, 75, '/placeholder.png?height=400&width=600&query=charge%20controller');
+('Solar Panel 300W', 'High-efficiency monocrystalline solar panel', 250.00, 100, 'SP300W', 'YOUR_USER_ID'),
+('Inverter 5kW', 'Hybrid solar inverter with battery support', 1200.00, 50, 'INV5KW', 'YOUR_USER_ID'),
+('Solar Battery 100Ah', 'Deep cycle gel battery for solar systems', 300.00, 200, 'BAT100AH', 'YOUR_USER_ID'),
+('Mounting Kit - Roof', 'Universal roof mounting kit for solar panels', 80.00, 150, 'MK-ROOF', 'YOUR_USER_ID'),
+('Charge Controller 60A', 'MPPT solar charge controller', 150.00, 75, 'CC60A', 'YOUR_USER_ID');
 
--- Replace 'YOUR_USER_ID_HERE' with the actual user ID from your 'public.users' table.
--- You can find your user ID in the Supabase Auth dashboard or by querying the 'auth.users' table.
+-- Replace 'YOUR_USER_ID' with the actual user ID from your auth.users table.
+-- You can find your user ID in the Supabase Auth dashboard or by querying the auth.users table.
+-- Example: SELECT id FROM auth.users WHERE email = 'your_email@example.com';

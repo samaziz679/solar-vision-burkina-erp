@@ -1,38 +1,61 @@
-import { createClient } from "@/lib/supabase/server"
-import type { Purchase } from "@/lib/supabase/types"
-import { getUser } from "@/lib/auth"
+import { unstable_noStore as noStore } from 'next/cache';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { Purchase } from '../supabase/types';
 
-export async function getPurchases(): Promise<Purchase[]> {
-  const supabase = createClient()
-  const user = await getUser()
+export async function fetchPurchases(): Promise<Purchase[]> {
+  noStore();
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: any) => cookieStore.set(name, value, options),
+        remove: (name: string, options: any) => cookieStore.delete(name, options),
+      },
+    }
+  );
 
   const { data, error } = await supabase
-    .from("purchases")
-    .select("*, products(name), suppliers(name)")
-    .eq("user_id", user.id)
-    .order("purchase_date", { ascending: false })
+    .from('purchases')
+    .select('*')
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("Error fetching purchases:", error.message)
-    return []
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch purchases.');
   }
-  return data || []
+
+  return data;
 }
 
-export async function getPurchaseById(id: string): Promise<Purchase | null> {
-  const supabase = createClient()
-  const user = await getUser()
+export async function fetchPurchaseById(id: string): Promise<Purchase | null> {
+  noStore();
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+        set: (name: string, value: string, options: any) => cookieStore.set(name, value, options),
+        remove: (name: string, options: any) => cookieStore.delete(name, options),
+      },
+    }
+  );
 
   const { data, error } = await supabase
-    .from("purchases")
-    .select("*, products(name), suppliers(name)")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single()
+    .from('purchases')
+    .select('*')
+    .eq('id', id)
+    .single();
 
   if (error) {
-    console.error("Error fetching purchase by ID:", error.message)
-    return null
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch purchase.');
   }
-  return data || null
+
+  return data;
 }

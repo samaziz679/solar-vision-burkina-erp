@@ -1,101 +1,114 @@
-"use client"
+'use client';
 
-import type React from "react"
+import { useActionState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { createProduct, State } from '@/app/inventory/actions';
+import { toast } from 'sonner';
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { createProduct } from "@/app/inventory/actions"
-import { toast } from "sonner"
-import Image from "next/image"
+export default function ProductForm() {
+  const initialState: State = { message: null, errors: {} };
+  const [state, formAction] = useActionState(createProduct, initialState);
 
-export function ProductForm() {
-  const router = useRouter()
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+  // Show toast messages for success or error
+  if (state?.message) {
+    if (state.message.includes('Failed')) {
+      toast.error(state.message);
     } else {
-      setImagePreview(null)
-    }
-  }
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsPending(true)
-    setError(null)
-
-    const formData = new FormData(event.currentTarget)
-
-    try {
-      const result = await createProduct(formData)
-      if (result.success) {
-        toast.success("Product created successfully!")
-        router.push("/inventory")
-      } else {
-        toast.error(result.error)
-        setError(result.error)
-      }
-    } catch (e: any) {
-      toast.error("An unexpected error occurred.", { description: e.message })
-      setError(e.message)
-    } finally {
-      setIsPending(false)
+      toast.success(state.message);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" name="name" required />
-      </div>
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" required />
-      </div>
-      <div>
-        <Label htmlFor="category">Category</Label>
-        <Input id="category" name="category" required />
-      </div>
-      <div>
-        <Label htmlFor="price">Price</Label>
-        <Input id="price" name="price" type="number" step="0.01" required />
-      </div>
-      <div>
-        <Label htmlFor="stock">Stock</Label>
-        <Input id="stock" name="stock" type="number" required />
-      </div>
-      <div>
-        <Label htmlFor="image">Product Image</Label>
-        <Input id="image" name="image" type="file" accept="image/*" onChange={handleImageChange} />
-        {imagePreview && (
-          <div className="mt-2">
-            <Image
-              src={imagePreview || "/placeholder.png"}
-              alt="Image Preview"
-              width={100}
-              height={100}
-              className="rounded-md object-cover"
-            />
+    <form action={formAction} className="space-y-4">
+      <div className="grid gap-2">
+        <Label htmlFor="name">Product Name</Label>
+        <Input
+          id="name"
+          name="name"
+          type="text"
+          required
+          aria-describedby="name-error"
+        />
+        {state?.errors?.name && (
+          <div id="name-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.name.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
           </div>
         )}
       </div>
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create Product"}
+      <div className="grid gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          aria-describedby="description-error"
+        />
+        {state?.errors?.description && (
+          <div id="description-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.description.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="price">Price</Label>
+        <Input
+          id="price"
+          name="price"
+          type="number"
+          step="0.01"
+          required
+          aria-describedby="price-error"
+        />
+        {state?.errors?.price && (
+          <div id="price-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.price.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="stock_quantity">Stock Quantity</Label>
+        <Input
+          id="stock_quantity"
+          name="stock_quantity"
+          type="number"
+          required
+          aria-describedby="stock-quantity-error"
+        />
+        {state?.errors?.stock_quantity && (
+          <div id="stock-quantity-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.stock_quantity.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="sku">SKU</Label>
+        <Input
+          id="sku"
+          name="sku"
+          type="text"
+          aria-describedby="sku-error"
+        />
+        {state?.errors?.sku && (
+          <div id="sku-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.sku.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <Button type="submit" className="w-full">
+        Create Product
       </Button>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
-  )
+  );
 }

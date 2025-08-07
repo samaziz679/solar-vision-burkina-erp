@@ -1,106 +1,111 @@
-"use client"
+'use client';
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import type { Expense } from "@/lib/supabase/types"
-import { createExpense, updateExpense } from "@/app/expenses/actions"
-import { toast } from "sonner"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
+import { useActionState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { createExpense, updateExpense, State } from '@/app/expenses/actions';
+import { Expense } from '@/lib/supabase/types';
+import { toast } from 'sonner';
 
 interface ExpenseFormProps {
-  initialData?: Expense
+  expense?: Expense;
 }
 
-export function ExpenseForm({ initialData }: ExpenseFormProps) {
-  const router = useRouter()
-  const isEditing = !!initialData
-  const [date, setDate] = useState<Date | undefined>(initialData ? new Date(initialData.date) : undefined)
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export default function ExpenseForm({ expense }: ExpenseFormProps) {
+  const initialState: State = { message: null, errors: {} };
+  const updateExpenseWithId = updateExpense.bind(null, expense?.id || '');
+  const [state, formAction] = useActionState(
+    expense ? updateExpenseWithId : createExpense,
+    initialState
+  );
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsPending(true)
-    setError(null)
-
-    if (!date) {
-      setError("Date is required.")
-      setIsPending(false)
-      return
-    }
-
-    const formData = new FormData(event.currentTarget)
-    formData.set("date", format(date, "yyyy-MM-dd"))
-
-    try {
-      let result
-      if (isEditing && initialData) {
-        result = await updateExpense(initialData.id, formData)
-      } else {
-        result = await createExpense(formData)
-      }
-
-      if (result.success) {
-        toast.success(isEditing ? "Expense updated successfully!" : "Expense created successfully!")
-        router.push("/expenses")
-      } else {
-        toast.error(result.error)
-        setError(result.error)
-      }
-    } catch (e: any) {
-      toast.error("An unexpected error occurred.", { description: e.message })
-      setError(e.message)
-    } finally {
-      setIsPending(false)
+  // Show toast messages for success or error
+  if (state?.message) {
+    if (state.message.includes('Failed')) {
+      toast.error(state.message);
+    } else {
+      toast.success(state.message);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="id" value={expense?.id} />
+      <div className="grid gap-2">
         <Label htmlFor="amount">Amount</Label>
-        <Input id="amount" name="amount" type="number" step="0.01" defaultValue={initialData?.amount} required />
+        <Input
+          id="amount"
+          name="amount"
+          type="number"
+          step="0.01"
+          defaultValue={expense?.amount || 0}
+          required
+          aria-describedby="amount-error"
+        />
+        {state?.errors?.amount && (
+          <div id="amount-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.amount.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
-      <div>
+      <div className="grid gap-2">
         <Label htmlFor="category">Category</Label>
-        <Input id="category" name="category" defaultValue={initialData?.category} required />
+        <Input
+          id="category"
+          name="category"
+          type="text"
+          defaultValue={expense?.category || ''}
+          aria-describedby="category-error"
+        />
+        {state?.errors?.category && (
+          <div id="category-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.category.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
-      <div>
+      <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" defaultValue={initialData?.description} required />
+        <Textarea
+          id="description"
+          name="description"
+          defaultValue={expense?.description || ''}
+          aria-describedby="description-error"
+        />
+        {state?.errors?.description && (
+          <div id="description-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.description.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
-      <div>
+      <div className="grid gap-2">
         <Label htmlFor="date">Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-          </PopoverContent>
-        </Popover>
-        <Input type="hidden" name="date" value={date ? format(date, "yyyy-MM-dd") : ""} />
+        <Input
+          id="date"
+          name="date"
+          type="date"
+          defaultValue={expense?.date || new Date().toISOString().split('T')[0]}
+          required
+          aria-describedby="date-error"
+        />
+        {state?.errors?.date && (
+          <div id="date-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.date.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
-      <Button type="submit" disabled={isPending}>
-        {isEditing ? (isPending ? "Updating..." : "Update Expense") : isPending ? "Creating..." : "Create Expense"}
+      <Button type="submit" className="w-full">
+        {expense ? 'Update Expense' : 'Create Expense'}
       </Button>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
-  )
+  );
 }

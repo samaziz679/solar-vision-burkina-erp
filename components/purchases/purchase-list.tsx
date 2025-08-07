@@ -1,126 +1,98 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Purchase } from "@/lib/supabase/types"
-import { DataTable } from "@/components/ui/data-table"
-import { Button } from "@/components/ui/button"
-import { ArrowUpDown, MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import Link from "next/link"
-import { DeletePurchaseDialog } from "./delete-purchase-dialog"
-
-export const columns: ColumnDef<Purchase>[] = [
-  {
-    accessorKey: "purchase_date",
-    header: ({ column }) => {
-      return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Purchase Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("purchase_date"))
-      return date.toLocaleDateString()
-    },
-  },
-  {
-    accessorKey: "supplier_name",
-    header: "Supplier",
-  },
-  {
-    accessorKey: "product_name",
-    header: "Product",
-  },
-  {
-    accessorKey: "quantity",
-    header: "Quantity",
-  },
-  {
-    accessorKey: "unit_price",
-    header: ({ column }) => {
-      return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Unit Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const unitPrice = Number.parseFloat(row.getValue("unit_price"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(unitPrice)
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
-    accessorFn: (row) => row.quantity * row.unit_price,
-    id: "total_price",
-    header: "Total Price",
-    cell: ({ row }) => {
-      const total = row.original.quantity * row.original.unit_price
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(total)
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
-    accessorKey: "notes",
-    header: "Notes",
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const purchase = row.original
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href={`/purchases/${purchase.id}/edit`}>Edit</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DeletePurchaseDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} purchaseId={purchase.id} />
-        </>
-      )
-    },
-  },
-]
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ColumnDef } from '@tanstack/react-table'
+import { Purchase } from '@/lib/supabase/types'
+import { DataTable } from '@/components/ui/data-table'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { MoreHorizontalIcon } from 'lucide-react'
+import { DeletePurchaseDialog } from './delete-purchase-dialog'
+import { format } from 'date-fns'
 
 interface PurchaseListProps {
   purchases: Purchase[]
 }
 
 export function PurchaseList({ purchases }: PurchaseListProps) {
+  const router = useRouter()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null)
+
+  const handleDeleteClick = (id: string) => {
+    setSelectedPurchaseId(id)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const columns: ColumnDef<Purchase>[] = [
+    {
+      accessorKey: 'supplier_name', // Assuming you'll join this from suppliers table
+      header: 'Supplier',
+      cell: ({ row }) => row.original.suppliers?.name || 'N/A',
+    },
+    {
+      accessorKey: 'product_name', // Assuming you'll join this from products table
+      header: 'Product',
+      cell: ({ row }) => row.original.products?.name || 'N/A',
+    },
+    {
+      accessorKey: 'quantity',
+      header: 'Quantity',
+    },
+    {
+      accessorKey: 'purchase_date',
+      header: 'Purchase Date',
+      cell: ({ row }) => {
+        const date = new Date(row.getValue('purchase_date'))
+        return <div>{format(date, 'PPP')}</div>
+      },
+    },
+    {
+      accessorKey: 'total_amount',
+      header: 'Total Amount',
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue('total_amount'))
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'XOF', // Assuming XOF as default currency for purchases
+        }).format(amount)
+        return <div className="font-medium">{formatted}</div>
+      },
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontalIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => router.push(`/purchases/${row.original.id}/edit`)}>
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDeleteClick(row.original.id)}>
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
+
   return (
-    <div className="w-full">
-      <DataTable columns={columns} data={purchases} filterColumnId="product_name" />
-    </div>
+    <>
+      <DataTable columns={columns} data={purchases} />
+      {selectedPurchaseId && (
+        <DeletePurchaseDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          purchaseId={selectedPurchaseId}
+        />
+      )}
+    </>
   )
 }

@@ -1,223 +1,317 @@
-"use server"
+'use server';
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
-import { getUser } from "@/lib/auth"
-import type { TablesInsert, TablesUpdate } from "@/lib/supabase/types"
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { getAuthUser } from '@/lib/auth';
 
-export async function createSale(formData: FormData) {
-  const supabase = createClient()
-  const user = await getUser()
+const FormSchema = z.object({
+  id: z.string().optional(),
+  product_id: z.string().min(1, 'Product is required.'),
+  client_id: z.string().min(1, 'Client is required.'),
+  quantity: z.coerce.number().int().min(1, 'Quantity must be at least 1.'),
+  total_amount: z.coerce.number().gt(0, 'Total amount must be greater than 0.'),
+  sale_date: z.string().min(1, 'Sale Date is required.'),
+  created_at: z.string().optional(),
+  user_id: z.string().optional(),
+});
 
-  const product_id = formData.get("product_id") as string
-  const client_id = formData.get("client_id") as string
-  const quantity = Number.parseInt(formData.get("quantity") as string)
-  const unit_price = Number.parseFloat(formData.get("unit_price") as string)
-  const sale_date = formData.get("sale_date") as string
-  const notes = formData.get("notes") as string | null
+const CreateSale = FormSchema.omit({ id: true, created_at: true, user_id: true });
+const UpdateSale = FormSchema.omit({ created_at: true, user_id: true });
 
-  if (
-    !product_id ||
-    !client_id ||
-    isNaN(quantity) ||
-    quantity <= 0 ||
-    isNaN(unit_price) ||
-    unit_price <= 0 ||
-    !sale_date
-  ) {
-    return { success: false, error: "All required fields must be filled and values must be positive." }
+export type State = {
+  errors?: {
+    product_id?: string[];
+    client_id?: string[];
+    quantity?: string[];
+    total_amount?: string[];
+    sale_date?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createSale(prevState: State, formData: FormData) {
+  const validatedFields = CreateSale.safeParse({
+    product_id: formData.get('product_id'),
+    client_id: formData.get('client_id'),
+    quantity: formData.get('quantity'),
+    total_amount: formData.get('total_amount'),
+    sale_date: formData.get('sale_date'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Sale.',
+    };
   }
 
-  // Check if enough stock is available
-  const { data: product, error: productFetchError } = await supabase
-    .from("products")
-    .select("stock")
-    .eq("id", product_id)
-    .single()
+  const { product_id, client_id, quantity, total_amount, sale_date } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-  if (productFetchError || !product) {
-    console.error("Error fetching product for stock check:", productFetchError?.message || "Product not found")
-    return { success: false, error: "Product not found or error fetching product details." }
+  try {
+    // Check if there's enough stock
+    const { data: product, error: fetchProductError } = await supabase
+      .from('products')
+      .select('stock_quantity')
+      .eq('id', product_id)
+      .single();
+
+    if (fetchProductError || !product) {
+      console.error('Database Error (Fetch Product):', fetchProductError);
+      return { message: 'Database Error: Failed to fetch product for stock check.' };
+    }
+
+    if (product.stock_quantity < quantity) {
+      return { message: 'Insufficient stock for this product.' };
+    }
+
+    const { error: saleError } = await supabase
+      .from('sales')
+      .insert({
+        product_id,
+        client_id,
+        quantity,
+        total_amount,
+        sale_date,
+        user_id: user.id,
+      });
+
+    if (saleError) {
+      console.error('Database Error (Sale):', saleError);
+      return { message: 'Database Error: Failed to Create Sale.' };
+    }
+
+    // Decrease product stock quantity
+    const newStockQuantity = product.stock_quantity - quantity;
+
+    const { error: updateStockError } = await supabase
+      .from('products')
+      .update({ stock_quantity: newStockQuantity })
+      .eq('id', product_id)
+      .eq('user_id', user.id);
+
+    if (updateStockError) {
+      console.error('Database Error (Update Stock):', updateStockError);
+      return { message: 'Database Error: Failed to update product stock.' };
+    }
+
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Create Sale.' };
   }
 
-  if (product.stock < quantity) {
-    return { success: false, error: `Not enough stock for ${product.stock} units. Available: ${product.stock}` }
-  }
-
-  const newSale: TablesInsert<"sales"> = {
-    user_id: user.id,
-    product_id,
-    client_id,
-    quantity,
-    unit_price,
-    sale_date,
-    notes,
-  }
-
-  const { error } = await supabase.from("sales").insert(newSale)
-
-  if (error) {
-    console.error("Error creating sale:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  // Update product stock
-  const newStock = product.stock - quantity
-  const { error: stockUpdateError } = await supabase.from("products").update({ stock: newStock }).eq("id", product_id)
-
-  if (stockUpdateError) {
-    console.error("Error updating product stock:", stockUpdateError.message)
-    // Even if stock update fails, the sale is recorded. Consider rollback or alert.
-  }
-
-  revalidatePath("/sales")
-  revalidatePath("/inventory") // Revalidate inventory page as stock changed
-  return { success: true }
+  revalidatePath('/sales');
+  revalidatePath('/inventory'); // Revalidate inventory page as stock changes
+  redirect('/sales');
 }
 
-export async function updateSale(id: string, formData: FormData) {
-  const supabase = createClient()
-  const user = await getUser()
+export async function updateSale(id: string, prevState: State, formData: FormData) {
+  const validatedFields = UpdateSale.safeParse({
+    id: formData.get('id'),
+    product_id: formData.get('product_id'),
+    client_id: formData.get('client_id'),
+    quantity: formData.get('quantity'),
+    total_amount: formData.get('total_amount'),
+    sale_date: formData.get('sale_date'),
+  });
 
-  const product_id = formData.get("product_id") as string
-  const client_id = formData.get("client_id") as string
-  const quantity = Number.parseInt(formData.get("quantity") as string)
-  const unit_price = Number.parseFloat(formData.get("unit_price") as string)
-  const sale_date = formData.get("sale_date") as string
-  const notes = formData.get("notes") as string | null
-  const original_quantity = Number.parseInt(formData.get("original_quantity") as string) // Hidden field for original quantity
-
-  if (
-    !product_id ||
-    !client_id ||
-    isNaN(quantity) ||
-    quantity <= 0 ||
-    isNaN(unit_price) ||
-    unit_price <= 0 ||
-    !sale_date
-  ) {
-    return { success: false, error: "All required fields must be filled and values must be positive." }
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Sale.',
+    };
   }
 
-  // Calculate quantity difference for stock adjustment
-  const quantityDifference = quantity - original_quantity
+  const { product_id, client_id, quantity, total_amount, sale_date } = validatedFields.data;
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-  // Check if enough stock is available for the *net* change
-  if (quantityDifference !== 0) {
-    const { data: product, error: productFetchError } = await supabase
-      .from("products")
-      .select("stock")
-      .eq("id", product_id)
-      .single()
+  try {
+    // Fetch old quantity and product_id to correctly adjust stock
+    const { data: oldSale, error: fetchOldSaleError } = await supabase
+      .from('sales')
+      .select('quantity, product_id')
+      .eq('id', id)
+      .single();
 
-    if (productFetchError || !product) {
-      console.error("Error fetching product for stock check:", productFetchError?.message || "Product not found")
-      return { success: false, error: "Product not found or error fetching product details." }
+    if (fetchOldSaleError || !oldSale) {
+      console.error('Database Error (Fetch Old Sale):', fetchOldSaleError);
+      return { message: 'Database Error: Failed to fetch old sale data.' };
     }
 
-    // If increasing quantity, check if enough stock
-    if (quantityDifference > 0 && product.stock < quantityDifference) {
-      return {
-        success: false,
-        error: `Not enough stock to increase sale quantity by ${quantityDifference}. Available: ${product.stock}`,
+    const oldQuantity = oldSale.quantity;
+    const oldProductId = oldSale.product_id;
+
+    // Update the sale record
+    const { error: saleError } = await supabase
+      .from('sales')
+      .update({
+        product_id,
+        client_id,
+        quantity,
+        total_amount,
+        sale_date,
+      })
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (saleError) {
+      console.error('Database Error (Sale):', saleError);
+      return { message: 'Database Error: Failed to Update Sale.' };
+    }
+
+    // Adjust stock quantity
+    if (oldProductId !== product_id) {
+      // Increase stock for old product
+      const { data: oldProduct, error: fetchOldProductError } = await supabase
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', oldProductId)
+        .single();
+
+      if (fetchOldProductError || !oldProduct) {
+        console.error('Database Error (Fetch Old Product):', fetchOldProductError);
+        return { message: 'Database Error: Failed to fetch old product for stock adjustment.' };
       }
-    }
-  }
 
-  const updatedSale: TablesUpdate<"sales"> = {
-    product_id,
-    client_id,
-    quantity,
-    unit_price,
-    sale_date,
-    notes,
-  }
+      const newOldProductStock = oldProduct.stock_quantity + oldQuantity;
+      await supabase
+        .from('products')
+        .update({ stock_quantity: newOldProductStock })
+        .eq('id', oldProductId)
+        .eq('user_id', user.id);
 
-  const { error } = await supabase.from("sales").update(updatedSale).eq("id", id).eq("user_id", user.id)
+      // Decrease stock for new product, checking for sufficiency
+      const { data: newProduct, error: fetchNewProductError } = await supabase
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', product_id)
+        .single();
 
-  if (error) {
-    console.error("Error updating sale:", error.message)
-    return { success: false, error: error.message }
-  }
+      if (fetchNewProductError || !newProduct) {
+        console.error('Database Error (Fetch New Product):', fetchNewProductError);
+        return { message: 'Database Error: Failed to fetch new product for stock adjustment.' };
+      }
 
-  // Update product stock based on quantity change
-  if (quantityDifference !== 0) {
-    const { data: product, error: productFetchError } = await supabase
-      .from("products")
-      .select("stock")
-      .eq("id", product_id)
-      .single()
+      if (newProduct.stock_quantity < quantity) {
+        // Revert changes if new product stock is insufficient
+        await supabase
+          .from('products')
+          .update({ stock_quantity: oldProduct.stock_quantity })
+          .eq('id', oldProductId)
+          .eq('user_id', user.id);
+        return { message: 'Insufficient stock for the new product.' };
+      }
 
-    if (productFetchError || !product) {
-      console.error(
-        "Error fetching product for stock update (after sale update):",
-        productFetchError?.message || "Product not found",
-      )
+      const newNewProductStock = newProduct.stock_quantity - quantity;
+      await supabase
+        .from('products')
+        .update({ stock_quantity: newNewProductStock })
+        .eq('id', product_id)
+        .eq('user_id', user.id);
+
     } else {
-      const newStock = product.stock - quantityDifference
-      const { error: stockUpdateError } = await supabase
-        .from("products")
-        .update({ stock: newStock })
-        .eq("id", product_id)
+      // Adjust stock for the same product
+      const stockDifference = oldQuantity - quantity; // If quantity decreased, stock increases
+      const { data: product, error: fetchProductError } = await supabase
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', product_id)
+        .single();
 
-      if (stockUpdateError) {
-        console.error("Error updating product stock (after sale update):", stockUpdateError.message)
+      if (fetchProductError || !product) {
+        console.error('Database Error (Fetch Product):', fetchProductError);
+        return { message: 'Database Error: Failed to fetch product for stock update.' };
+      }
+
+      const newStockQuantity = product.stock_quantity + stockDifference;
+
+      if (newStockQuantity < 0) {
+        return { message: 'Insufficient stock for this product after quantity adjustment.' };
+      }
+
+      const { error: updateStockError } = await supabase
+        .from('products')
+        .update({ stock_quantity: newStockQuantity })
+        .eq('id', product_id)
+        .eq('user_id', user.id);
+
+      if (updateStockError) {
+        console.error('Database Error (Update Stock):', updateStockError);
+        return { message: 'Database Error: Failed to update product stock.' };
       }
     }
+
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Update Sale.' };
   }
 
-  revalidatePath("/sales")
-  revalidatePath(`/sales/${id}/edit`)
-  revalidatePath("/inventory") // Revalidate inventory page as stock changed
-  return { success: true }
+  revalidatePath('/sales');
+  revalidatePath('/inventory'); // Revalidate inventory page as stock changes
+  redirect('/sales');
 }
 
 export async function deleteSale(id: string) {
-  const supabase = createClient()
-  const user = await getUser()
+  const supabase = createClient();
+  const user = await getAuthUser();
 
-  // Get the sale details to revert stock
-  const { data: sale, error: fetchError } = await supabase
-    .from("sales")
-    .select("product_id, quantity")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single()
+  try {
+    // Fetch sale details to revert stock quantity
+    const { data: sale, error: fetchSaleError } = await supabase
+      .from('sales')
+      .select('product_id, quantity')
+      .eq('id', id)
+      .single();
 
-  if (fetchError || !sale) {
-    console.error("Error fetching sale for deletion:", fetchError?.message || "Sale not found")
-    return { success: false, error: fetchError?.message || "Sale not found." }
-  }
-
-  const { error } = await supabase.from("sales").delete().eq("id", id).eq("user_id", user.id)
-
-  if (error) {
-    console.error("Error deleting sale:", error.message)
-    return { success: false, error: error.message }
-  }
-
-  // Revert product stock
-  const { data: product, error: productFetchError } = await supabase
-    .from("products")
-    .select("stock")
-    .eq("id", sale.product_id)
-    .single()
-
-  if (productFetchError || !product) {
-    console.error("Error fetching product for stock reversion:", productFetchError?.message || "Product not found")
-  } else {
-    const newStock = product.stock + sale.quantity
-    const { error: stockUpdateError } = await supabase
-      .from("products")
-      .update({ stock: newStock })
-      .eq("id", sale.product_id)
-
-    if (stockUpdateError) {
-      console.error("Error reverting product stock:", stockUpdateError.message)
+    if (fetchSaleError || !sale) {
+      console.error('Database Error (Fetch Sale):', fetchSaleError);
+      return { message: 'Database Error: Failed to fetch sale for deletion.' };
     }
+
+    const { error: deleteError } = await supabase
+      .from('sales')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error('Database Error (Delete Sale):', deleteError);
+      return { message: 'Database Error: Failed to Delete Sale.' };
+    }
+
+    // Revert product stock quantity
+    const { data: product, error: fetchProductError } = await supabase
+      .from('products')
+      .select('stock_quantity')
+      .eq('id', sale.product_id)
+      .single();
+
+    if (fetchProductError || !product) {
+      console.error('Database Error (Fetch Product for Revert):', fetchProductError);
+      return { message: 'Database Error: Failed to fetch product for stock revert.' };
+    }
+
+    const newStockQuantity = product.stock_quantity + sale.quantity;
+    const { error: updateStockError } = await supabase
+      .from('products')
+      .update({ stock_quantity: newStockQuantity })
+      .eq('id', sale.product_id)
+      .eq('user_id', user.id);
+
+    if (updateStockError) {
+      console.error('Database Error (Update Stock for Revert):', updateStockError);
+      return { message: 'Database Error: Failed to revert product stock.' };
+    }
+
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    return { message: 'Unexpected Error: Failed to Delete Sale.' };
   }
 
-  revalidatePath("/sales")
-  revalidatePath("/inventory") // Revalidate inventory page as stock changed
-  return { success: true }
+  revalidatePath('/sales');
+  revalidatePath('/inventory'); // Revalidate inventory page as stock changes
 }

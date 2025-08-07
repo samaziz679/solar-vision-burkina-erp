@@ -1,8 +1,6 @@
 {
-  "rewrites": [
-    {
-      "source": "/supabase/:path*",
-      "destination": "https://YOUR_SUPABASE_PROJECT_REF.supabase.co/:path*"
-    }
-  ]
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "dist",
+  "devCommand": "pnpm run dev"
 }

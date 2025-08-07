@@ -1,22 +1,17 @@
-"use client"
+'use client'
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import type { Purchase, Product, Supplier } from "@/lib/supabase/types"
-import { createPurchase, updatePurchase } from "@/app/purchases/actions"
-import { toast } from "sonner"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { createPurchase, updatePurchase } from '@/app/purchases/actions'
+import { toast } from 'sonner'
+import { Purchase, Product, Supplier } from '@/lib/supabase/types'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CalendarIcon } from 'lucide-react'
+import { format } from 'date-fns'
+import { Calendar } from '@/components/ui/calendar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface PurchaseFormProps {
   initialData?: Purchase
@@ -25,75 +20,62 @@ interface PurchaseFormProps {
 }
 
 export function PurchaseForm({ initialData, products, suppliers }: PurchaseFormProps) {
-  const router = useRouter()
-  const isEditing = !!initialData
-  const [selectedProduct, setSelectedProduct] = useState<string>(initialData?.product_id || "")
-  const [selectedSupplier, setSelectedSupplier] = useState<string>(initialData?.supplier_id || "")
+  const [supplierId, setSupplierId] = useState(initialData?.supplier_id || '')
+  const [productId, setProductId] = useState(initialData?.product_id || '')
+  const [quantity, setQuantity] = useState(initialData?.quantity?.toString() || '')
   const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(
-    initialData ? new Date(initialData.purchase_date) : undefined,
+    initialData?.purchase_date ? new Date(initialData.purchase_date) : undefined
   )
+  const [totalAmount, setTotalAmount] = useState(initialData?.total_amount?.toString() || '')
   const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<{ [key: string]: string[] }>({})
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (initialData) {
+      setSupplierId(initialData.supplier_id || '')
+      setProductId(initialData.product_id || '')
+      setQuantity(initialData.quantity?.toString() || '')
+      setPurchaseDate(initialData.purchase_date ? new Date(initialData.purchase_date) : undefined)
+      setTotalAmount(initialData.total_amount?.toString() || '')
+    }
+  }, [initialData])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsPending(true)
-    setError(null)
-
-    if (!purchaseDate) {
-      setError("Purchase date is required.")
-      setIsPending(false)
-      return
-    }
+    setErrors({})
+    setMessage(null)
 
     const formData = new FormData(event.currentTarget)
-    formData.set("purchase_date", format(purchaseDate, "yyyy-MM-dd"))
-
-    try {
-      let result
-      if (isEditing && initialData) {
-        formData.set("original_quantity", initialData.quantity.toString()) // Pass original quantity for stock adjustment
-        result = await updatePurchase(initialData.id, formData)
-      } else {
-        result = await createPurchase(formData)
-      }
-
-      if (result.success) {
-        toast.success(isEditing ? "Purchase updated successfully!" : "Purchase created successfully!")
-        router.push("/purchases")
-      } else {
-        toast.error(result.error)
-        setError(result.error)
-      }
-    } catch (e: any) {
-      toast.error("An unexpected error occurred.", { description: e.message })
-      setError(e.message)
-    } finally {
-      setIsPending(false)
+    if (initialData?.id) {
+      formData.append('id', initialData.id)
     }
+    formData.set('purchase_date', purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : '')
+
+    const action = initialData ? updatePurchase : createPurchase
+    const result = await action(undefined, formData) // Pass undefined for prevState
+
+    if (result?.errors) {
+      setErrors(result.errors)
+      setMessage(result.message)
+      toast.error(result.message)
+    } else if (result?.message) {
+      setMessage(result.message)
+      toast.error(result.message)
+    } else {
+      toast.success(initialData ? 'Purchase updated successfully!' : 'Purchase created successfully!')
+    }
+    setIsPending(false)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="product_id">Product</Label>
-        <Select name="product_id" value={selectedProduct} onValueChange={setSelectedProduct} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a product" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name} (Stock: {product.stock})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <input type="hidden" name="id" value={initialData?.id} />
+      <div className="grid gap-2">
         <Label htmlFor="supplier_id">Supplier</Label>
-        <Select name="supplier_id" value={selectedSupplier} onValueChange={setSelectedSupplier} required>
-          <SelectTrigger>
+        <Select onValueChange={setSupplierId} value={supplierId} disabled={isPending}>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a supplier" />
           </SelectTrigger>
           <SelectContent>
@@ -104,48 +86,85 @@ export function PurchaseForm({ initialData, products, suppliers }: PurchaseFormP
             ))}
           </SelectContent>
         </Select>
+        <input type="hidden" name="supplier_id" value={supplierId} />
+        {errors.supplier_id && <p className="text-red-500 text-sm">{errors.supplier_id.join(', ')}</p>}
       </div>
-      <div>
+      <div className="grid gap-2">
+        <Label htmlFor="product_id">Product</Label>
+        <Select onValueChange={setProductId} value={productId} disabled={isPending}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a product" />
+          </SelectTrigger>
+          <SelectContent>
+            {products.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <input type="hidden" name="product_id" value={productId} />
+        {errors.product_id && <p className="text-red-500 text-sm">{errors.product_id.join(', ')}</p>}
+      </div>
+      <div className="grid gap-2">
         <Label htmlFor="quantity">Quantity</Label>
-        <Input id="quantity" name="quantity" type="number" defaultValue={initialData?.quantity} required />
-      </div>
-      <div>
-        <Label htmlFor="unit_price">Unit Price</Label>
         <Input
-          id="unit_price"
-          name="unit_price"
+          id="quantity"
+          name="quantity"
           type="number"
-          step="0.01"
-          defaultValue={initialData?.unit_price}
+          step="1"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          placeholder="e.g., 10"
           required
+          disabled={isPending}
         />
+        {errors.quantity && <p className="text-red-500 text-sm">{errors.quantity.join(', ')}</p>}
       </div>
-      <div>
+      <div className="grid gap-2">
         <Label htmlFor="purchase_date">Purchase Date</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant={"outline"}
-              className={cn("w-full justify-start text-left font-normal", !purchaseDate && "text-muted-foreground")}
+              variant={'outline'}
+              className="w-full justify-start text-left font-normal"
+              disabled={isPending}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {purchaseDate ? format(purchaseDate, "PPP") : <span>Pick a date</span>}
+              {purchaseDate ? format(purchaseDate, 'PPP') : <span>Pick a date</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
-            <Calendar mode="single" selected={purchaseDate} onSelect={setPurchaseDate} initialFocus />
+            <Calendar
+              mode="single"
+              selected={purchaseDate}
+              onSelect={setPurchaseDate}
+              initialFocus
+            />
           </PopoverContent>
         </Popover>
-        <Input type="hidden" name="purchase_date" value={purchaseDate ? format(purchaseDate, "yyyy-MM-dd") : ""} />
+        <input type="hidden" name="purchase_date" value={purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : ''} />
+        {errors.purchase_date && <p className="text-red-500 text-sm">{errors.purchase_date.join(', ')}</p>}
       </div>
-      <div>
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" defaultValue={initialData?.notes || ""} />
+      <div className="grid gap-2">
+        <Label htmlFor="total_amount">Total Amount</Label>
+        <Input
+          id="total_amount"
+          name="total_amount"
+          type="number"
+          step="0.01"
+          value={totalAmount}
+          onChange={(e) => setTotalAmount(e.target.value)}
+          placeholder="e.g., 2500.00"
+          required
+          disabled={isPending}
+        />
+        {errors.total_amount && <p className="text-red-500 text-sm">{errors.total_amount.join(', ')}</p>}
       </div>
-      <Button type="submit" disabled={isPending}>
-        {isEditing ? (isPending ? "Updating..." : "Update Purchase") : isPending ? "Creating..." : "Create Purchase"}
+      {message && <p className="text-red-500 text-sm">{message}</p>}
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Purchase' : 'Create Purchase')}
       </Button>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
   )
 }

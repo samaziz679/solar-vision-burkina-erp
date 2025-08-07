@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# This script is for deploying the application to Vercel.
-# It assumes you have the Vercel CLI installed and configured.
+# This script is used to deploy the application to Vercel.
+# It is executed by the Vercel build process.
 
-echo "Deploying Solar Vision ERP to Vercel..."
-
-# Build the project
-echo "Building the project..."
-npm run build
-
-# Deploy to Vercel
 echo "Deploying to Vercel..."
-vercel --prod
+
+# Install pnpm dependencies
+echo "Installing pnpm dependencies..."
+pnpm install --frozen-lockfile
+
+# Build the Next.js application
+echo "Building Next.js application..."
+pnpm run build
 
 echo "Deployment complete!"

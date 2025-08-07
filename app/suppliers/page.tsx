@@ -1,25 +1,41 @@
-import { getSuppliers } from "@/lib/data/suppliers"
-import { SupplierList } from "@/components/suppliers/supplier-list"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchSuppliers } from '@/lib/data/suppliers';
+import SupplierList from '@/components/suppliers/supplier-list';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 export default async function SuppliersPage() {
-  const suppliers = await getSuppliers()
+  const suppliers = await fetchSuppliers();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-4xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">Suppliers</CardTitle>
-          <Link href="/suppliers/new">
-            <Button>Add New Supplier</Button>
-          </Link>
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <div className="flex items-center">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink>Suppliers</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <Button asChild className="ml-auto">
+          <Link href="/suppliers/new">Add New Supplier</Link>
+        </Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Suppliers</CardTitle>
         </CardHeader>
         <CardContent>
           <SupplierList suppliers={suppliers} />
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 }

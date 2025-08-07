@@ -1,25 +1,41 @@
-import { getClients } from "@/lib/data/clients"
-import { ClientList } from "@/components/clients/client-list"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchClients } from '@/lib/data/clients';
+import ClientList from '@/components/clients/client-list';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 export default async function ClientsPage() {
-  const clients = await getClients()
+  const clients = await fetchClients();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-4xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">Clients</CardTitle>
-          <Link href="/clients/new">
-            <Button>Add New Client</Button>
-          </Link>
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <div className="flex items-center">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink>Clients</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <Button asChild className="ml-auto">
+          <Link href="/clients/new">Add New Client</Link>
+        </Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Clients</CardTitle>
         </CardHeader>
         <CardContent>
           <ClientList clients={clients} />
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 }

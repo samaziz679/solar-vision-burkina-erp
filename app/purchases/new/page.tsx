@@ -1,15 +1,36 @@
-import { PurchaseForm } from "@/components/purchases/purchase-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getProducts } from "@/lib/data/products"
-import { getSuppliers } from "@/lib/data/suppliers"
+import PurchaseForm from '@/components/purchases/purchase-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import Link from 'next/link';
+import { fetchProducts } from '@/lib/data/products';
+import { fetchSuppliers } from '@/lib/data/suppliers';
 
 export default async function NewPurchasePage() {
-  const products = await getProducts()
-  const suppliers = await getSuppliers()
+  const products = await fetchProducts();
+  const suppliers = await fetchSuppliers();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl">
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/purchases">Purchases</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink>New Purchase</BreadcrumbLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <Card>
         <CardHeader>
           <CardTitle>Add New Purchase</CardTitle>
         </CardHeader>
@@ -17,6 +38,6 @@ export default async function NewPurchasePage() {
           <PurchaseForm products={products} suppliers={suppliers} />
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 }

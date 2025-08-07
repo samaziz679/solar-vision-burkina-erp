@@ -1,138 +1,126 @@
-"use client"
+'use client';
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import type { Product } from "@/lib/supabase/types"
-import { updateProduct } from "@/app/inventory/actions"
-import { toast } from "sonner"
-import Image from "next/image"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useActionState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { updateProduct, State } from '@/app/inventory/actions';
+import { Product } from '@/lib/supabase/types';
+import { toast } from 'sonner';
 
 interface EditProductFormProps {
-  initialData: Product
+  product: Product;
 }
 
-export function EditProductForm({ initialData }: EditProductFormProps) {
-  const router = useRouter()
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData.image_url)
-  const [removeImage, setRemoveImage] = useState<boolean>(false)
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export default function EditProductForm({ product }: EditProductFormProps) {
+  const initialState: State = { message: null, errors: {} };
+  const updateProductWithId = updateProduct.bind(null, product.id);
+  const [state, formAction] = useActionState(updateProductWithId, initialState);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-        setRemoveImage(false) // If new image is selected, don't remove
-      }
-      reader.readAsDataURL(file)
+  // Show toast messages for success or error
+  if (state?.message) {
+    if (state.message.includes('Failed')) {
+      toast.error(state.message);
     } else {
-      setImagePreview(initialData.image_url) // Revert to initial if no file selected
-    }
-  }
-
-  const handleRemoveImageChange = (checked: boolean) => {
-    setRemoveImage(checked)
-    if (checked) {
-      setImagePreview(null) // Clear preview if removing
-    } else {
-      setImagePreview(initialData.image_url) // Restore original preview if unchecking
-    }
-  }
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsPending(true)
-    setError(null)
-
-    const formData = new FormData(event.currentTarget)
-    formData.set("existing_image_url", initialData.image_url || "")
-    formData.set("remove_image", removeImage.toString())
-
-    try {
-      const result = await updateProduct(initialData.id, formData)
-      if (result.success) {
-        toast.success("Product updated successfully!")
-        router.push("/inventory")
-      } else {
-        toast.error(result.error)
-        setError(result.error)
-      }
-    } catch (e: any) {
-      toast.error("An unexpected error occurred.", { description: e.message })
-      setError(e.message)
-    } finally {
-      setIsPending(false)
+      toast.success(state.message);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" name="name" defaultValue={initialData.name} required />
-      </div>
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" defaultValue={initialData.description} required />
-      </div>
-      <div>
-        <Label htmlFor="category">Category</Label>
-        <Input id="category" name="category" defaultValue={initialData.category} required />
-      </div>
-      <div>
-        <Label htmlFor="price">Price</Label>
-        <Input id="price" name="price" type="number" step="0.01" defaultValue={initialData.price} required />
-      </div>
-      <div>
-        <Label htmlFor="stock">Stock</Label>
-        <Input id="stock" name="stock" type="number" defaultValue={initialData.stock} required />
-      </div>
-      <div>
-        <Label htmlFor="image">Product Image</Label>
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="id" value={product.id} />
+      <div className="grid gap-2">
+        <Label htmlFor="name">Product Name</Label>
         <Input
-          id="image"
-          name="image"
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          disabled={removeImage}
+          id="name"
+          name="name"
+          type="text"
+          defaultValue={product.name}
+          required
+          aria-describedby="name-error"
         />
-        {imagePreview && (
-          <div className="mt-2">
-            <Image
-              src={imagePreview || "/placeholder.png"}
-              alt="Image Preview"
-              width={100}
-              height={100}
-              className="rounded-md object-cover"
-            />
-          </div>
-        )}
-        {initialData.image_url && (
-          <div className="flex items-center space-x-2 mt-2">
-            <Checkbox id="remove_image" checked={removeImage} onCheckedChange={handleRemoveImageChange} />
-            <label
-              htmlFor="remove_image"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Remove existing image
-            </label>
+        {state?.errors?.name && (
+          <div id="name-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.name.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
           </div>
         )}
       </div>
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Updating..." : "Update Product"}
+      <div className="grid gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          defaultValue={product.description || ''}
+          aria-describedby="description-error"
+        />
+        {state?.errors?.description && (
+          <div id="description-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.description.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="price">Price</Label>
+        <Input
+          id="price"
+          name="price"
+          type="number"
+          step="0.01"
+          defaultValue={product.price}
+          required
+          aria-describedby="price-error"
+        />
+        {state?.errors?.price && (
+          <div id="price-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.price.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="stock_quantity">Stock Quantity</Label>
+        <Input
+          id="stock_quantity"
+          name="stock_quantity"
+          type="number"
+          defaultValue={product.stock_quantity}
+          required
+          aria-describedby="stock-quantity-error"
+        />
+        {state?.errors?.stock_quantity && (
+          <div id="stock-quantity-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.stock_quantity.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="sku">SKU</Label>
+        <Input
+          id="sku"
+          name="sku"
+          type="text"
+          defaultValue={product.sku || ''}
+          aria-describedby="sku-error"
+        />
+        {state?.errors?.sku && (
+          <div id="sku-error" aria-live="polite" className="text-sm text-red-500">
+            {state.errors.sku.map((error: string) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <Button type="submit" className="w-full">
+        Update Product
       </Button>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
     </form>
-  )
+  );
 }

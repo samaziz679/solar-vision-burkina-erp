@@ -1,27 +1,26 @@
-import LoginForm from '@/components/auth/login-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { redirect } from 'next/navigation'
+import LoginForm from '@/components/auth/login-form'
+import { createClient } from '@/lib/supabase/server'
 
-export default async function LoginPage() {
-  const supabase = createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { redirectedFrom?: string }
+}) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (user) {
-    redirect('/dashboard');
+    redirect('/dashboard')
   }
 
+  const redirectedFrom = searchParams?.redirectedFrom ?? '/dashboard'
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LoginForm />
-        </CardContent>
-      </Card>
-    </div>
-  );
+    <main className="min-h-[80vh] flex items-center justify-center p-4">
+      <LoginForm redirectedFrom={redirectedFrom} />
+    </main>
+  )
 }

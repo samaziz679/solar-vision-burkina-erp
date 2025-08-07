@@ -3,12 +3,22 @@ import { fetchCardData } from '@/lib/data/dashboard';
 import { DollarSign, ShoppingCart, Package } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server'
 
 export default async function DashboardPage() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   const { totalSales, totalExpenses, totalProducts } = await fetchCardData();
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <p className="mt-2 text-muted-foreground">
+        {user ? `Signed in as ${user.email}` : 'No user session detected.'}
+      </p>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

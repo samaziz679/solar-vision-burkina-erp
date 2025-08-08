@@ -1,56 +1,28 @@
-# Verify Vercel Deployment Commit SHA
+# SHA Comparison Steps
 
-Goal: Confirm your Production deployment is built from the exact commit on GitHub `main` (and your local `HEAD`).
+Goal: Confirm Vercel is deploying the commit you expect.
 
-## 0) Screenshots for reference
-- GitHub latest commit (main):  
-  ![](/docs/github-main-commit.png)
-- Vercel Deployments list (Production):  
-  ![](/docs/vercel-deployments-list.png)
-
-## 1) Get the SHA from GitHub (remote main)
-Copy the short SHA of the top commit on GitHub (e.g., `f5a73ff` from the screenshot), or use:
-
+## 1) Get local SHA
 \`\`\`bash
-git fetch origin
-git rev-parse --short origin/main
+git rev-parse HEAD
 \`\`\`
 
-## 2) Get the SHA from your local repo
-\`\`\`bash
-git checkout main
-git pull --ff-only
-git rev-parse --short HEAD
-\`\`\`
+## 2) Get GitHub main HEAD SHA
+- Open your repo on GitHub → Branch: main → copy the latest commit SHA (7 characters are enough to compare with Vercel).
 
-## 3) Get the SHA from Vercel (Production)
-- Vercel → Project → Deployments → click the latest Production deployment → in “Deployment Details,” copy the short SHA next to “Source: main” (it’s a link to the commit).
-
-Tip: The Deployments list may show “Redeploy of …”. Always click into the deployment to see the actual commit SHA.
+## 3) Get Vercel deployed SHA
+- Vercel Dashboard → Project → Deployments → open the deployment → look for “Commit: <sha>”.
 
 ## 4) Compare
-All three should match:
-- Vercel Production deployment SHA
-- GitHub `origin/main` SHA
-- Local `HEAD` (on `main`) SHA
+- All three SHAs (local, GitHub, Vercel) should match.
+- If GitHub and Vercel match but local differs: you haven’t pushed.
+- If local and GitHub match but Vercel differs: wrong repo/branch is linked, or a different deployment was promoted.
 
-## 5) Resolve mismatches
-- Local `HEAD` ≠ `origin/main` → push:
-\`\`\`bash
-git push -u origin main
-\`\`\`
-
-- `origin/main` ≠ Vercel Production deployment:
-  - The latest commit hasn’t deployed yet or you’re viewing an older deployment.
-  - Options:
-    - Push a new commit to `main` to trigger a fresh deploy, or
-    - In Vercel Deployments, open the desired commit’s deployment and click **Redeploy**, or
-    - CLI:
-      \`\`\`bash
-      npx vercel redeploy <deployment-url-or-id> --target=production
-      \`\`\`
-
-## 6) Sanity checks
-- Vercel → Settings → Git: Connected repo must be `samaziz679/solar-vision-burkina-erp`.
-- Vercel → Settings → Production: Branch Tracking should be `main`.
-- If your app lives in a subfolder, set Root Directory under Settings → General → Build & Development Settings.
+## 5) Fixes
+- Push missing commits:
+  \`\`\`bash
+  git push origin main
+  \`\`\`
+- Re-link the correct repo in Vercel:
+  - Settings → Git → Disconnect → Connect Git Repository → select the correct repo.
+- Re-run the deployment (or push a no-op commit) and verify SHAs again.

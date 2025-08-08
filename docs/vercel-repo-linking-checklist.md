@@ -1,64 +1,42 @@
-# Vercel ↔ GitHub Linking Checklist
+# Vercel Repo Linking Checklist
 
-Use this to confirm the Vercel project deploys from the correct repository and branch.
+Goal: Ensure this Vercel project deploys from the correct Git repository, branch, and directory.
 
-## 1) Confirm linked repository in Vercel
-- Vercel → Project → Settings → Git
-- "Git Repository" should be the exact owner/repo you expect.
-- If wrong:
-  1. Click "Disconnect"
-  2. Click "Connect" and select the correct repo
-  3. Save
+1) Confirm the linked repository
+- Vercel Dashboard → Project → Settings → Git
+- “Connected to” should show the correct <owner>/<repo>.
+- If wrong: Click Disconnect → Connect Git Repository → pick the correct repo.
+- If the repo isn’t listed: Click Manage next to the Git provider → grant access to the target repository → try Connect again.
 
-## 2) Confirm production branch
-- Vercel → Project → Settings → Production → Branch Tracking
-- Ensure it's set to "main" (or your chosen prod branch).
+2) Production branch
+- Settings → Git → Production Branch → set to `main` (or your chosen branch).
+- If your repo’s default is `master`, set Production Branch to `master` here.
 
-## 3) Monorepo (if applicable)
-- Vercel → Project → Settings → General → Build & Development Settings → Root Directory
-- Set to the folder that contains your Next.js app (leave empty if your app is at repo root).
-- Save.
+3) Root Directory (monorepo or subfolder)
+- Settings → General → Build & Development Settings → Root Directory.
+- Leave empty for a single-app repo. Set to the app folder for monorepos (e.g., `apps/web`).
 
-## 4) Verify commit SHA matches
-- Vercel → Project → Deployments → open latest deployment
-- Note the "Triggered by commit <sha> on main" line.
-- Locally:
-  \`\`\`
-  git rev-parse --short HEAD
-  \`\`\`
-- On GitHub: confirm the latest commit SHA on `main`.
-- The SHAs should match (for a Git-triggered deployment from `main`).
+4) Install and build commands
+- Usually blank so Vercel auto-detects Next.js.
+- If needed (temporary workaround): set Install Command to `pnpm install --no-frozen-lockfile`.
+- Leave Build Command empty or set `next build`.
 
-## 5) Check GitHub App permissions
-- Vercel → Project → Settings → Git → "Manage" for GitHub → ensure repository is accessible.
-- GitHub → Settings → Integrations → GitHub Apps → Vercel → Configure → ensure repo is selected.
+5) Environment variables
+- Settings → Environment Variables
+- Add required keys (e.g., Supabase):
+  - NEXT_PUBLIC_SUPABASE_URL
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - SUPABASE_URL
+  - SUPABASE_SERVICE_ROLE_KEY
+- Re-run the deployment after changes.
 
-## 6) Ensure your local folder is linked to the right Vercel project
-From your project folder:
-\`\`\`
-npx vercel link
-npx vercel pull
-\`\`\`
-- Confirm `.vercel/project.json` exists and references the intended project.
-- You can now `vercel deploy --prod` to deploy your local state to the same Vercel project.
+6) Verify SHA alignment
+- After a deploy, compare the commit SHA in:
+  - GitHub (main HEAD)
+  - Vercel → Deployment Details
+  - Local `git rev-parse HEAD`
+- All three should match.
 
-## 7) Domain attached to the right project
-- Vercel → Project → Settings → Domains
-- Ensure your `*.vercel.app` or custom domain is attached to this project.
-- If attached to a different project, remove it there and add it here.
-
-## 8) Build settings sanity
-- Framework preset: Next.js
-- Default build command: `next build`
-- Output: automatic (Next.js output handled by Vercel)
-- No "Ignored Build Step" preventing builds unintentionally.
-
-## 9) Final sanity
-- Push to `main`:
-  \`\`\`
-  git push origin main
-  \`\`\`
-- Watch Vercel Deployments: a new build should start with your commit message.
-- Open the build → confirm repo and commit SHA shown are correct.
-
-Tip: For Supabase OAuth on preview deployments, add the preview URLs to Supabase Redirect URLs (wildcards for Vercel previews are supported). See Supabase docs for wildcard examples and Vercel preview URL guidance.
+7) Permissions sanity check
+- In your Git provider, ensure the Vercel GitHub App has access to the selected repo.
+- If your org uses SSO/restrictions, approve the app for the org and repo.

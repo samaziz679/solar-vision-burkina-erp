@@ -1,91 +1,74 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
+import Link from 'next/link'
+import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { LogOut, Settings } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
-type SimpleUser = {
-  email?: string | null
-  user_metadata?: {
-    name?: string | null
-    avatar_url?: string | null
-  } | null
+type UserButtonProps = {
+  name?: string
+  email?: string
+  imageUrl?: string
 }
 
-export function UserButton({ user }: { user?: SimpleUser | null }) {
-  const router = useRouter()
-  const supabase = createClient()
-
-  const displayName = useMemo(() => {
-    return (
-      user?.user_metadata?.name ||
-      user?.email?.split('@')[0] ||
-      'User'
-    )
-  }, [user])
-
-  const initials = useMemo(() => {
-    const name = displayName || ''
-    const parts = name.trim().split(' ')
-    const first = parts[0]?.[0] || user?.email?.[0] || 'U'
-    const second = parts.length > 1 ? parts[1]?.[0] : ''
-    return `${first}${second}`.toUpperCase()
-  }, [displayName, user])
-
-  async function handleSignOut() {
-    try {
-      await supabase.auth.signOut()
-      router.push('/login')
-    } catch {
-      // best-effort sign out; still redirect
-      router.push('/login')
-    }
-  }
+export default function UserButton({
+  name = 'User',
+  email = 'user@example.com',
+  imageUrl,
+}: UserButtonProps) {
+  const [open, setOpen] = useState(false)
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2 px-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage
-              src={user?.user_metadata?.avatar_url || undefined}
-              alt={displayName || 'User avatar'}
-            />
-            <AvatarFallback>{initials}</AvatarFallback>
+            {imageUrl ? (
+              <AvatarImage src={imageUrl || "/placeholder.svg"} alt={name} />
+            ) : (
+              <AvatarFallback>
+                <User className="h-4 w-4" />
+              </AvatarFallback>
+            )}
           </Avatar>
-          <span className="hidden sm:inline-block max-w-[160px] truncate">
-            {displayName}
-          </span>
+          <span className="hidden sm:inline-block text-sm font-medium">{name}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="font-medium">{name}</span>
+            <span className="text-xs text-muted-foreground">{email}</span>
+          </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Sign out</span>
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
-}
-
-UserButton.defaultProps = {
-  user: null,
 }

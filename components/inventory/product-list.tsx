@@ -1,121 +1,100 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { PencilIcon, TrashIcon } from 'lucide-react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Product } from '@/lib/supabase/types'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
-interface ProductListProps {
-  products: Product[]
+export type Product = {
+  id: string | number
+  name: string
+  sku?: string
+  price?: number
+  stock?: number
+  unit?: string
 }
 
-export default function ProductList({ products }: ProductListProps) {
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+type ProductListProps = {
+  products?: Product[]
+  showActions?: boolean
+}
 
-  function onDeleteClick(id?: string | null) {
-    if (!id) return
-    setSelectedId(id)
-    setIsDeleteOpen(true)
-    // If you have a real delete dialog/action, wire it here.
-  }
+export default function ProductList({
+  products = [],
+  showActions = true,
+}: ProductListProps) {
+  const fmt = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+  })
 
-  function onCloseDelete() {
-    setSelectedId(null)
-    setIsDeleteOpen(false)
-  }
-
-  const getPrice = (p: any) => {
-    const val =
-      typeof p?.price === 'number'
-        ? p.price
-        : typeof p?.unit_price === 'number'
-          ? p.unit_price
-          : Number(p?.price ?? 0)
-    return Number.isFinite(val) ? val.toFixed(2) : '0.00'
-  }
-
-  const getQty = (p: any) =>
-    typeof p?.stock_quantity === 'number'
-      ? p.stock_quantity
-      : typeof p?.stockQuantity === 'number'
-        ? p.stockQuantity
-        : typeof p?.quantity === 'number'
-          ? p.quantity
-          : 0
+  const hasData = products && products.length > 0
 
   return (
-    <>
+    <div className="w-full overflow-x-auto">
       <Table>
+        <TableCaption className="text-xs">
+          {hasData ? 'Inventory overview' : 'No products found'}
+        </TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Stock Quantity</TableHead>
-            <TableHead>SKU</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="min-w-[180px]">Name</TableHead>
+            <TableHead className="min-w-[120px]">SKU</TableHead>
+            <TableHead className="text-right min-w-[120px]">Price</TableHead>
+            <TableHead className="text-right min-w-[100px]">Stock</TableHead>
+            <TableHead className="min-w-[80px]">Unit</TableHead>
+            {showActions && <TableHead className="text-right min-w-[160px]">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.isArray(products) && products.length > 0 ? (
-            products.map((product: any) => {
-              const id = product?.id ?? product?.sku ?? product?.name
-              return (
-                <TableRow key={String(id)}>
-                  <TableCell>{product?.name ?? '—'}</TableCell>
-                  <TableCell className="max-w-[420px] truncate">{product?.description ?? '—'}</TableCell>
-                  <TableCell>${getPrice(product)}</TableCell>
-                  <TableCell>{getQty(product)}</TableCell>
-                  <TableCell>{product?.sku ?? '—'}</TableCell>
+          {hasData ? (
+            products.map((p) => (
+              <TableRow key={String(p.id)}>
+                <TableCell className="font-medium">{p.name}</TableCell>
+                <TableCell className="text-muted-foreground">{p.sku || '-'}</TableCell>
+                <TableCell className="text-right">{p.price != null ? fmt.format(p.price) : '-'}</TableCell>
+                <TableCell className="text-right">{p.stock ?? '-'}</TableCell>
+                <TableCell>{p.unit || '-'}</TableCell>
+                {showActions && (
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {product?.id ? (
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/inventory/${product.id}/edit`}>
-                            <PencilIcon className="mr-1 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </Button>
-                      ) : null}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/inventory/${p.id}/edit`}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </Button>
+                      {/* If you have a DeleteProductDialog, wire it here; otherwise keep a placeholder */}
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => onDeleteClick(product?.id ?? null)}
-                        disabled={!product?.id}
+                        onClick={() => alert(`Delete product ${p.name}`)}
                       >
-                        <TrashIcon className="mr-1 h-4 w-4" />
+                        <Trash2 className="mr-2 h-4 w-4" />
                         Delete
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
-              )
-            })
+                )}
+              </TableRow>
+            ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground">
-                No products found.
+              <TableCell colSpan={showActions ? 6 : 5} className="text-center">
+                No data
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-
-      {/* Accessible, no-op placeholder for delete UX (prevents build-time errors).
-          Replace with your real dialog when ready. */}
-      {isDeleteOpen && selectedId ? (
-        <div className="sr-only" aria-live="polite">
-          {'Delete requested for product id: '}{selectedId}
-          {' — replace placeholder with your DeleteProductDialog and call onCloseDelete() to close.'}
-        </div>
-      ) : null}
-    </>
+    </div>
   )
-}
-
-ProductList.defaultProps = {
-  products: [],
 }

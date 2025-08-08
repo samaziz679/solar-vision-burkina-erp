@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
+import * as React from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -10,82 +11,69 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table'
-import { Edit, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 
 export type Product = {
   id: string
   name: string
   sku?: string
-  price?: number
-  stock?: number
   category?: string
+  stock?: number
+  price?: number
 }
 
-type ProductListProps = {
+export type ProductListProps = {
   products?: Product[]
-  onEdit?(product: Product): void
-  onDelete?(product: Product): void
 }
 
-export default function ProductList({
-  products,
-  onEdit,
-  onDelete,
-}: ProductListProps) {
-  const data = useMemo<Product[]>(
-    () =>
-      products && products.length > 0
-        ? products
-        : [
-            { id: 'p1', name: 'Solar Panel 450W', sku: 'SP-450', price: 210, stock: 32, category: 'Panels' },
-            { id: 'p2', name: 'Inverter 5kW', sku: 'INV-5K', price: 650, stock: 12, category: 'Inverters' },
-            { id: 'p3', name: 'Battery 12V 200Ah', sku: 'BAT-200', price: 180, stock: 54, category: 'Batteries' },
-          ],
-    [products]
-  )
+export default function ProductList({ products = [] }: ProductListProps) {
+  const data =
+    products.length > 0
+      ? products
+      : [
+          { id: 'p1', name: 'Solar Panel 200W', sku: 'SP-200', category: 'Panels', stock: 24, price: 129.99 },
+          { id: 'p2', name: 'Charge Controller 40A', sku: 'CC-40A', category: 'Controllers', stock: 10, price: 89 },
+          { id: 'p3', name: 'Deep Cycle Battery 12V', sku: 'BAT-12V', category: 'Batteries', stock: 6, price: 159 },
+        ]
+
+  const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' })
 
   return (
     <div className="w-full overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead className="hidden md:table-cell">SKU</TableHead>
+            <TableHead className="min-w-[180px]">Name</TableHead>
+            <TableHead>SKU</TableHead>
             <TableHead className="hidden md:table-cell">Category</TableHead>
-            <TableHead className="text-right hidden sm:table-cell">Stock</TableHead>
-            <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
-            <TableHead className="w-[120px] text-right">Actions</TableHead>
+            <TableHead className="text-right">Stock</TableHead>
+            <TableHead className="text-right">Price</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell className="hidden md:table-cell">{product.sku ?? '-'}</TableCell>
-              <TableCell className="hidden md:table-cell">{product.category ?? '-'}</TableCell>
-              <TableCell className="text-right hidden sm:table-cell">
-                {product.stock ?? 0}
-              </TableCell>
-              <TableCell className="text-right hidden sm:table-cell">
-                {product.price != null ? `$${product.price.toFixed(2)}` : '-'}
-              </TableCell>
+          {data.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell className="font-medium">{p.name}</TableCell>
+              <TableCell className="text-muted-foreground">{p.sku ?? '-'}</TableCell>
+              <TableCell className="hidden md:table-cell">{p.category ?? '-'}</TableCell>
+              <TableCell className="text-right">{p.stock ?? 0}</TableCell>
+              <TableCell className="text-right">{p.price != null ? fmt.format(p.price) : '-'}</TableCell>
               <TableCell className="text-right">
-                <div className="inline-flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Edit"
-                    onClick={() => onEdit?.(product)}
-                  >
-                    <Edit className="h-4 w-4" />
+                <div className="inline-flex gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/inventory/${p.id}/edit`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Link>
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Delete"
-                    onClick={() => onDelete?.(product)}
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => alert(`Delete product ${p.name}`)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
                   </Button>
                 </div>
               </TableCell>
@@ -93,7 +81,7 @@ export default function ProductList({
           ))}
           {data.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground">
+              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                 No products found.
               </TableCell>
             </TableRow>

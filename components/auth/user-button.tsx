@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { LogOut, Settings, User } from 'lucide-react'
+import * as React from 'react'
+import { LogOut, Settings, UserIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -14,38 +13,33 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 
-type UserButtonProps = {
+export type UserButtonProps = {
   name?: string
   email?: string
   imageUrl?: string
+  onSignOut?: () => void
 }
 
 export default function UserButton({
   name = 'User',
   email = 'user@example.com',
   imageUrl = '/placeholder-user.jpg',
+  onSignOut,
 }: UserButtonProps) {
-  const [open, setOpen] = useState(false)
-
-  const initials =
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .slice(0, 2) || 'U'
-
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-9 px-2">
-          <Avatar className="h-7 w-7">
-            <AvatarImage src={imageUrl || "/placeholder.svg"} alt={`${name} avatar`} />
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-          </Avatar>
-          <span className="ml-2 hidden text-sm font-medium sm:inline">{name}</span>
+        <Button variant="ghost" className="h-9 px-2">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-7 w-7">
+              <AvatarImage src={imageUrl || "/placeholder.svg"} alt="User avatar" />
+              <AvatarFallback>{(name ?? 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="hidden sm:inline text-sm font-medium">{name}</span>
+          </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col">
             <span className="text-sm font-medium">{name}</span>
@@ -53,29 +47,21 @@ export default function UserButton({
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="flex w-full items-center">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </Link>
+        <DropdownMenuItem className="cursor-pointer">
+          <UserIcon className="mr-2 h-4 w-4" />
+          Profile
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/profile" className="flex w-full items-center">
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </Link>
+        <DropdownMenuItem className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault()
-            // Placeholder sign-out action. Wire to your auth when ready.
-            alert('Signed out')
-          }}
-          className="text-red-600 focus:text-red-600"
+          onClick={() => (onSignOut ? onSignOut() : alert('Signed out'))}
+          className="cursor-pointer text-red-600 focus:text-red-700"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Sign out</span>
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

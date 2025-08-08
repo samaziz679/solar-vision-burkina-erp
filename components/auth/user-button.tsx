@@ -2,17 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { LogOut, Settings, User } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 
 type UserButtonProps = {
   name?: string
@@ -23,50 +23,59 @@ type UserButtonProps = {
 export default function UserButton({
   name = 'User',
   email = 'user@example.com',
-  imageUrl,
+  imageUrl = '/placeholder-user.jpg',
 }: UserButtonProps) {
   const [open, setOpen] = useState(false)
+
+  const initials =
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2) || 'U'
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 px-2">
-          <Avatar className="h-8 w-8">
-            {imageUrl ? (
-              <AvatarImage src={imageUrl || "/placeholder.svg"} alt={name} />
-            ) : (
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            )}
+        <Button variant="ghost" size="sm" className="h-9 px-2">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={imageUrl || "/placeholder.svg"} alt={`${name} avatar`} />
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
-          <span className="hidden sm:inline-block text-sm font-medium">{name}</span>
+          <span className="ml-2 hidden text-sm font-medium sm:inline">{name}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span className="font-medium">{name}</span>
+            <span className="text-sm font-medium">{name}</span>
             <span className="text-xs text-muted-foreground">{email}</span>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard
+          <Link href="/settings" className="flex w-full items-center">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
+          <Link href="/profile" className="flex w-full items-center">
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault()
+            // Placeholder sign-out action. Wire to your auth when ready.
+            alert('Signed out')
+          }}
+          className="text-red-600 focus:text-red-600"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

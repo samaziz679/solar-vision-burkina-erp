@@ -1,0 +1,58 @@
+// app/dashboard/layout.tsx
+import UserButton from '@/components/auth/user-button';
+
+// components/banking/banking-form.tsx
+import { useFormState } from 'react-dom';
+const [state, formAction] = useFormState(
+  bankingAccount ? updateBankingAccountWithId : createBankingAccount,
+  initialState
+);
+
+// components/clients/client-form.tsx
+import { useFormState } from 'react-dom';
+const [state, formAction] = useFormState(
+  client ? updateClientWithId : createClientAction,
+  initialState
+);
+
+// components/expenses/expense-form.tsx
+import { useFormState } from 'react-dom';
+const [state, formAction] = useFormState(
+  expense ? updateExpenseWithId : createExpense,
+  initialState
+);
+
+// components/inventory/edit-product-form.tsx
+import { useFormState } from 'react-dom';
+const [state, formAction] = useFormState(updateProductWithId, initialState);
+
+// components/inventory/product-form.tsx
+import { useFormState } from 'react-dom';
+const [state, formAction] = useFormState(createProduct, initialState);
+
+// app/purchases/[id]/edit/page.tsx
+import { EditPurchaseForm } from '@/components/purchases/edit-purchase-form';
+
+// app/purchases/new/page.tsx
+import { PurchaseForm } from '@/components/purchases/purchase-form';
+
+// app/purchases/page.tsx
+import { PurchaseList } from '@/components/purchases/purchase-list';
+
+// app/sales/[id]/edit/page.tsx
+import { EditSaleForm } from '@/components/sales/edit-sale-form';
+
+// app/sales/new/page.tsx
+import { SaleForm } from '@/components/sales/sale-form';
+
+// app/sales/page.tsx
+import { SalesList } from '@/components/sales/sales-list';
+
+// app/suppliers/[id]/edit/page.tsx
+import { EditSupplierForm } from '@/components/suppliers/edit-supplier-form';
+
+// app/suppliers/new/page.tsx
+import { SupplierForm } from '@/components/suppliers/supplier-form';
+
+// app/suppliers/page.tsx
+import { SupplierList } from '@/components/suppliers/supplier-list';

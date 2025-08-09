@@ -1,113 +1,96 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { createSupplier, updateSupplier } from "@/app/suppliers/actions"
+import type { Supplier } from "@/lib/supabase/types"
 
-type Supplier = {
-  id: string
-  name: string
-  contact_person: string | null
-  email: string | null
-  phone_number: string | null
-  address: string | null
-  created_at: string
-  user_id: string
-}
-
-export type SupplierFormProps = {
+type Props = {
   initialData?: Supplier | null
 }
 
-function SupplierForm({ initialData = null }: SupplierFormProps) {
+export default function SupplierForm({ initialData = null }: Props) {
+  const [name, setName] = useState(initialData?.name ?? "")
+  const [contactPerson, setContactPerson] = useState(initialData?.contact_person ?? "")
+  const [email, setEmail] = useState(initialData?.email ?? "")
+  const [phoneNumber, setPhoneNumber] = useState(initialData?.phone_number ?? "")
+  const [address, setAddress] = useState(initialData?.address ?? "")
   const [isPending, setIsPending] = useState(false)
-  const [errors, setErrors] = useState<{ [key: string]: string[] }>({})
 
-  // Choose the server action at render time
-  const serverAction = initialData ? updateSupplier : createSupplier
+  const formAction = (initialData ? updateSupplier : createSupplier) as unknown as string
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <form method="post" onSubmit={() => setIsPending(true)} className="space-y-4">
-          <input type="hidden" name="id" value={initialData?.id ?? ""} />
+    <form action={formAction} onSubmit={() => setIsPending(true)} className="space-y-4">
+      <input type="hidden" name="id" value={initialData?.id ?? ""} />
 
-          <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              name="name"
-              required
-              defaultValue={initialData?.name ?? ""}
-              placeholder="Acme Supplies Ltd"
-            />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.join(", ")}</p>}
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="name">Name</Label>
+        <Input
+          id="name"
+          name="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          placeholder="Acme Supplies Co."
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="contact_person">Contact person</Label>
-            <Input
-              id="contact_person"
-              name="contact_person"
-              defaultValue={initialData?.contact_person ?? ""}
-              placeholder="John Doe"
-            />
-            {errors.contact_person && <p className="text-sm text-destructive">{errors.contact_person.join(", ")}</p>}
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="contact_person">Contact person</Label>
+        <Input
+          id="contact_person"
+          name="contact_person"
+          value={contactPerson}
+          onChange={(e) => setContactPerson(e.target.value)}
+          placeholder="Jane Doe"
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              name="email"
-              defaultValue={initialData?.email ?? ""}
-              placeholder="supplier@example.com"
-            />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.join(", ")}</p>}
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="supplier@example.com"
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="phone_number">Phone number</Label>
-            <Input
-              id="phone_number"
-              name="phone_number"
-              defaultValue={initialData?.phone_number ?? ""}
-              placeholder="+1 555 555 5555"
-            />
-            {errors.phone_number && <p className="text-sm text-destructive">{errors.phone_number.join(", ")}</p>}
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="phone_number">Phone number</Label>
+        <Input
+          id="phone_number"
+          name="phone_number"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          placeholder="+226 70 00 00 00"
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              name="address"
-              defaultValue={initialData?.address ?? ""}
-              placeholder="123 Main St, City, Country"
-            />
-            {errors.address && <p className="text-sm text-destructive">{errors.address.join(", ")}</p>}
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="address">Address</Label>
+        <Textarea
+          id="address"
+          name="address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="123 Market Street, Ouagadougou"
+        />
+      </div>
 
-          <div className="flex items-center gap-3 pt-2">
-            <Button
-              type="submit"
-              // Bind the server action on the button for React 18 DOM typings; cast to satisfy TS.
-              formAction={serverAction as unknown as (formData: FormData) => void}
-              disabled={isPending}
-            >
-              {isPending ? (initialData ? "Saving..." : "Creating...") : initialData ? "Save" : "Create"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="flex items-center justify-end gap-2">
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : initialData ? "Update Supplier" : "Create Supplier"}
+        </Button>
+      </div>
+    </form>
   )
 }
 
-export default SupplierForm
-export { SupplierForm }
+// Also export a named export for backwards-compat imports if any file still uses it.
+export { default as SupplierForm } from "./supplier-form"

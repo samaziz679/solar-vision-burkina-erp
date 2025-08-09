@@ -1,25 +1,41 @@
-import { createServerClient } from "@supabase/supabase-js"
+import { unstable_noStore as noStore } from "next/cache"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import type { CookieOptions } from "types"
+import type { Purchase } from "../supabase/types"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-export const createClient = () => {
+function getSupabase() {
   const cookieStore = cookies()
-  const get = (key: string) => cookieStore.get(key)?.value || ""
-  const set = (key: string, value: string, options: CookieOptions) => {
-    cookieStore.set(key, value, options)
-  }
-  const remove = (key: string) => {
-    cookieStore.delete(key)
-  }
-
-  return createServerClient(supabaseUrl, supabaseKey, {
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
-      get,
-      set,
-      remove,
+      get: (name: string) => cookieStore.get(name)?.value,
+      set: (name: string, value: string, options: any) => cookieStore.set(name, value, options),
+      remove: (name: string, options: any) => cookieStore.delete(name, options),
     },
   })
+}
+
+export async function fetchPurchases(): Promise<Purchase[]> {
+  noStore()
+  const supabase = getSupabase()
+  const { data, error } = await supabase.from("purchases").select("*").order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Database Error:", error)
+    throw new Error("Failed to fetch purchases.")
+  }
+
+  return data
+}
+
+export async function fetchPurchaseById(id: string): Promise<Purchase | null> {
+  noStore()
+  const supabase = getSupabase()
+  const { data, error } = await supabase.from("purchases").select("*").eq("id", id).single()
+
+  if (error) {
+    console.error("Database Error:", error)
+    throw new Error("Failed to fetch purchase.")
+  }
+
+  return data
 }

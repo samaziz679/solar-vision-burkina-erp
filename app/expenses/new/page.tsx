@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-import ExpenseForm from "@/components/expenses/expense-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,9 +10,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import ExpenseForm from "@/components/expenses/expense-form"
 
 export default function NewExpensePage() {
-  // Do not use searchParams.get in a Server Component. Server pages receive a plain object.
+  // No searchParams.get usage
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>

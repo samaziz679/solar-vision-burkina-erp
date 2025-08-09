@@ -10,11 +10,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { getAdminClient } from "@/lib/supabase/admin"
 import { fetchClients } from "@/lib/data/clients"
 import { SaleForm } from "@/components/sales/sale-form"
 
-// Form needs these fields from products
+// Fields needed by the SaleForm from products
 export type ProductForSale = {
   id: string
   name: string
@@ -24,10 +24,9 @@ export type ProductForSale = {
 }
 
 export default async function NewSalePage() {
-  // Do not use searchParams.get in a Server Component. Server pages receive a plain object.
-
-  // Fetch products directly with Supabase server client
-  const supabase = createClient()
+  // IMPORTANT: Do NOT use searchParams.get in Server Components.
+  // Read products server-side using admin client (no cookies).
+  const supabase = getAdminClient()
   const { data: productsData, error: productsError } = await supabase
     .from("products")
     .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
@@ -47,7 +46,6 @@ export default async function NewSalePage() {
       prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
     })) ?? []
 
-  // Fetch clients via data module
   const clients = await fetchClients()
 
   return (

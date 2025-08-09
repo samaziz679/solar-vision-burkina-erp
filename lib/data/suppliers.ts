@@ -1,58 +1,55 @@
 import "server-only"
 import { unstable_noStore as noStore } from "next/cache"
-import { cookies } from "next/headers"
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Supplier } from "@/lib/supabase/types"
 
-// Lightweight options for dropdowns
+// Lightweight options for dropdowns (strictly existing fields)
 export type SupplierLite = Pick<Supplier, "id" | "name">
 
-function getSupabase() {
-  const cookieStore = cookies()
+/**
+ * Fetch all suppliers (full rows, matches SQL schema).
+ */
+export async function fetchSuppliers(): Promise<Supplier[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("suppliers").select("*").order("created_at", { ascending: false })
 
-  const cookieMethods = {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(_name: string, _value: string, _options: CookieOptions) {},
-    remove(_name: string, _options: CookieOptions) {},
+  if (error) {
+    console.error("Database Error (fetchSuppliers):", error)
+    throw new Error("Failed to fetch suppliers.")
   }
 
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: cookieMethods as any,
-  })
+  return (data ?? []) as Supplier[]
 }
 
 /**
- * Supplier options for dropdowns (id, name)
- * Matches existing usage where a minimal shape is required.
- */
-export async function fetchSuppliers(): Promise<SupplierLite[]> {
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("suppliers").select("id,name").order("name", { ascending: true })
-
-  if (error) throw error
-
-  return (data ?? []).map((s: any) => ({
-    id: String(s.id),
-    name: String(s.name ?? ""),
-  }))
-}
-
-/**
- * Full supplier by id
+ * Fetch a single supplier by id (full row).
  */
 export async function fetchSupplierById(id: string): Promise<Supplier | null> {
   noStore()
-  const supabase = getSupabase()
-
+  const supabase = getAdminClient()
   const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Database Error (supplier by id):", error)
+    console.error("Database Error (fetchSupplierById):", error)
     throw new Error("Failed to fetch supplier.")
   }
 
   return (data ?? null) as Supplier | null
+}
+
+/**
+ * Supplier options for selects (id, name).
+ */
+export async function fetchSupplierOptions(): Promise<SupplierLite[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("suppliers").select("id,name").order("name", { ascending: true })
+
+  if (error) {
+    console.error("Database Error (fetchSupplierOptions):", error)
+    throw new Error("Failed to fetch supplier options.")
+  }
+
+  return (data ?? []) as SupplierLite[]
 }

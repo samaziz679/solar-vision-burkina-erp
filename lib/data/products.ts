@@ -1,58 +1,59 @@
 import "server-only"
 import { unstable_noStore as noStore } from "next/cache"
-import { cookies } from "next/headers"
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Product } from "@/lib/supabase/types"
 
-// Lightweight options type for dropdowns
+// Lightweight options for dropdowns (strictly existing fields)
 export type ProductLite = Pick<Product, "id" | "name">
 
-function getSupabase() {
-  const cookieStore = cookies()
+/**
+ * Fetch all products (full rows).
+ * This satisfies imports like:
+ *   import { fetchProducts } from "@/lib/data/products"
+ */
+export async function fetchProducts(): Promise<Product[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
 
-  const cookieMethods = {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(_name: string, _value: string, _options: CookieOptions) {},
-    remove(_name: string, _options: CookieOptions) {},
+  if (error) {
+    console.error("Database Error (fetchProducts):", error)
+    throw new Error("Failed to fetch products.")
   }
 
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: cookieMethods as any,
-  })
+  return (data ?? []) as Product[]
 }
 
 /**
- * Product options for dropdowns (id, name)
- * Matches existing usage in pages/forms that need a small payload.
- */
-export async function fetchProducts(): Promise<ProductLite[]> {
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("products").select("id,name").order("name", { ascending: true })
-
-  if (error) throw error
-
-  return (data ?? []).map((p: any) => ({
-    id: String(p.id),
-    name: String(p.name ?? ""),
-  }))
-}
-
-/**
- * Single product by id (full row)
+ * Fetch a single product by id (full row).
+ * Satisfies imports like:
+ *   import { fetchProductById } from "@/lib/data/products"
  */
 export async function fetchProductById(id: string): Promise<Product | null> {
   noStore()
-  const supabase = getSupabase()
-
+  const supabase = getAdminClient()
   const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Database Error (product by id):", error)
+    console.error("Database Error (fetchProductById):", error)
     throw new Error("Failed to fetch product.")
   }
 
   return (data ?? null) as Product | null
+}
+
+/**
+ * Product options for selects (id, name).
+ */
+export async function fetchProductOptions(): Promise<ProductLite[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("products").select("id,name").order("name", { ascending: true })
+
+  if (error) {
+    console.error("Database Error (fetchProductOptions):", error)
+    throw new Error("Failed to fetch product options.")
+  }
+
+  return (data ?? []) as ProductLite[]
 }

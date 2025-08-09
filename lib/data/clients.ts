@@ -3,11 +3,11 @@ import { unstable_noStore as noStore } from "next/cache"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Client } from "@/lib/supabase/types"
 
-// Lightweight options for dropdowns
+// Lightweight options for dropdowns (strictly existing fields)
 export type ClientLite = Pick<Client, "id" | "name">
 
 /**
- * Full list of clients for /clients page and other places expecting full shape.
+ * Fetch all clients (full rows).
  */
 export async function fetchClients(): Promise<Client[]> {
   noStore()
@@ -15,7 +15,7 @@ export async function fetchClients(): Promise<Client[]> {
   const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Database Error (clients):", error)
+    console.error("Database Error (fetchClients):", error)
     throw new Error("Failed to fetch clients.")
   }
 
@@ -23,26 +23,7 @@ export async function fetchClients(): Promise<Client[]> {
 }
 
 /**
- * Options for dropdowns (id, name) to avoid over-fetching.
- */
-export async function fetchClientOptions(): Promise<ClientLite[]> {
-  noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("clients").select("id,name").order("name", { ascending: true })
-
-  if (error) {
-    console.error("Database Error (client options):", error)
-    throw new Error("Failed to fetch client options.")
-  }
-
-  return (data ?? []).map((c: any) => ({
-    id: String(c.id),
-    name: String(c.name ?? ""),
-  }))
-}
-
-/**
- * Single client by id.
+ * Fetch a single client by id (full row).
  */
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
@@ -50,9 +31,25 @@ export async function fetchClientById(id: string): Promise<Client | null> {
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Database Error (client by id):", error)
+    console.error("Database Error (fetchClientById):", error)
     throw new Error("Failed to fetch client.")
   }
 
   return (data ?? null) as Client | null
+}
+
+/**
+ * Client options for selects (id, name).
+ */
+export async function fetchClientOptions(): Promise<ClientLite[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("clients").select("id,name").order("name", { ascending: true })
+
+  if (error) {
+    console.error("Database Error (fetchClientOptions):", error)
+    throw new Error("Failed to fetch client options.")
+  }
+
+  return (data ?? []) as ClientLite[]
 }

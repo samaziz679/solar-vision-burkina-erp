@@ -12,25 +12,18 @@ function getSupabase() {
         return cookieStore.get(name)?.value
       },
       set(name: string, value: string, options: CookieOptions) {
-        try {
-          // @ts-expect-error: cookies().set may not be available in RSC
-          cookieStore.set(name, value, options as any)
-        } catch {}
+        cookieStore.set(name, value, options as any)
       },
       remove(name: string, options: CookieOptions) {
-        try {
-          // @ts-expect-error: cookies().delete may not be available in RSC
-          cookieStore.delete(name, options as any)
-        } catch {}
+        cookieStore.delete(name, options as any)
       },
-    } as any,
+    },
   })
 }
 
 export async function fetchExpenses(): Promise<Expense[]> {
   noStore()
   const supabase = getSupabase()
-
   const { data, error } = await supabase.from("expenses").select("*").order("created_at", { ascending: false })
 
   if (error) {
@@ -44,7 +37,6 @@ export async function fetchExpenses(): Promise<Expense[]> {
 export async function fetchExpenseById(id: string): Promise<Expense | null> {
   noStore()
   const supabase = getSupabase()
-
   const { data, error } = await supabase.from("expenses").select("*").eq("id", id).single()
 
   if (error) {

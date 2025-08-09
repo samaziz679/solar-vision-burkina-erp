@@ -2,6 +2,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
+import { formatMoney } from "@/lib/currency"
 
 export type InventoryProduct = {
   id: string
@@ -20,15 +21,6 @@ export type InventoryProduct = {
 
 type ProductListProps = {
   products: InventoryProduct[]
-}
-
-function currency(n: number | null) {
-  if (n == null || Number.isNaN(n)) return "—"
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n)
-  } catch {
-    return String(n)
-  }
 }
 
 export default function ProductList({ products }: ProductListProps) {
@@ -69,10 +61,10 @@ export default function ProductList({ products }: ProductListProps) {
                 <TableCell className="text-right tabular-nums">{p.quantity}</TableCell>
                 <TableCell>{p.unit ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{p.seuil_stock_bas ?? "—"}</TableCell>
-                <TableCell className="text-right">{currency(p.prix_vente_detail_1)}</TableCell>
-                <TableCell className="text-right">{currency(p.prix_vente_detail_2)}</TableCell>
-                <TableCell className="text-right">{currency(p.prix_vente_gros)}</TableCell>
-                <TableCell className="text-right">{currency(p.prix_achat)}</TableCell>
+                <TableCell className="text-right">{formatMoney(p.prix_vente_detail_1)}</TableCell>
+                <TableCell className="text-right">{formatMoney(p.prix_vente_detail_2)}</TableCell>
+                <TableCell className="text-right">{formatMoney(p.prix_vente_gros)}</TableCell>
+                <TableCell className="text-right">{formatMoney(p.prix_achat)}</TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">
                   {new Date(p.created_at).toLocaleDateString()}
                 </TableCell>

@@ -10,11 +10,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-
-function toCurrencySafe(value: unknown) {
-  const n = Number(value)
-  return Number.isFinite(n) ? n.toFixed(2) : "0.00"
-}
+import { formatMoney } from "@/lib/currency"
 
 function toIntSafe(value: unknown) {
   const n = Number(value)
@@ -62,7 +58,7 @@ export default async function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${toCurrencySafe(totalSales)}</div>
+            <div className="text-2xl font-bold">{formatMoney(totalSales)}</div>
             <p className="text-xs text-muted-foreground">Total revenue from all sales</p>
           </CardContent>
         </Card>
@@ -73,7 +69,7 @@ export default async function DashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${toCurrencySafe(totalExpenses)}</div>
+            <div className="text-2xl font-bold">{formatMoney(totalExpenses)}</div>
             <p className="text-xs text-muted-foreground">Total amount spent on expenses</p>
           </CardContent>
         </Card>

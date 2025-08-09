@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createSale } from "@/app/sales/actions"
+import { formatMoney } from "@/lib/currency"
 
 type ProductForSale = {
   id: string
@@ -20,15 +21,6 @@ type Client = { id: string; name: string }
 export type SaleFormProps = {
   products: ProductForSale[]
   clients: Client[]
-}
-
-function fmt(n: number) {
-  if (!Number.isFinite(n)) return ""
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n)
-  } catch {
-    return String(n)
-  }
 }
 
 export function SaleForm({ products, clients }: SaleFormProps) {
@@ -114,7 +106,7 @@ export function SaleForm({ products, clients }: SaleFormProps) {
                   onClick={() => setUnitPrice(Number(o.value))}
                   className="h-7"
                 >
-                  {o.label}: {fmt(Number(o.value))}
+                  {o.label}: {formatMoney(Number(o.value))}
                 </Button>
               ))}
           </div>
@@ -172,7 +164,7 @@ export function SaleForm({ products, clients }: SaleFormProps) {
         <Label>Total</Label>
         <input ref={totalRef} type="hidden" name="total_amount" />
         <div className="h-10 rounded-md border px-3 py-2 text-sm flex items-center bg-muted/30 tabular-nums">
-          {fmt(totalAmount)}
+          {formatMoney(totalAmount)}
         </div>
       </div>
 

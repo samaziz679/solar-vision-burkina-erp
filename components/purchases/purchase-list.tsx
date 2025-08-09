@@ -1,6 +1,7 @@
 "use client"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatMoney } from "@/lib/currency"
 
 type BasePurchase = {
   created_at: string
@@ -32,11 +33,6 @@ function formatDate(d: string | Date) {
   const date = typeof d === "string" ? new Date(d) : d
   if (Number.isNaN(date.getTime())) return d?.toString() ?? "N/A"
   return date.toLocaleDateString()
-}
-
-function currency(n: number) {
-  if (typeof n !== "number" || Number.isNaN(n)) return "0"
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n)
 }
 
 function safeSupplierName(row: PurchaseRow) {
@@ -76,7 +72,7 @@ function PurchaseListComponent({ data, purchases }: Props) {
                 <TableCell>{safeSupplierName(row)}</TableCell>
                 <TableCell>{safeProductName(row)}</TableCell>
                 <TableCell className="text-right">{row.quantity}</TableCell>
-                <TableCell className="text-right">{currency(row.total_amount)}</TableCell>
+                <TableCell className="text-right">{formatMoney(row.total_amount)}</TableCell>
               </TableRow>
             ))
           )}

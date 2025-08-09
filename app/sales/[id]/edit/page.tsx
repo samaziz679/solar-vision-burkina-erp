@@ -49,7 +49,7 @@ export default async function EditSalePage({ params }: { params: { id: string } 
           <CardTitle>Edit Sale</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditSaleForm sale={sale} products={products} clients={clients} />
+          <EditSaleForm initialData={sale} products={products} clients={clients} />
         </CardContent>
       </Card>
     </main>

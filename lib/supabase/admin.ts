@@ -1,34 +1,33 @@
 import "server-only"
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
-import type { Database } from "@/lib/supabase/types"
 
 /**
- * Server-only Supabase admin client (Service Role).
- * Never import this in client components.
+ * Server-only Supabase admin client (service role).
+ * Do NOT import this into client components.
  */
-let adminClient: SupabaseClient<Database> | null = null
+let adminClient: SupabaseClient | null = null
 
-export function getAdminClient(): SupabaseClient<Database> {
+export function getAdminClient(): SupabaseClient {
   if (adminClient) return adminClient
 
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""
 
-  if (!url || !key) {
-    throw new Error("Missing SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "Missing Supabase env vars for admin client (SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).",
+    )
   }
 
-  adminClient = createClient<Database>(url, key, {
+  adminClient = createClient(url, serviceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
-    },
-    global: {
-      // Ensure SSR-compatible fetch
-      fetch,
     },
   })
 
   return adminClient
 }
+
+export default getAdminClient

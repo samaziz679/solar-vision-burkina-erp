@@ -12,46 +12,47 @@ import {
 import Link from "next/link"
 import SaleForm from "@/components/sales/sale-form"
 import { getAdminClient } from "@/lib/supabase/admin"
-import { fetchClientOptions } from "@/lib/data/clients"
+import { fetchClients } from "@/lib/data/clients"
 
+// Match exactly what the SaleForm expects for products
 type ProductForSale = {
   id: string
   name: string
-  unit?: string | null
-  quantity?: number | null
-  prix_achat?: number | null
-  prix_vente_detail_1?: number | null
-  prix_vente_detail_2?: number | null
-  prix_vente_gros?: number | null
+  prix_vente_detail_1: number | null
+  prix_vente_detail_2: number | null
+  prix_vente_gros: number | null
 }
 
+type ClientOption = { id: string; name: string | null }
+
 export default async function NewSalePage() {
-  // Server-side, cookie-free reads via admin client to avoid any cookies.get issues.
+  // Cookie-free SSR read
   const supabase = getAdminClient()
 
-  // Fetch products with relevant fields for pricing/stock.
-  const { data: productsData, error: productsError } = await supabase
-    .from("products")
-    .select("id,name,unit,quantity,prix_achat,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
-    .order("name", { ascending: true })
+  const [{ data: productsData, error: productsError }, fullClients] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
+      .order("name", { ascending: true }),
+    fetchClients(),
+  ])
 
   if (productsError) {
-    console.error("Failed to load products:", productsError)
+    console.error("Failed to load products for /sales/new:", productsError)
     throw new Error("Unable to load products.")
   }
-
-  // Fetch clients as lightweight options for the dropdown.
-  const clients = await fetchClientOptions()
 
   const products: ProductForSale[] = (productsData ?? []).map((p: any) => ({
     id: String(p.id),
     name: String(p.name ?? ""),
-    unit: p.unit ?? null,
-    quantity: typeof p.quantity === "number" ? p.quantity : null,
-    prix_achat: p.prix_achat ?? null,
-    prix_vente_detail_1: p.prix_vente_detail_1 ?? null,
-    prix_vente_detail_2: p.prix_vente_detail_2 ?? null,
-    prix_vente_gros: p.prix_vente_gros ?? null,
+    prix_vente_detail_1: p.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
+    prix_vente_detail_2: p.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
+    prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
+  }))
+
+  const clients: ClientOption[] = (fullClients ?? []).map((c: any) => ({
+    id: String(c.id),
+    name: c.name ?? null,
   }))
 
   return (
@@ -81,7 +82,8 @@ export default async function NewSalePage() {
           <CardTitle>Add New Sale</CardTitle>
         </CardHeader>
         <CardContent>
-          <SaleForm products={products} clients={clients} />
+          {/* The types align with SaleForm's props: products: { id, name, prix_* }[], clients: { id, name }[] */}
+          <SaleForm products={products} clients={clients as any} />
         </CardContent>
       </Card>
     </main>

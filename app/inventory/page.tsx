@@ -19,7 +19,7 @@ export default async function InventoryPage() {
     .order("created_at", { ascending: false })
 
   // Fall back to empty array on error
-  const products = (data ?? []) as InventoryProduct[]
+  const products = (data ?? []) as unknown as InventoryProduct[]
 
   return (
     <main className="flex-1 p-6">

@@ -26,19 +26,13 @@ export default async function DashboardPage() {
   let userEmail: string | null = null
 
   try {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (!error && user) {
-      userEmail = user.email ?? null
-    }
+    const { data, error } = await supabase.auth.getUser()
+    if (!error && data?.user) userEmail = data.user.email ?? null
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error("dashboard: auth.getUser failed", e)
   }
 
-  // fetchCardData is resilient and never throws
+  // Resilient: returns zeros on failure; never throws
   const { totalSales, totalExpenses, totalProducts } = await fetchCardData()
 
   return (
@@ -60,6 +54,7 @@ export default async function DashboardPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -71,6 +66,7 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">Total revenue from all sales</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
@@ -81,6 +77,7 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">Total amount spent on expenses</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Products in Stock</CardTitle>

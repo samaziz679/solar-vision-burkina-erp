@@ -1,65 +1,43 @@
 import { NextResponse } from "next/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
-import { createClient as createServerClient } from "@/lib/supabase/server"
+import { createClient as createSSRClient } from "@/lib/supabase/server"
 
+// Lightweight diagnostics to help verify env and DB connectivity in Production.
 export async function GET() {
   const env = {
     NEXT_PUBLIC_SUPABASE_URL: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
     SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    NODE_ENV: process.env.NODE_ENV,
   }
 
-  // Prefer Service Role for a server-only health check
-  const useService = Boolean(process.env.SUPABASE_URL) && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
-
-  const connectivity: {
-    ok: boolean
-    source: "service-role" | "server-client"
-    details?: unknown
-    countProducts?: number | null
-  } = {
-    ok: false,
-    source: useService ? "service-role" : "server-client",
-    countProducts: null,
-  }
+  const report: Record<string, unknown> = { env, checks: {} }
 
   try {
-    if (useService) {
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
       const admin = createAdminClient(
         process.env.SUPABASE_URL as string,
         process.env.SUPABASE_SERVICE_ROLE_KEY as string,
         { auth: { persistSession: false, autoRefreshToken: false } },
       )
-
       const { count, error } = await admin.from("products").select("*", { head: true, count: "exact" })
-
-      if (error) throw error
-      connectivity.ok = true
-      connectivity.countProducts = typeof count === "number" ? count : null
+      report.checks = { mode: "service-role", productsCount: count ?? null, error: error?.message ?? null }
     } else {
-      // Fallback to the SSR client
-      const client = createServerClient()
-      const { data: authData } = await client.auth.getUser()
-      const { count, error } = await client.from("products").select("*", { head: true, count: "exact" })
-
-      if (error) throw error
-      connectivity.ok = true
-      connectivity.countProducts = typeof count === "number" ? count : null
-      connectivity.details = { hasSession: Boolean(authData?.user) }
+      const ssr = createSSRClient()
+      const { data: auth } = await ssr.auth.getUser()
+      const { count, error } = await ssr.from("products").select("*", { head: true, count: "exact" })
+      report.checks = {
+        mode: "ssr",
+        hasUser: Boolean(auth?.user),
+        productsCount: count ?? null,
+        error: error?.message ?? null,
+      }
     }
-  } catch (e) {
-    connectivity.details = {
-      error: e instanceof Error ? { name: e.name, message: e.message, stack: e.stack } : String(e),
-    }
+  } catch (e: any) {
+    report.error = e?.message ?? String(e)
   }
 
-  return NextResponse.json(
-    {
-      env,
-      connectivity,
-      timestamp: new Date().toISOString(),
-    },
-    { status: connectivity.ok ? 200 : 500 },
-  )
+  const ok = !(report as any).error && !(report.checks as any)?.error
+  return NextResponse.json(report, { status: ok ? 200 : 500 })
 }

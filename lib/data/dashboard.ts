@@ -4,10 +4,10 @@ import { createClient as createServerClient } from "@/lib/supabase/server"
 
 type AnyRow = Record<string, unknown>
 
-function pickFirstNumber(row: AnyRow, keys: string[]): number {
+function numberFrom(row: AnyRow, keys: string[]): number {
   for (const k of keys) {
-    if (k in row) {
-      const v = row[k]
+    if (Object.prototype.hasOwnProperty.call(row, k)) {
+      const v = (row as AnyRow)[k]
       const n = typeof v === "number" ? v : Number(v)
       if (Number.isFinite(n)) return n
     }
@@ -15,10 +15,12 @@ function pickFirstNumber(row: AnyRow, keys: string[]): number {
   return 0
 }
 
-async function selectAll<T extends AnyRow>(table: string): Promise<{ rows: T[]; ok: boolean }> {
-  // Prefer Service Role for server-side aggregates (bypass RLS safely on server).
+/**
+ * Prefer a server-only Service Role client for reliable aggregates (bypasses RLS).
+ * Falls back to the regular SSR client if Service Role is not configured.
+ */
+async function selectAll<T extends AnyRow>(table: string): Promise<T[]> {
   const hasService = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
-
   try {
     if (hasService) {
       const admin = createAdminClient(
@@ -28,33 +30,30 @@ async function selectAll<T extends AnyRow>(table: string): Promise<{ rows: T[]; 
       )
       const { data, error } = await admin.from(table).select("*")
       if (error) {
-        // eslint-disable-next-line no-console
-        console.warn(`dashboard: ${table} query failed (service-role)`, error)
-        return { rows: [], ok: false }
+        console.warn(`dashboard: service-role select failed for table=${table}`, error) // do not throw
+        return []
       }
-      return { rows: (data ?? []) as T[], ok: true }
+      return (data ?? []) as T[]
     }
 
-    // Fallback to SSR client (requires RLS policies to allow read)
-    const supabase = createServerClient()
-    const { data, error } = await supabase.from(table).select("*")
+    // Fallback: SSR client (requires RLS allowing read access)
+    const client = createServerClient()
+    const { data, error } = await client.from(table).select("*")
     if (error) {
-      // eslint-disable-next-line no-console
-      console.warn(`dashboard: ${table} query failed (server-client)`, error)
-      return { rows: [], ok: false }
+      console.warn(`dashboard: ssr select failed for table=${table}`, error) // do not throw
+      return []
     }
-    return { rows: (data ?? []) as T[], ok: true }
+    return (data ?? []) as T[]
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(`dashboard: unexpected failure selecting from ${table}`, e)
-    return { rows: [], ok: false }
+    console.error(`dashboard: unexpected failure selecting from ${table}`, e) // do not throw
+    return []
   }
 }
 
 /**
- * Fetch totals for dashboard cards. This function is resilient:
- * - flexible column detection
- * - never throws; returns 0s on error
+ * Fetch totals for dashboard cards.
+ * Resilient to schema differences (e.g., total vs total_amount).
+ * Never throws — returns 0s on error to keep the page rendering.
  */
 export async function fetchCardData(): Promise<{
   totalSales: number
@@ -63,33 +62,22 @@ export async function fetchCardData(): Promise<{
 }> {
   noStore()
 
+  // Detect-and-sum patterns for common column names.
+  const salesKeys = ["total_amount", "total", "grand_total", "total_price", "amount"]
+  const expenseKeys = ["amount", "total", "value", "expense_amount", "cost"]
+  const productQtyKeys = ["stock_quantity", "quantity", "stock", "in_stock", "qty"]
+
   // Sales
-  const salesCols = ["total_amount", "total", "grand_total", "total_price", "amount"]
-  let totalSales = 0
-  {
-    const { rows } = await selectAll("sales")
-    totalSales = rows.reduce((sum, row) => sum + pickFirstNumber(row, salesCols), 0)
-  }
+  const salesRows = await selectAll("sales")
+  const totalSales = salesRows.reduce((sum, row) => sum + numberFrom(row, salesKeys), 0)
 
   // Expenses
-  const expenseCols = ["amount", "total", "value", "expense_amount", "cost"]
-  let totalExpenses = 0
-  {
-    const { rows } = await selectAll("expenses")
-    totalExpenses = rows.reduce((sum, row) => sum + pickFirstNumber(row, expenseCols), 0)
-  }
+  const expenseRows = await selectAll("expenses")
+  const totalExpenses = expenseRows.reduce((sum, row) => sum + numberFrom(row, expenseKeys), 0)
 
-  // Products (sum stock quantities)
-  const productQtyCols = ["stock_quantity", "quantity", "stock", "in_stock", "qty"]
-  let totalProducts = 0
-  {
-    const { rows } = await selectAll("products")
-    totalProducts = rows.reduce((sum, row) => sum + pickFirstNumber(row, productQtyCols), 0)
-  }
+  // Products (sum quantities)
+  const productRows = await selectAll("products")
+  const totalProducts = productRows.reduce((sum, row) => sum + numberFrom(row, productQtyKeys), 0)
 
-  return {
-    totalSales,
-    totalExpenses,
-    totalProducts,
-  }
+  return { totalSales, totalExpenses, totalProducts }
 }

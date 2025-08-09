@@ -1,5 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { getAdminClient } from "@/lib/supabase/admin"
 import type { Client } from "../supabase/types"
 
 /**
@@ -8,7 +8,7 @@ import type { Client } from "../supabase/types"
  */
 export async function fetchClients(): Promise<Client[]> {
   noStore()
-  const supabase = createClient()
+  const supabase = getAdminClient()
 
   const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
 
@@ -25,7 +25,7 @@ export async function fetchClients(): Promise<Client[]> {
  */
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
-  const supabase = createClient()
+  const supabase = getAdminClient()
 
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
 

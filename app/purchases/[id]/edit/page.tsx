@@ -1,5 +1,6 @@
-import { fetchPurchaseById } from "@/lib/data/purchases"
-import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -10,12 +11,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import { fetchPurchaseById } from "@/lib/data/purchases"
 import { fetchProductsForPurchaseForm } from "@/lib/data/products"
 import { fetchSuppliersForPurchaseForm } from "@/lib/data/suppliers"
+import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
   const id = params.id
-
   const [purchase, products, suppliers] = await Promise.all([
     fetchPurchaseById(id),
     fetchProductsForPurchaseForm(),
@@ -47,12 +49,13 @@ export default async function EditPurchasePage({ params }: { params: { id: strin
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
       <Card>
         <CardHeader>
           <CardTitle>Edit Purchase</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
+          <EditPurchaseForm purchase={purchase} products={products} suppliers={suppliers} />
         </CardContent>
       </Card>
     </main>

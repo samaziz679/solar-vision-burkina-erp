@@ -10,11 +10,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchPrerequisitesForPurchaseForm } from "@/lib/data/purchases"
+import { fetchProductsForPurchaseForm } from "@/lib/data/products"
+import { fetchSuppliersForPurchaseForm } from "@/lib/data/suppliers"
 import PurchaseForm from "@/components/purchases/purchase-form"
 
 export default async function NewPurchasePage() {
-  const { products, suppliers } = await fetchPrerequisitesForPurchaseForm()
+  const [products, suppliers] = await Promise.all([fetchProductsForPurchaseForm(), fetchSuppliersForPurchaseForm()])
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">

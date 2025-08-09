@@ -3,11 +3,21 @@ import { unstable_noStore as noStore } from "next/cache"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Product } from "@/lib/supabase/types"
 
-export type ProductForSale = Pick<
-  Product,
-  "id" | "name" | "prix_vente_detail_1" | "prix_vente_detail_2" | "prix_vente_gros"
->
-export type ProductForPurchase = Pick<Product, "id" | "name" | "prix_achat">
+// Explicitly define the shape for the Sale Form
+export type ProductForSale = {
+  id: string
+  name: string
+  prix_vente_detail_1: number | null
+  prix_vente_detail_2: number | null
+  prix_vente_gros: number | null
+}
+
+// Explicitly define the shape for the Purchase Form
+export type ProductForPurchase = {
+  id: string
+  name: string
+  prix_achat: number | null
+}
 
 export async function fetchProductsForSaleForm(): Promise<ProductForSale[]> {
   noStore()
@@ -22,7 +32,14 @@ export async function fetchProductsForSaleForm(): Promise<ProductForSale[]> {
     throw new Error("Failed to fetch products for sale form.")
   }
 
-  return (data ?? []).map((p) => ({ ...p, id: String(p.id), name: p.name ?? "" }))
+  // Ensure correct types on return
+  return (data ?? []).map((p) => ({
+    id: String(p.id),
+    name: p.name ?? "",
+    prix_vente_detail_1: p.prix_vente_detail_1 as number | null,
+    prix_vente_detail_2: p.prix_vente_detail_2 as number | null,
+    prix_vente_gros: p.prix_vente_gros as number | null,
+  }))
 }
 
 export async function fetchProductsForPurchaseForm(): Promise<ProductForPurchase[]> {
@@ -38,7 +55,12 @@ export async function fetchProductsForPurchaseForm(): Promise<ProductForPurchase
     throw new Error("Failed to fetch products for purchase form.")
   }
 
-  return (data ?? []).map((p) => ({ ...p, id: String(p.id), name: p.name ?? "" }))
+  // Ensure correct types on return
+  return (data ?? []).map((p) => ({
+    id: String(p.id),
+    name: p.name ?? "",
+    prix_achat: p.prix_achat as number | null,
+  }))
 }
 
 export async function fetchProducts(): Promise<Product[]> {
@@ -60,6 +82,7 @@ export async function fetchProductById(id: string): Promise<Product | null> {
   const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
 
   if (error) {
+    // It's common for a single record not to be found, so we can return null gracefully.
     if (error.code === "PGRST116") {
       return null
     }

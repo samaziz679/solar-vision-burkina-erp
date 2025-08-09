@@ -49,7 +49,7 @@ export default async function EditPurchasePage({ params }: { params: { id: strin
           <CardTitle>Edit Purchase</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditPurchaseForm purchase={purchase} products={products} suppliers={suppliers} />
+          <EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
         </CardContent>
       </Card>
     </main>

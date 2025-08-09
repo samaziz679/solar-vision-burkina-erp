@@ -21,7 +21,13 @@ type ProductForSale = {
   prix_vente_gros: number | null
 }
 
-// Note: We will pass full client rows to match SaleForm's type expectations.
+type ClientRow = {
+  id: string
+  name: string
+  // keep extra columns returned by * but they are ignored by SaleForm
+  [k: string]: any
+}
+
 export default async function NewSalePage() {
   const supabase = getAdminClient()
 
@@ -30,11 +36,7 @@ export default async function NewSalePage() {
       .from("products")
       .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
       .order("name", { ascending: true }),
-    // Fetch full client rows so typing matches SaleForm's props (Client[])
-    supabase
-      .from("clients")
-      .select("*")
-      .order("name", { ascending: true }),
+    supabase.from("clients").select("*").order("name", { ascending: true }),
   ])
 
   if (productsError) {
@@ -54,8 +56,11 @@ export default async function NewSalePage() {
     prix_vente_gros: p?.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
   }))
 
-  // Pass as-is to SaleForm to satisfy its typing (expected Client[]).
-  const clients = clientsData ?? []
+  const clients: ClientRow[] = (clientsData ?? []).map((c: any) => ({
+    id: String(c.id),
+    name: String(c?.name ?? ""),
+    ...c,
+  }))
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">

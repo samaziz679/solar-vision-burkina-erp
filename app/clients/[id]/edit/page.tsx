@@ -12,10 +12,9 @@ import {
 import Link from "next/link"
 import type { SearchParams } from "@/lib/utils/safe-params"
 
-// Ensure no use of searchParams.get() — if you need query hints later, use safe helpers.
 export default async function EditClientPage({
   params,
-  // Keep searchParams in signature to avoid accidental global usage patterns
+  // keep optional but never call .get on it
   searchParams,
 }: {
   params: { id: string }

@@ -1,8 +1,8 @@
 export type SearchParams = Record<string, string | string[] | undefined>
 
 /**
- * Safely read a string value from Next.js App Router searchParams (server-side).
- * searchParams in server components is a plain object, not URLSearchParams.
+ * Safely read a string from Next.js App Router searchParams (server-side).
+ * searchParams is a plain object on the server, not URLSearchParams.
  */
 export function pickParam(sp: SearchParams | undefined, key: string): string | null {
   const v = sp?.[key]
@@ -11,7 +11,7 @@ export function pickParam(sp: SearchParams | undefined, key: string): string | n
 }
 
 /**
- * Safely read a number value (returns null if missing or invalid).
+ * Safely read a number from searchParams. Returns null if missing/invalid.
  */
 export function pickNumber(sp: SearchParams | undefined, key: string): number | null {
   const s = pickParam(sp, key)

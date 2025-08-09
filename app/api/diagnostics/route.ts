@@ -1,5 +1,4 @@
 import "server-only"
-
 import { NextResponse } from "next/server"
 import { getAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
@@ -23,7 +22,7 @@ export async function GET() {
     }
   }
 
-  // Validate the RSC Supabase client (uses the cookies adapter we fixed)
+  // Validate the RSC Supabase client (uses the cookies adapter)
   let rscClientCheck: { ok: boolean; error: string | null } = { ok: true, error: null }
   try {
     const supabase = createClient()

@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -21,11 +24,17 @@ export type ProductForSale = {
 }
 
 export default async function NewSalePage() {
+  // Fetch products directly with Supabase
   const supabase = createClient()
-  const { data: productsData } = await supabase
+  const { data: productsData, error: productsError } = await supabase
     .from("products")
     .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
     .order("name", { ascending: true })
+
+  if (productsError) {
+    console.error("Products query error:", productsError)
+    throw new Error("Failed to load products for the sale form.")
+  }
 
   const products: ProductForSale[] =
     (productsData ?? []).map((p: any) => ({
@@ -36,6 +45,7 @@ export default async function NewSalePage() {
       prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
     })) ?? []
 
+  // Fetch clients via data module (uses noStore)
   const clients = await fetchClients()
 
   return (

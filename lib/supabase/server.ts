@@ -2,16 +2,14 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 /**
- * Server-side Supabase client for App Router (RSC/Route Handlers).
+ * Server-side Supabase client for App Router (RSC/Route Handlers/Actions).
  *
- * Why this shape?
- * - @supabase/ssr expects a cookies adapter with get/set/remove in many versions.
- * - In React Server Components you cannot mutate cookies during render, so set/remove are no-ops here.
- * - Do cookie mutations in Route Handlers or Server Actions with NextResponse instead.
+ * Universal cookies adapter:
+ * - Exposes both get/set/remove and getAll/setAll to be compatible across @supabase/ssr versions.
+ * - set/remove/setAll are NO-OPs in RSC to avoid mutating headers during render.
+ *   Perform cookie mutations in Route Handlers or Server Actions with NextResponse.
  */
 export function createClient() {
-  const cookieStore = cookies()
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -23,17 +21,32 @@ export function createClient() {
 
   return createServerClient(url, anon, {
     cookies: {
+      // Newer API shape on some @supabase/ssr paths
       get(name: string) {
-        // Read cookie value safely in RSC
         try {
-          return cookieStore.get(name)?.value
+          return cookies().get(name)?.value
         } catch {
           return undefined
         }
       },
-      // No-ops in RSC render path
-      set(_name: string, _value: string, _options: CookieOptions) {},
-      remove(_name: string, _options: CookieOptions) {},
+      set(_name: string, _value: string, _options: CookieOptions) {
+        // no-op in RSC
+      },
+      remove(_name: string, _options: CookieOptions) {
+        // no-op in RSC
+      },
+
+      // Older / alternative API shape used in some environments
+      getAll() {
+        try {
+          return cookies().getAll()
+        } catch {
+          return []
+        }
+      },
+      setAll(_cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        // no-op in RSC
+      },
     } as any,
   })
 }

@@ -4,7 +4,7 @@ import type { Client } from "../supabase/types"
 
 /**
  * Fetch all clients ordered by creation date (desc).
- * Uses the shared Supabase server client with a correct cookies adapter.
+ * Uses the shared Supabase server client with a universal cookies adapter.
  */
 export async function fetchClients(): Promise<Client[]> {
   noStore()

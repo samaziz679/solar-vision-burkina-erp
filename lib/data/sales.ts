@@ -1,22 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache"
-import { cookies } from "next/headers"
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/server"
 import type { Sale } from "@/lib/supabase/types"
-
-function getSupabase() {
-  const cookieStore = cookies()
-  const cookieMethods = {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(_name: string, _value: string, _options: CookieOptions) {},
-    remove(_name: string, _options: CookieOptions) {},
-  }
-  // Use anon key; RLS should allow reads for authenticated users.
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: cookieMethods as any,
-  })
-}
 
 // Normalize a database row into the exact Sale type shape
 function normalizeSale(row: any): Sale {
@@ -34,7 +18,7 @@ function normalizeSale(row: any): Sale {
 
 export async function fetchSales(): Promise<Sale[]> {
   noStore()
-  const supabase = getSupabase()
+  const supabase = createClient()
   const { data, error } = await supabase.from("sales").select("*").order("id", { ascending: false })
 
   if (error) {
@@ -48,7 +32,7 @@ export async function fetchSales(): Promise<Sale[]> {
 
 export async function fetchSaleById(id: string): Promise<Sale | null> {
   noStore()
-  const supabase = getSupabase()
+  const supabase = createClient()
   const { data, error } = await supabase.from("sales").select("*").eq("id", id).maybeSingle()
 
   if (error) {

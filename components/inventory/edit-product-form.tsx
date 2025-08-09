@@ -1,40 +1,71 @@
 "use client"
 
-import { useFormState } from "react-dom"
+import type React from "react"
+
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { updateProduct, type State } from "@/app/inventory/actions"
+import { updateProduct } from "@/app/inventory/actions"
 import type { Product } from "@/lib/supabase/types"
 import { toast } from "sonner"
+
+type FieldErrors = Partial<Record<"name" | "description" | "price" | "stock_quantity" | "sku", string[]>>
 
 interface EditProductFormProps {
   product: Product
 }
 
 export default function EditProductForm({ product }: EditProductFormProps) {
-  const initialState: State = { message: null, errors: {} }
-  const updateProductWithId = updateProduct.bind(null, product.id)
-  const [state, formAction] = useFormState(updateProductWithId, initialState)
+  const [errors, setErrors] = useState<FieldErrors>({})
+  const [pending, setPending] = useState(false)
 
-  if (state?.message) {
-    if (state.message.includes("Failed")) {
-      toast.error(state.message)
-    } else {
-      toast.success(state.message)
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setPending(true)
+    setErrors({})
+
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    // Ensure id is present
+    formData.set("id", product.id)
+
+    try {
+      // updateProduct was previously used with useFormState via .bind(null, product.id)
+      // Its signature is typically (id, prevState, formData). We pass undefined for prevState.
+      const result = await (updateProduct as unknown as (id: string, _prev: unknown, fd: FormData) => Promise<any>)(
+        product.id,
+        undefined,
+        formData,
+      )
+
+      if (result?.errors) {
+        setErrors(result.errors as FieldErrors)
+        if (result.message) toast.error(result.message)
+      } else if (result?.message) {
+        // Some actions return an error message without field errors
+        toast.error(result.message)
+      } else {
+        toast.success("Product updated successfully!")
+      }
+    } catch (err) {
+      toast.error("Failed to update product.")
+      console.error(err)
+    } finally {
+      setPending(false)
     }
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="id" value={product.id} />
       <div className="grid gap-2">
         <Label htmlFor="name">Product Name</Label>
         <Input id="name" name="name" type="text" defaultValue={product.name} required aria-describedby="name-error" />
-        {state?.errors?.name && (
+        {errors.name && (
           <div id="name-error" aria-live="polite" className="text-sm text-red-500">
-            {state.errors.name.map((error: string) => (
+            {errors.name.map((error) => (
               <p key={error}>{error}</p>
             ))}
           </div>
@@ -48,9 +79,9 @@ export default function EditProductForm({ product }: EditProductFormProps) {
           defaultValue={product.description || ""}
           aria-describedby="description-error"
         />
-        {state?.errors?.description && (
+        {errors.description && (
           <div id="description-error" aria-live="polite" className="text-sm text-red-500">
-            {state.errors.description.map((error: string) => (
+            {errors.description.map((error) => (
               <p key={error}>{error}</p>
             ))}
           </div>
@@ -67,9 +98,9 @@ export default function EditProductForm({ product }: EditProductFormProps) {
           required
           aria-describedby="price-error"
         />
-        {state?.errors?.price && (
+        {errors.price && (
           <div id="price-error" aria-live="polite" className="text-sm text-red-500">
-            {state.errors.price.map((error: string) => (
+            {errors.price.map((error) => (
               <p key={error}>{error}</p>
             ))}
           </div>
@@ -85,9 +116,9 @@ export default function EditProductForm({ product }: EditProductFormProps) {
           required
           aria-describedby="stock-quantity-error"
         />
-        {state?.errors?.stock_quantity && (
+        {errors.stock_quantity && (
           <div id="stock-quantity-error" aria-live="polite" className="text-sm text-red-500">
-            {state.errors.stock_quantity.map((error: string) => (
+            {errors.stock_quantity.map((error) => (
               <p key={error}>{error}</p>
             ))}
           </div>
@@ -96,16 +127,16 @@ export default function EditProductForm({ product }: EditProductFormProps) {
       <div className="grid gap-2">
         <Label htmlFor="sku">SKU</Label>
         <Input id="sku" name="sku" type="text" defaultValue={product.sku || ""} aria-describedby="sku-error" />
-        {state?.errors?.sku && (
+        {errors.sku && (
           <div id="sku-error" aria-live="polite" className="text-sm text-red-500">
-            {state.errors.sku.map((error: string) => (
+            {errors.sku.map((error) => (
               <p key={error}>{error}</p>
             ))}
           </div>
         )}
       </div>
-      <Button type="submit" className="w-full">
-        Update Product
+      <Button type="submit" className="w-full" disabled={pending}>
+        {pending ? "Updating..." : "Update Product"}
       </Button>
     </form>
   )

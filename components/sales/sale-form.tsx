@@ -1,110 +1,153 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatCurrency, getActiveCurrency } from "@/lib/currency"
-import { createSale } from "@/app/sales/actions"
+import { formatMoney, getActiveCurrency, formatAmount } from "@/lib/currency"
 
-type Product = {
+// Minimal shapes expected by the form
+export type ProductForSale = {
   id: string
   name: string
-  quantity?: number | null
-  prix_vente_detail_1?: number | null
-  prix_vente_detail_2?: number | null
-  prix_vente_gros?: number | null
+  prix_vente_detail_1: number | null
+  prix_vente_detail_2: number | null
+  prix_vente_gros: number | null
 }
 
-type Client = { id: string; name: string }
+export type ClientOption = {
+  id: string
+  name: string | null
+}
 
 type Props = {
-  products: Product[]
-  clients: Client[]
+  products: ProductForSale[]
+  clients: ClientOption[]
+  // Optional: if you wire a server action, you can pass it in and cast on the page.
+  action?: (formData: FormData) => Promise<any>
 }
 
-export default function SaleForm({ products, clients }: Props) {
-  const [productId, setProductId] = useState<string>("")
-  const [clientId, setClientId] = useState<string>("")
-  const [qty, setQty] = useState<number>(1)
+export function SaleForm({ products = [], clients = [], action }: Props) {
+  const [productId, setProductId] = useState(products[0]?.id ?? "")
+  const [clientId, setClientId] = useState(clients[0]?.id ?? "")
+  const [quantity, setQuantity] = useState<number>(1)
   const [unitPrice, setUnitPrice] = useState<number>(0)
+  const [saleDate, setSaleDate] = useState<string>(() => {
+    const d = new Date()
+    // yyyy-mm-dd
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  })
 
   const currency = getActiveCurrency()
 
-  const selectedProduct = useMemo(() => products.find((p) => p.id === productId), [products, productId])
+  const selectedProduct = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId])
 
-  const total = useMemo(() => {
-    const q = Number.isFinite(Number(qty)) ? Number(qty) : 0
-    const u = Number.isFinite(Number(unitPrice)) ? Number(unitPrice) : 0
-    return q * u
-  }, [qty, unitPrice])
-
-  const tierPrices = useMemo(() => {
-    const d1 = Number(selectedProduct?.prix_vente_detail_1 ?? Number.NaN)
-    const d2 = Number(selectedProduct?.prix_vente_detail_2 ?? Number.NaN)
-    const gros = Number(selectedProduct?.prix_vente_gros ?? Number.NaN)
-    return {
-      d1: Number.isFinite(d1) ? d1 : undefined,
-      d2: Number.isFinite(d2) ? d2 : undefined,
-      gros: Number.isFinite(gros) ? gros : undefined,
-    }
+  // Set an initial unit price when product changes (prefer detail_1, else detail_2, else gros)
+  useEffect(() => {
+    if (!selectedProduct) return
+    const { prix_vente_detail_1, prix_vente_detail_2, prix_vente_gros } = selectedProduct
+    const firstAvailable =
+      prix_vente_detail_1 ?? undefined ?? prix_vente_detail_2 ?? undefined ?? prix_vente_gros ?? undefined
+    setUnitPrice(firstAvailable != null ? Number(firstAvailable) : 0)
   }, [selectedProduct])
 
-  const formAction = createSale as unknown as string
+  const total = useMemo(() => {
+    const q = Number(quantity)
+    const u = Number(unitPrice)
+    if (!Number.isFinite(q) || !Number.isFinite(u)) return 0
+    return Math.max(0, q) * Math.max(0, u)
+  }, [quantity, unitPrice])
+
+  function pickPrice(val: number | null) {
+    if (val == null) return
+    setUnitPrice(Number(val))
+  }
+
+  const onSubmit = action ? (action as unknown as (formData: FormData) => void) : undefined
 
   return (
-    <form action={formAction} className="space-y-4">
-      {/* Hidden fields that server action expects */}
-      <input type="hidden" name="product_id" value={productId} />
-      <input type="hidden" name="client_id" value={clientId} />
-      <input type="hidden" name="total_amount" value={total} />
-
+    <form action={onSubmit} className="grid gap-6">
+      {/* Product */}
       <div className="grid gap-2">
-        <Label>Product</Label>
-        <Select
+        <Label htmlFor="product_id">Product</Label>
+        <select
+          id="product_id"
+          name="product_id"
+          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
           value={productId}
-          onValueChange={(v) => {
-            setProductId(v)
-            // When changing product, if tier1 exists use it as a sensible default
-            const next = products.find((p) => p.id === v)
-            const def =
-              Number(next?.prix_vente_detail_1 ?? Number.NaN) ||
-              Number(next?.prix_vente_detail_2 ?? Number.NaN) ||
-              Number(next?.prix_vente_gros ?? Number.NaN) ||
-              0
-            setUnitPrice(def)
-          }}
+          onChange={(e) => setProductId(e.target.value)}
+          required
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select product" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
+          {products.length === 0 ? (
+            <option value="">No products</option>
+          ) : (
+            products.map((p) => (
+              <option key={p.id} value={p.id}>
                 {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              </option>
+            ))
+          )}
+        </select>
+        {selectedProduct ? (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={selectedProduct.prix_vente_detail_1 == null}
+              onClick={() => pickPrice(selectedProduct.prix_vente_detail_1)}
+            >
+              Detail 1: {formatMoney(selectedProduct.prix_vente_detail_1)}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={selectedProduct.prix_vente_detail_2 == null}
+              onClick={() => pickPrice(selectedProduct.prix_vente_detail_2)}
+            >
+              Detail 2: {formatMoney(selectedProduct.prix_vente_detail_2)}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={selectedProduct.prix_vente_gros == null}
+              onClick={() => pickPrice(selectedProduct.prix_vente_gros)}
+            >
+              Wholesale: {formatMoney(selectedProduct.prix_vente_gros)}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
+      {/* Client */}
       <div className="grid gap-2">
-        <Label>Client</Label>
-        <Select value={clientId} onValueChange={setClientId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label htmlFor="client_id">Client</Label>
+        <select
+          id="client_id"
+          name="client_id"
+          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value={clientId}
+          onChange={(e) => setClientId(e.target.value)}
+          required
+        >
+          {clients.length === 0 ? (
+            <option value="">No clients</option>
+          ) : (
+            <>
+              <option value="">Select client</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name ?? "Unnamed"}
+                </option>
+              ))}
+            </>
+          )}
+        </select>
       </div>
 
+      {/* Quantity */}
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantity</Label>
         <Input
@@ -112,71 +155,64 @@ export default function SaleForm({ products, clients }: Props) {
           name="quantity"
           type="number"
           min={1}
-          value={qty}
-          onChange={(e) => setQty(Number(e.target.value))}
+          step={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          required
+          inputMode="numeric"
+        />
+      </div>
+
+      {/* Unit Price (free input) */}
+      <div className="grid gap-2">
+        <Label htmlFor="unit_price">Unit Price</Label>
+        <Input
+          id="unit_price"
+          name="unit_price"
+          type="number"
+          step={currency === "XOF" ? 1 : 0.01}
+          min={0}
+          value={unitPrice}
+          onChange={(e) => setUnitPrice(Number(e.target.value))}
+          inputMode="decimal"
+          placeholder={formatAmount(0)}
+        />
+        <p className="text-xs text-muted-foreground">
+          You can enter any price or use the buttons above to pick Detail 1 / Detail 2 / Wholesale.
+        </p>
+      </div>
+
+      {/* Sale Date */}
+      <div className="grid gap-2">
+        <Label htmlFor="sale_date">Sale Date</Label>
+        <Input
+          id="sale_date"
+          name="sale_date"
+          type="date"
+          value={saleDate}
+          onChange={(e) => setSaleDate(e.target.value)}
           required
         />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Unit Price ({currency})</Label>
-        <Input
-          id="unit_price"
-          type="number"
-          step="0.01"
-          value={Number.isFinite(Number(unitPrice)) ? unitPrice : 0}
-          onChange={(e) => setUnitPrice(Number(e.target.value))}
-          placeholder="Enter any unit price"
-        />
-        {selectedProduct && (tierPrices.d1 || tierPrices.d2 || tierPrices.gros) ? (
-          <div className="flex flex-wrap gap-2">
-            {tierPrices.d1 !== undefined && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setUnitPrice(tierPrices.d1!)}
-                title={`Detail 1: ${formatCurrency(tierPrices.d1, currency)}`}
-              >
-                Use Detail 1 ({formatCurrency(tierPrices.d1, currency)})
-              </Button>
-            )}
-            {tierPrices.d2 !== undefined && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setUnitPrice(tierPrices.d2!)}
-                title={`Detail 2: ${formatCurrency(tierPrices.d2, currency)}`}
-              >
-                Use Detail 2 ({formatCurrency(tierPrices.d2, currency)})
-              </Button>
-            )}
-            {tierPrices.gros !== undefined && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setUnitPrice(tierPrices.gros!)}
-                title={`Gross: ${formatCurrency(tierPrices.gros, currency)}`}
-              >
-                Use Gross ({formatCurrency(tierPrices.gros, currency)})
-              </Button>
-            )}
-          </div>
-        ) : null}
-      </div>
-
+      {/* Computed total (read-only display) */}
       <div className="grid gap-1">
         <Label>Total</Label>
-        <div className="text-lg font-semibold">{formatCurrency(total, currency)}</div>
+        <div className="h-10 rounded-md border border-input bg-muted/30 px-3 py-2 text-sm flex items-center justify-between">
+          <span className="text-muted-foreground">Quantity × Unit Price</span>
+          <span className="font-semibold tabular-nums">{formatMoney(total)}</span>
+        </div>
+        {/* Hidden actual numeric field that server action/route can read */}
+        <input type="hidden" name="total_amount" value={total} />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="sale_date">Sale Date</Label>
-        <Input id="sale_date" name="sale_date" type="date" required />
+      <div className="pt-2">
+        <Button type="submit" className="w-full">
+          Create Sale
+        </Button>
       </div>
-
-      <Button type="submit" className="w-full">
-        Create Sale
-      </Button>
     </form>
   )
 }
+
+export default SaleForm

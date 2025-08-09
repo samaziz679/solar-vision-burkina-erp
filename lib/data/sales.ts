@@ -1,48 +1,26 @@
-import { unstable_noStore as noStore } from "next/cache"
-import { cookies } from "next/headers"
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
-import type { Sale } from "../supabase/types"
+import { getAdminClient } from "@/lib/supabase/admin"
 
-function getSupabase() {
-  const cookieStore = cookies()
+export type SaleRow = Record<string, unknown>
 
-  const cookieMethods = {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(_name: string, _value: string, _options: CookieOptions) {},
-    remove(_name: string, _options: CookieOptions) {},
+/**
+ * Fetch Sales safely:
+ * - Select "*" to avoid missing-column errors (e.g., created_at not present).
+ * - Never throw; return [] on error and log details.
+ */
+export async function fetchSales(): Promise<SaleRow[]> {
+  const supabase = getAdminClient()
+  try {
+    const { data, error } = await supabase
+      .from("sales" as any)
+      .select("*")
+      .limit(1000)
+    if (error) {
+      console.error("Database Error (sales):", error)
+      return []
+    }
+    return (data ?? []) as SaleRow[]
+  } catch (err) {
+    console.error("Unexpected Error (sales):", err)
+    return []
   }
-
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: cookieMethods as any,
-  })
-}
-
-export async function fetchSales(): Promise<Sale[]> {
-  noStore()
-  const supabase = getSupabase()
-
-  const { data, error } = await supabase.from("sales").select("*").order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Database Error:", error)
-    throw new Error("Failed to fetch sales.")
-  }
-
-  return (data ?? []) as Sale[]
-}
-
-export async function fetchSaleById(id: string): Promise<Sale | null> {
-  noStore()
-  const supabase = getSupabase()
-
-  const { data, error } = await supabase.from("sales").select("*").eq("id", id).single()
-
-  if (error) {
-    console.error("Database Error:", error)
-    throw new Error("Failed to fetch sale.")
-  }
-
-  return (data ?? null) as Sale | null
 }

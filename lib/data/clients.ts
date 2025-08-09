@@ -5,19 +5,6 @@ import type { Client } from "@/lib/supabase/types"
 
 export type ClientOption = Pick<Client, "id" | "name">
 
-export async function fetchClientsForSaleForm(): Promise<ClientOption[]> {
-  noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("clients").select("id, name").order("name", { ascending: true })
-
-  if (error) {
-    console.error("Database Error (fetchClientsForSaleForm):", error)
-    throw new Error("Failed to fetch client options.")
-  }
-
-  return (data ?? []).map((c) => ({ ...c, id: String(c.id), name: c.name ?? "" }))
-}
-
 export async function fetchClients(): Promise<Client[]> {
   noStore()
   const supabase = getAdminClient()
@@ -37,12 +24,23 @@ export async function fetchClientById(id: string): Promise<Client | null> {
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
 
   if (error) {
-    if (error.code === "PGRST116") {
-      return null
-    }
+    if (error.code === "PGRST116") return null
     console.error("Database Error (fetchClientById):", error)
     throw new Error("Failed to fetch client.")
   }
 
   return (data ?? null) as Client | null
+}
+
+export async function fetchClientOptions(): Promise<ClientOption[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("clients").select("id, name").order("name", { ascending: true })
+
+  if (error) {
+    console.error("Database Error (fetchClientOptions):", error)
+    throw new Error("Failed to fetch client options.")
+  }
+
+  return (data ?? []).map((c) => ({ ...c, id: String(c.id), name: c.name ?? "" }))
 }

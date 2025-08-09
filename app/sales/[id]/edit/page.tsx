@@ -1,5 +1,6 @@
-import { fetchSaleById } from "@/lib/data/sales"
-import { EditSaleForm } from "@/components/sales/edit-sale-form"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -10,17 +11,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchProductsForSaleForm } from "@/lib/data/products"
-import { fetchClientsForSaleForm } from "@/lib/data/clients"
+import { fetchSaleById } from "@/lib/data/sales"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchClients } from "@/lib/data/clients"
+import { EditSaleForm } from "@/components/sales/edit-sale-form"
 
 export default async function EditSalePage({ params }: { params: { id: string } }) {
   const id = params.id
-
-  const [sale, products, clients] = await Promise.all([
-    fetchSaleById(id),
-    fetchProductsForSaleForm(),
-    fetchClientsForSaleForm(),
-  ])
+  const [sale, products, clients] = await Promise.all([fetchSaleById(id), fetchProducts(), fetchClients()])
 
   if (!sale) {
     notFound()
@@ -52,7 +50,7 @@ export default async function EditSalePage({ params }: { params: { id: string } 
           <CardTitle>Edit Sale</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditSaleForm initialData={sale} products={products} clients={clients} />
+          <EditSaleForm sale={sale} products={products} clients={clients} />
         </CardContent>
       </Card>
     </main>

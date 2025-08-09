@@ -12,17 +12,13 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 import { fetchPurchaseById } from "@/lib/data/purchases"
-import { fetchProductsForPurchaseForm } from "@/lib/data/products"
-import { fetchSuppliersForPurchaseForm } from "@/lib/data/suppliers"
-import EditPurchaseForm from "@/components/purchases/edit-purchase-form"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchSuppliers } from "@/lib/data/suppliers"
+import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
   const id = params.id
-  const [purchase, products, suppliers] = await Promise.all([
-    fetchPurchaseById(id),
-    fetchProductsForPurchaseForm(),
-    fetchSuppliersForPurchaseForm(),
-  ])
+  const [purchase, products, suppliers] = await Promise.all([fetchPurchaseById(id), fetchProducts(), fetchSuppliers()])
 
   if (!purchase) {
     notFound()
@@ -53,7 +49,8 @@ export default async function EditPurchasePage({ params }: { params: { id: strin
       <Card>
         <CardHeader>
           <CardTitle>Edit Purchase</CardTitle>
-        </CardHeader>
+        </CardHeader>{" "}
+        {/* Close the CardHeader tag */}
         <CardContent>
           <EditPurchaseForm purchase={purchase} products={products} suppliers={suppliers} />
         </CardContent>

@@ -5,19 +5,6 @@ import type { Supplier } from "@/lib/supabase/types"
 
 export type SupplierOption = Pick<Supplier, "id" | "name">
 
-export async function fetchSuppliersForPurchaseForm(): Promise<SupplierOption[]> {
-  noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("suppliers").select("id, name").order("name", { ascending: true })
-
-  if (error) {
-    console.error("Database Error (fetchSuppliersForPurchaseForm):", error)
-    throw new Error("Failed to fetch supplier options.")
-  }
-
-  return (data ?? []).map((s) => ({ ...s, id: String(s.id), name: s.name ?? "" }))
-}
-
 export async function fetchSuppliers(): Promise<Supplier[]> {
   noStore()
   const supabase = getAdminClient()
@@ -37,12 +24,23 @@ export async function fetchSupplierById(id: string): Promise<Supplier | null> {
   const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).single()
 
   if (error) {
-    if (error.code === "PGRST116") {
-      return null
-    }
+    if (error.code === "PGRST116") return null
     console.error("Database Error (fetchSupplierById):", error)
     throw new Error("Failed to fetch supplier.")
   }
 
   return (data ?? null) as Supplier | null
+}
+
+export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("suppliers").select("id, name").order("name", { ascending: true })
+
+  if (error) {
+    console.error("Database Error (fetchSupplierOptions):", error)
+    throw new Error("Failed to fetch supplier options.")
+  }
+
+  return (data ?? []).map((s) => ({ ...s, id: String(s.id), name: s.name ?? "" }))
 }

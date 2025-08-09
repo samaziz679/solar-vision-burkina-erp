@@ -10,12 +10,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchProductsForSaleForm } from "@/lib/data/products"
-import { fetchClientsForSaleForm } from "@/lib/data/clients"
-import SaleForm from "@/components/sales/sale-form"
+import { fetchProductOptions } from "@/lib/data/products"
+import { fetchClientOptions } from "@/lib/data/clients"
+import { SaleForm } from "@/components/sales/sale-form"
 
 export default async function NewSalePage() {
-  const [products, clients] = await Promise.all([fetchProductsForSaleForm(), fetchClientsForSaleForm()])
+  const [products, clients] = await Promise.all([fetchProductOptions(), fetchClientOptions()])
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -38,10 +38,9 @@ export default async function NewSalePage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-
       <Card>
         <CardHeader>
-          <CardTitle>Add New Sale</CardTitle>
+          <CardTitle>Create New Sale</CardTitle>
         </CardHeader>
         <CardContent>
           <SaleForm products={products} clients={clients} />

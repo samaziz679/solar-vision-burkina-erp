@@ -1,48 +1,31 @@
 "use client"
 
-import { useFormState } from "react-dom"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updatePurchase } from "@/app/purchases/actions"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { toast } from "sonner"
-import type { Purchase, Supplier } from "@/lib/supabase/types"
-import type { ProductForPurchase } from "@/lib/data/products" // Use the new type
+import type { Product } from "@/lib/supabase/types"
+import type { Supplier } from "@/lib/supabase/types"
+import type { PurchaseWithItems } from "@/lib/supabase/types"
 
-interface EditPurchaseFormProps {
-  purchase: Purchase
-  products: ProductForPurchase[] // Update prop type
+type EditPurchaseFormProps = {
+  purchase: PurchaseWithItems
+  products: Product[]
   suppliers: Supplier[]
 }
 
-export default function EditPurchaseForm({ purchase, products, suppliers }: EditPurchaseFormProps) {
-  const initialState = { message: "", errors: {} }
+export function EditPurchaseForm({ purchase, products, suppliers }: EditPurchaseFormProps) {
+  const initialState = { message: null, errors: {} }
   const updatePurchaseWithId = updatePurchase.bind(null, purchase.id)
   const [state, dispatch] = useFormState(updatePurchaseWithId, initialState)
 
-  const [quantity, setQuantity] = useState<number>(purchase.quantity)
-  const [unitPrice, setUnitPrice] = useState<number>(0)
-  const [totalAmount, setTotalAmount] = useState<number>(purchase.total_amount)
-
-  const selectedProduct = products.find((p) => p.id === purchase.product_id)
-
   useEffect(() => {
-    if (selectedProduct) {
-      // In an edit form, the price is fixed from the original purchase.
-      // We calculate it for display but it's not editable.
-      const originalUnitPrice = purchase.total_amount / purchase.quantity
-      setUnitPrice(originalUnitPrice)
-    }
-  }, [selectedProduct, purchase])
-
-  useEffect(() => {
-    setTotalAmount(unitPrice * quantity)
-  }, [unitPrice, quantity])
-
-  useEffect(() => {
-    if (state?.message) {
-      if (state.errors) {
+    if (state.message) {
+      if (Object.keys(state.errors ?? {}).length > 0) {
         toast.error(state.message)
       } else {
         toast.success(state.message)
@@ -53,67 +36,65 @@ export default function EditPurchaseForm({ purchase, products, suppliers }: Edit
   return (
     <form action={dispatch}>
       <div className="grid gap-4">
-        {/* Product (read-only) */}
         <div className="grid gap-2">
-          <Label>Product</Label>
-          <Input value={selectedProduct?.name ?? "Loading..."} readOnly disabled />
-          <input type="hidden" name="product_id" value={purchase.product_id} />
+          <Label htmlFor="supplier_id">Supplier</Label>
+          <Select name="supplier_id" defaultValue={String(purchase.supplier_id)} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a supplier" />
+            </SelectTrigger>
+            <SelectContent>
+              {suppliers.map((supplier) => (
+                <SelectItem key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Unit Price (read-only) */}
+        {/* For simplicity, we assume a single product per purchase in this form */}
         <div className="grid gap-2">
-          <Label>Unit Price</Label>
-          <Input type="number" value={unitPrice.toFixed(2)} readOnly disabled />
+          <Label htmlFor="product_id">Product</Label>
+          <Select name="product_id" defaultValue={String(purchase.purchase_items[0]?.product_id)} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a product" />
+            </SelectTrigger>
+            <SelectContent>
+              {products.map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Quantity */}
         <div className="grid gap-2">
           <Label htmlFor="quantity">Quantity</Label>
-          <Input
-            id="quantity"
-            name="quantity"
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            min="1"
-          />
-          {state.errors?.quantity && <p className="text-sm font-medium text-destructive">{state.errors.quantity}</p>}
+          <Input name="quantity" type="number" defaultValue={purchase.purchase_items[0]?.quantity} required />
         </div>
 
-        {/* Total Amount (read-only) */}
         <div className="grid gap-2">
-          <Label htmlFor="total_amount">Total Amount</Label>
-          <Input id="total_amount" name="total_amount" type="number" value={totalAmount} readOnly />
-          {state.errors?.total_amount && (
-            <p className="text-sm font-medium text-destructive">{state.errors.total_amount}</p>
-          )}
+          <Label htmlFor="unit_price">Unit Price</Label>
+          <Input name="unit_price" type="number" defaultValue={purchase.purchase_items[0]?.unit_price} required />
         </div>
 
-        {/* Supplier (read-only) */}
-        <div className="grid gap-2">
-          <Label>Supplier</Label>
-          <Input value={suppliers.find((s) => s.id === purchase.supplier_id)?.name ?? "Loading..."} readOnly disabled />
-          <input type="hidden" name="supplier_id" value={purchase.supplier_id} />
-        </div>
-
-        {/* Purchase Date */}
         <div className="grid gap-2">
           <Label htmlFor="purchase_date">Purchase Date</Label>
-          <Input
-            id="purchase_date"
-            name="purchase_date"
-            type="date"
-            defaultValue={new Date(purchase.purchase_date).toISOString().split("T")[0]}
-          />
-          {state.errors?.purchase_date && (
-            <p className="text-sm font-medium text-destructive">{state.errors.purchase_date}</p>
-          )}
+          <Input name="purchase_date" type="date" defaultValue={purchase.date.split("T")[0]} required />
         </div>
 
-        <Button type="submit" className="w-full">
-          Update Purchase
-        </Button>
+        <SubmitButton />
       </div>
     </form>
+  )
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" disabled={pending} className="w-full">
+      {pending ? "Updating Purchase..." : "Update Purchase"}
+    </Button>
   )
 }

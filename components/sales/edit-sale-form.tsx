@@ -1,100 +1,102 @@
 "use client"
 
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateSale } from "@/app/sales/actions"
+import { useEffect } from "react"
+import { toast } from "sonner"
+import type { Product } from "@/lib/supabase/types"
+import type { Client } from "@/lib/supabase/types"
+import type { SaleWithItems } from "@/lib/supabase/types"
 
-type Product = { id: string; name: string }
-type Client = { id: string; name: string }
-type Sale = {
-  id: string
-  product_id: string
-  client_id: string
-  quantity: number
-  total_amount: number
-  sale_date: string
-}
-
-export type EditSaleFormProps = {
-  initialData: Sale
+type EditSaleFormProps = {
+  sale: SaleWithItems
   products: Product[]
   clients: Client[]
 }
 
-export function EditSaleForm({ initialData, products, clients }: EditSaleFormProps) {
-  const formAction = updateSale.bind(null, initialData.id) as unknown as string
+export function EditSaleForm({ sale, products, clients }: EditSaleFormProps) {
+  const initialState = { message: null, errors: {} }
+  const updateSaleWithId = updateSale.bind(null, sale.id)
+  const [state, dispatch] = useFormState(updateSaleWithId, initialState)
 
+  useEffect(() => {
+    if (state.message) {
+      if (Object.keys(state.errors ?? {}).length > 0) {
+        toast.error(state.message)
+      } else {
+        toast.success(state.message)
+      }
+    }
+  }, [state])
+
+  // Note: Edit form is simplified and doesn't have dynamic price changing.
+  // It assumes the core data (product, client, price) is fixed on edit.
   return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="id" value={initialData.id} />
+    <form action={dispatch}>
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="client_id">Client</Label>
+          <Select name="client_id" defaultValue={String(sale.client_id)} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a client" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="grid gap-2">
-        <Label>Product</Label>
-        <input type="hidden" name="product_id" value={initialData.product_id} />
-        <Select
-          defaultValue={initialData.product_id}
-          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="product_id"]')!.value = v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select product" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* For simplicity, we assume a single product per sale in this form */}
+        <div className="grid gap-2">
+          <Label htmlFor="product_id">Product</Label>
+          <Select name="product_id" defaultValue={String(sale.sale_items[0]?.product_id)} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a product" />
+            </SelectTrigger>
+            <SelectContent>
+              {products.map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="quantity">Quantity</Label>
+          <Input name="quantity" type="number" defaultValue={sale.sale_items[0]?.quantity} required />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="unit_price">Unit Price</Label>
+          <Input name="unit_price" type="number" defaultValue={sale.sale_items[0]?.unit_price} required />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="sale_date">Sale Date</Label>
+          <Input name="sale_date" type="date" defaultValue={sale.date.split("T")[0]} required />
+        </div>
+
+        <SubmitButton />
       </div>
-
-      <div className="grid gap-2">
-        <Label>Client</Label>
-        <input type="hidden" name="client_id" value={initialData.client_id} />
-        <Select
-          defaultValue={initialData.client_id}
-          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="client_id"]')!.value = v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select client" />
-          </SelectTrigger>
-          <SelectContent>
-            {clients.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="quantity">Quantity</Label>
-        <Input id="quantity" name="quantity" type="number" defaultValue={initialData.quantity} required />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="total_amount">Total Amount</Label>
-        <Input
-          id="total_amount"
-          name="total_amount"
-          type="number"
-          step="0.01"
-          defaultValue={initialData.total_amount}
-          required
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="sale_date">Sale Date</Label>
-        <Input id="sale_date" name="sale_date" type="date" defaultValue={initialData.sale_date} required />
-      </div>
-
-      <Button type="submit" className="w-full">
-        Update Sale
-      </Button>
     </form>
+  )
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" disabled={pending} className="w-full">
+      {pending ? "Updating Sale..." : "Update Sale"}
+    </Button>
   )
 }

@@ -1,36 +1,39 @@
 "use client"
 
-import { useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { AlertTriangle } from "lucide-react"
 
-export default function Error({
+export default function GlobalError({
   error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  useEffect(() => {
-    console.error("App error boundary:", error)
-  }, [error])
+  // Log for observability (visible in browser console; server logs already capture stack)
+  // eslint-disable-next-line no-console
+  console.error("Global error boundary:", error)
 
   return (
-    <div className="min-h-[60vh] grid place-items-center px-6 py-16">
-      <div className="max-w-xl text-center space-y-4">
-        <h1 className="text-2xl font-semibold">Something went wrong</h1>
-        <p className="text-muted-foreground">{error.message || "An unexpected server error occurred."}</p>
-        {error?.digest ? <p className="text-xs text-muted-foreground">Digest: {error.digest}</p> : null}
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <button
-            onClick={() => reset()}
-            className="inline-flex items-center rounded-md bg-neutral-900 px-4 py-2 text-white hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-500"
-          >
-            Try again
-          </button>
-          <a href="/" className="inline-flex items-center rounded-md border px-4 py-2 hover:bg-neutral-50">
-            Go home
-          </a>
+    <html>
+      <body className="min-h-screen flex items-center justify-center bg-white p-6">
+        <div className="max-w-md w-full border rounded-lg p-6 shadow-sm text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-semibold">Something went wrong</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            The page encountered an unexpected error. You can try again or go back.
+          </p>
+          {error?.digest && <p className="text-xs text-gray-500">Digest: {error.digest}</p>}
+          <div className="flex items-center justify-center gap-3">
+            <Button onClick={() => reset()}>Try again</Button>
+            <a href="/" className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm">
+              Go home
+            </a>
+          </div>
         </div>
-      </div>
-    </div>
+      </body>
+    </html>
   )
 }

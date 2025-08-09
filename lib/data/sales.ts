@@ -1,27 +1,45 @@
 import { getAdminClient } from "@/lib/supabase/admin"
+import type { Sale as DbSale } from "@/lib/supabase/types"
 
-export type Sale = Record<string, unknown>
+function mapSale(row: Record<string, any>): DbSale {
+  const quantity = Number(row.quantity ?? 0)
+  const total_amount = Number(row.total_amount ?? row.total ?? row.total_price ?? 0)
+  const sale_date = row.sale_date ?? row.date ?? row.created_at ?? new Date().toISOString().split("T")[0]
 
-/**
- * Your errors showed sales.created_at is missing.
- * We avoid ordering by created_at and fall back to id.
- */
-export async function fetchSales(): Promise<Sale[]> {
+  return {
+    id: String(row.id ?? ""),
+    client_id: String(row.client_id ?? row.customer_id ?? ""),
+    product_id: String(row.product_id ?? ""),
+    quantity,
+    total_amount,
+    sale_date: String(sale_date),
+    user_id: String(row.user_id ?? row.created_by ?? ""),
+    created_at: String(row.created_at ?? row.updated_at ?? new Date().toISOString()),
+  }
+}
+
+export async function fetchSales(): Promise<DbSale[]> {
   const supabase = getAdminClient()
   try {
-    const { data, error } = await supabase.from("sales").select("*").order("id", { ascending: false })
+    const { data, error } = await supabase.from("sales").select("*")
     if (error) {
       console.error("Database Error (sales):", error)
       return []
     }
-    return (data ?? []) as Sale[]
-  } catch (e) {
-    console.error("Unexpected Error (sales):", e)
+    const rows = (data ?? []) as Record<string, any>[]
+    rows.sort((a, b) => {
+      const da = new Date(a.sale_date ?? a.created_at ?? 0).getTime()
+      const db = new Date(b.sale_date ?? b.created_at ?? 0).getTime()
+      return db - da
+    })
+    return rows.map(mapSale)
+  } catch (err) {
+    console.error("Unexpected Error (sales):", err)
     return []
   }
 }
 
-export async function fetchSaleById(id: string): Promise<Sale | null> {
+export async function fetchSaleById(id: string): Promise<DbSale | null> {
   const supabase = getAdminClient()
   try {
     const { data, error } = await supabase.from("sales").select("*").eq("id", id).maybeSingle()
@@ -29,9 +47,10 @@ export async function fetchSaleById(id: string): Promise<Sale | null> {
       console.error("Database Error (sale by id):", error)
       return null
     }
-    return (data as Sale) ?? null
-  } catch (e) {
-    console.error("Unexpected Error (sale by id):", e)
+    if (!data) return null
+    return mapSale(data as Record<string, any>)
+  } catch (err) {
+    console.error("Unexpected Error (sale by id):", err)
     return null
   }
 }

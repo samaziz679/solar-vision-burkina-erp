@@ -15,7 +15,6 @@ export type PurchaseFormProps = {
 }
 
 export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
-  // React 18 DOM typings workaround: cast Server Action to string
   const formAction = createPurchase as unknown as string
 
   return (
@@ -66,12 +65,12 @@ export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
 
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantity</Label>
-        <Input id="quantity" name="quantity" type="number" required />
+        <Input id="quantity" name="quantity" type="number" min={1} required />
       </div>
 
       <div className="grid gap-2">
         <Label htmlFor="total_amount">Total Amount</Label>
-        <Input id="total_amount" name="total_amount" type="number" step="0.01" required />
+        <Input id="total_amount" name="total_amount" type="number" step="0.01" min={0} required />
       </div>
 
       <div className="grid gap-2">
@@ -92,5 +91,4 @@ export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
   )
 }
 
-// Also export default so both named and default imports work
 export default PurchaseForm

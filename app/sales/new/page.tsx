@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 import { getAdminClient } from "@/lib/supabase/admin"
+import type { ClientLite } from "@/lib/data/clients"
 
-type ProductForSale = {
+export type ProductForSale = {
   id: string
   name: string
   prix_vente_detail_1: number | null
@@ -21,10 +22,8 @@ type ProductForSale = {
   prix_vente_gros: number | null
 }
 
-type Client = { id: string; name: string }
-
 export default async function NewSalePage() {
-  // Do NOT use searchParams.get in Server Components.
+  // Avoid searchParams.get in Server Components; preload data using admin client (no cookies).
   const supabase = getAdminClient()
 
   const [{ data: productsData, error: prodErr }, { data: clientsData, error: clientErr }] = await Promise.all([
@@ -49,7 +48,7 @@ export default async function NewSalePage() {
       prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
     })) ?? []
 
-  const clients: Client[] = (clientsData ?? []).map((c: any) => ({
+  const clients: ClientLite[] = (clientsData ?? []).map((c: any) => ({
     id: String(c.id),
     name: String(c.name ?? ""),
   }))

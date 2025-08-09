@@ -1,7 +1,9 @@
+import "server-only"
 import { unstable_noStore as noStore } from "next/cache"
 import { cookies } from "next/headers"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
-import type { Product } from "../supabase/types"
+import { getAdminClient } from "@/lib/supabase/admin"
+import type { Product, ProductLite } from "../supabase/types"
 
 function getSupabase() {
   const cookieStore = cookies()
@@ -19,18 +21,11 @@ function getSupabase() {
   })
 }
 
-export async function fetchProducts(): Promise<Product[]> {
-  noStore()
-  const supabase = getSupabase()
-
-  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Database Error:", error)
-    throw new Error("Failed to fetch products.")
-  }
-
-  return (data ?? []) as Product[]
+export async function fetchProducts(): Promise<ProductLite[]> {
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("products").select("id,name").order("name", { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((p: any) => ({ id: String(p.id), name: String(p.name ?? "") }))
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {

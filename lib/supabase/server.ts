@@ -1,55 +1,37 @@
-// Supabase server client for App Router (SSR/RSC-safe)
-// Provides a universal cookies adapter compatible with different @supabase/ssr expectations.
-
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import "server-only"
 import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/ssr"
+import type { CookieOptions } from "@supabase/ssr"
 
 export function createClient() {
-  // Acquire the request-scoped cookie store inside the function (never at module top level)
-  let cookieStore: ReturnType<typeof cookies> | undefined
-  try {
-    cookieStore = cookies()
-  } catch {
-    // When there's no request context (e.g., during static build), leave undefined
-    cookieStore = undefined
-  }
+  const cookieStore = cookies()
 
-  // Defensive adapter: expose both get/set/remove and getAll/setAll
-  const adapter: any = {
-    // Primary shape used by newer @supabase/ssr
-    get(name: string) {
-      try {
-        return cookieStore?.get(name)?.value
-      } catch {
-        return undefined
-      }
-    },
-    set(_name: string, _value: string, _options: CookieOptions) {
-      // No-op in RSC/SSR render path; mutations should happen in Route Handlers or Server Actions
-    },
-    remove(_name: string, _options: CookieOptions) {
-      // No-op
-    },
-    // Back-compat shape some versions expect
-    getAll() {
-      try {
-        const all = (cookieStore as any)?.getAll?.() ?? []
-        // Normalize to { name, value }
-        return all.map((c: any) => ({ name: c.name, value: c.value }))
-      } catch {
-        return []
-      }
-    },
-    setAll(_cookies: { name: string; value: string; options?: CookieOptions }[]) {
-      // No-op
-    },
-  }
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !anon) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY")
   }
 
-  return createServerClient(url, anon, { cookies: adapter })
+  // Universal cookies adapter: supports both get/set/remove and getAll/setAll shapes.
+  const cookieAdapter = {
+    // Used by some @supabase/ssr versions
+    get(name: string) {
+      return cookieStore.get(name)?.value
+    },
+    set(_name: string, _value: string, _options?: CookieOptions) {
+      // no-op in RSC/SSR page render; only set cookies in Route Handlers/Server Actions
+    },
+    remove(_name: string, _options?: CookieOptions) {
+      // no-op in RSC/SSR
+    },
+    // Official API for @supabase/ssr
+    getAll() {
+      return cookieStore.getAll().map((c) => ({ name: c.name, value: c.value }))
+    },
+    setAll(_cookies: { name: string; value: string; options?: CookieOptions }[]) {
+      // no-op during RSC/SSR
+    },
+  }
+
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    cookies: cookieAdapter as any,
+  })
 }

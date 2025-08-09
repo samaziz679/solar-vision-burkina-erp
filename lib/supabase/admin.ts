@@ -1,15 +1,16 @@
-// Supabase admin client (no cookies required).
-// Use only on the server. Never expose SERVICE_ROLE_KEY to the client.
+import "server-only"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+let adminClient: SupabaseClient | null = null
 
 export function getAdminClient() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) {
-    throw new Error("Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY")
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
   }
-  return createSupabaseClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
+  if (!adminClient) {
+    adminClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  }
+  return adminClient
 }

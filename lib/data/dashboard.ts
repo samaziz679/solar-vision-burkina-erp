@@ -1,34 +1,45 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { unstable_noStore as noStore } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+type SaleRow = { total_amount: number | null }
+type ExpenseRow = { amount: number | null }
+type ProductRow = { stock_quantity: number | null }
 
-export default async function Dashboard() {
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
-    cookies: {
-      get(name: string) {
-        return cookies().get(name)?.value
-      },
-      set(_name: string, _value: string, _options: CookieOptions) {},
-      remove(_name: string, _options: CookieOptions) {},
-    },
-  })
+export async function fetchCardData() {
+  noStore()
+  const supabase = createClient()
 
-  // Fetch data from Supabase
-  const { data, error } = await supabase.from("your_table").select("*")
+  // Total Sales
+  const { data: salesData, error: salesError } = await supabase.from("sales").select("total_amount")
 
-  if (error) {
-    console.error("Error fetching data:", error)
-    return <div>Error loading data</div>
+  if (salesError) {
+    console.error("Database Error (sales):", salesError)
+    throw new Error("Failed to fetch sales totals.")
   }
 
-  return (
-    <div>
-      {/* Render your dashboard here */}
-      {data.map((item) => (
-        <div key={item.id}>{item.name}</div>
-      ))}
-    </div>
-  )
+  // Total Expenses
+  const { data: expensesData, error: expensesError } = await supabase.from("expenses").select("amount")
+
+  if (expensesError) {
+    console.error("Database Error (expenses):", expensesError)
+    throw new Error("Failed to fetch expenses totals.")
+  }
+
+  // Total Products
+  const { data: productsData, error: productsError } = await supabase.from("products").select("stock_quantity")
+
+  if (productsError) {
+    console.error("Database Error (products):", productsError)
+    throw new Error("Failed to fetch product quantities.")
+  }
+
+  const totalSales = (salesData as SaleRow[]).reduce((sum, row) => sum + (row.total_amount ?? 0), 0)
+  const totalExpenses = (expensesData as ExpenseRow[]).reduce((sum, row) => sum + (row.amount ?? 0), 0)
+  const totalProducts = (productsData as ProductRow[]).reduce((sum, row) => sum + (row.stock_quantity ?? 0), 0)
+
+  return {
+    totalSales,
+    totalExpenses,
+    totalProducts,
+  }
 }

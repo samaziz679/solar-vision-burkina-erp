@@ -1,123 +1,113 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { createSupplier, updateSupplier } from "@/app/suppliers/actions"
-import type { Supplier } from "@/lib/supabase/types"
 
-interface SupplierFormProps {
-  initialData?: Supplier
+type Supplier = {
+  id: string
+  name: string
+  contact_person: string | null
+  email: string | null
+  phone_number: string | null
+  address: string | null
+  created_at: string
+  user_id: string
 }
 
-function SupplierFormComponent({ initialData }: SupplierFormProps) {
-  const [name, setName] = useState(initialData?.name || "")
-  const [contactPerson, setContactPerson] = useState(initialData?.contact_person || "")
-  const [email, setEmail] = useState(initialData?.email || "")
-  const [phoneNumber, setPhoneNumber] = useState(initialData?.phone_number || "")
-  const [address, setAddress] = useState(initialData?.address || "")
+export type SupplierFormProps = {
+  initialData?: Supplier | null
+}
+
+function SupplierForm({ initialData = null }: SupplierFormProps) {
   const [isPending, setIsPending] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string[] }>({})
 
-  useEffect(() => {
-    if (initialData) {
-      setName(initialData.name || "")
-      setContactPerson(initialData.contact_person || "")
-      setEmail(initialData.email || "")
-      setPhoneNumber(initialData.phone_number || "")
-      setAddress(initialData.address || "")
-    }
-  }, [initialData])
-
-  // Choose the correct Server Action and cast for React 18 DOM typings
-  const formAction = (initialData ? updateSupplier : createSupplier) as unknown as (formData: FormData) => void
+  // Choose the server action at render time
+  const serverAction = initialData ? updateSupplier : createSupplier
 
   return (
-    <form action={formAction as unknown as string} onSubmit={() => setIsPending(true)} className="space-y-4">
-      <input type="hidden" name="id" value={initialData?.id ?? ""} />
+    <Card>
+      <CardContent className="pt-6">
+        <form method="post" onSubmit={() => setIsPending(true)} className="space-y-4">
+          <input type="hidden" name="id" value={initialData?.id ?? ""} />
 
-      <div className="grid gap-2">
-        <Label htmlFor="name">Supplier Name</Label>
-        <Input
-          id="name"
-          name="name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Solar Parts Ltd."
-          required
-          disabled={isPending}
-        />
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              name="name"
+              required
+              defaultValue={initialData?.name ?? ""}
+              placeholder="Acme Supplies Ltd"
+            />
+            {errors.name && <p className="text-sm text-destructive">{errors.name.join(", ")}</p>}
+          </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="contact_person">Contact Person</Label>
-        <Input
-          id="contact_person"
-          name="contact_person"
-          type="text"
-          value={contactPerson}
-          onChange={(e) => setContactPerson(e.target.value)}
-          placeholder="e.g., Jane Smith"
-          disabled={isPending}
-        />
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="contact_person">Contact person</Label>
+            <Input
+              id="contact_person"
+              name="contact_person"
+              defaultValue={initialData?.contact_person ?? ""}
+              placeholder="John Doe"
+            />
+            {errors.contact_person && <p className="text-sm text-destructive">{errors.contact_person.join(", ")}</p>}
+          </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="e.g., jane.smith@example.com"
-          required
-          disabled={isPending}
-        />
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              defaultValue={initialData?.email ?? ""}
+              placeholder="supplier@example.com"
+            />
+            {errors.email && <p className="text-sm text-destructive">{errors.email.join(", ")}</p>}
+          </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="phone_number">Phone Number</Label>
-        <Input
-          id="phone_number"
-          name="phone_number"
-          type="tel"
-          value={phoneNumber ?? ""}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-          placeholder="e.g., +1987654321"
-          required
-          disabled={isPending}
-        />
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="phone_number">Phone number</Label>
+            <Input
+              id="phone_number"
+              name="phone_number"
+              defaultValue={initialData?.phone_number ?? ""}
+              placeholder="+1 555 555 5555"
+            />
+            {errors.phone_number && <p className="text-sm text-destructive">{errors.phone_number.join(", ")}</p>}
+          </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="address">Address</Label>
-        <Textarea
-          id="address"
-          name="address"
-          value={address ?? ""}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="e.g., 456 Panel Rd, Solarville"
-          required
-          disabled={isPending}
-        />
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="address">Address</Label>
+            <Textarea
+              id="address"
+              name="address"
+              defaultValue={initialData?.address ?? ""}
+              placeholder="123 Main St, City, Country"
+            />
+            {errors.address && <p className="text-sm text-destructive">{errors.address.join(", ")}</p>}
+          </div>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending
-          ? initialData
-            ? "Updating..."
-            : "Creating..."
-          : initialData
-            ? "Update Supplier"
-            : "Create Supplier"}
-      </Button>
-    </form>
+          <div className="flex items-center gap-3 pt-2">
+            <Button
+              type="submit"
+              // Bind the server action on the button for React 18 DOM typings; cast to satisfy TS.
+              formAction={serverAction as unknown as (formData: FormData) => void}
+              disabled={isPending}
+            >
+              {isPending ? (initialData ? "Saving..." : "Creating...") : initialData ? "Save" : "Create"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
-// Export both named and default so existing imports continue to work
-export { SupplierFormComponent as SupplierForm }
-export default SupplierFormComponent
+export default SupplierForm
+export { SupplierForm }

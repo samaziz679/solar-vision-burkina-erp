@@ -1,5 +1,65 @@
-// app/sales/[id]/edit/page.tsx
-<EditSaleForm initialData={sale} products={products} clients={clients} />
+// lib/data/clients.ts
+export class Clients {
+  // Other methods here
 
-// app/purchases/[id]/edit/page.tsx
-<EditPurchaseForm initialData={purchase} products={products} suppliers={suppliers} />
+  remove(name: string, _options?: CookieOptions) {
+    cookieStore.delete(name)
+  }
+
+  // Other methods here
+}
+
+// lib/data/expenses.ts
+export class Expenses {
+  // Other methods here
+
+  remove(name: string, _options?: CookieOptions) {
+    cookieStore.delete(name)
+  }
+
+  // Other methods here
+}
+
+// lib/data/products.ts
+export class Products {
+  // Other methods here
+
+  remove(name: string, _options?: CookieOptions) {
+    cookieStore.delete(name)
+  }
+
+  // Other methods here
+}
+
+// lib/data/purchases.ts
+export class Purchases {
+  // Other methods here
+
+  remove(name: string, _options?: CookieOptions) {
+    cookieStore.delete(name)
+  }
+
+  // Other methods here
+}
+
+// lib/data/sales.ts
+export class Sales {
+  // Other methods here
+
+  remove(name: string, _options?: CookieOptions) {
+    cookieStore.delete(name)
+  }
+
+  // Other methods here
+}
+
+// lib/data/suppliers.ts
+export class Suppliers {
+  // Other methods here
+
+  remove(name: string, _options?: CookieOptions) {
+    cookieStore.delete(name)
+  }
+
+  // Other methods here
+}

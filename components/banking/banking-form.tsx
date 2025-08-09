@@ -1,5 +1,3 @@
-"use client"
-
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -11,13 +9,13 @@ interface BankingFormProps {
 }
 
 export default function BankingForm({ bankingAccount }: BankingFormProps) {
-  // Bind the id for the update action when editing
-  const updateWithId = updateBankingAccount.bind(null, bankingAccount?.id ?? "")
-  const formAction = bankingAccount ? updateWithId : createBankingAccount
+  // When editing, bind the id so the Server Action receives it as the first argument.
+  const formAction = bankingAccount ? updateBankingAccount.bind(null, bankingAccount.id) : createBankingAccount
 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="id" value={bankingAccount?.id ?? ""} />
+
       <div className="grid gap-2">
         <Label htmlFor="bank_name">Bank Name</Label>
         <Input id="bank_name" name="bank_name" type="text" defaultValue={bankingAccount?.bank_name ?? ""} required />

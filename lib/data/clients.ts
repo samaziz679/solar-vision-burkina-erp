@@ -1,55 +1,53 @@
 import "server-only"
 import { unstable_noStore as noStore } from "next/cache"
-import { cookies } from "next/headers"
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
-import type { Client } from "../supabase/types"
+import type { Client } from "@/lib/supabase/types"
 
-// Local lightweight type for selects
+// Lightweight options for selects
 export type ClientLite = Pick<Client, "id" | "name">
 
-function getSupabase() {
-  const cookieStore = cookies()
+/**
+ * Full list of clients for pages like /clients (preserves existing shape).
+ */
+export async function fetchClients(): Promise<Client[]> {
+  noStore()
+  const supabase = getAdminClient()
+  const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
 
-  const cookieMethods = {
-    get(name: string) {
-      return cookieStore.get(name)?.value
-    },
-    set(_name: string, _value: string, _options: CookieOptions) {},
-    remove(_name: string, _options: CookieOptions) {},
+  if (error) {
+    console.error("Database Error (clients):", error)
+    throw new Error("Failed to fetch clients.")
   }
 
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: cookieMethods as any,
-  })
+  return (data ?? []) as Client[]
 }
 
 /**
- * List clients (id, name) for dropdowns
+ * Options for dropdowns (id, name) to avoid over-fetching.
  */
-export async function fetchClients(): Promise<ClientLite[]> {
+export async function fetchClientOptions(): Promise<ClientLite[]> {
+  noStore()
   const supabase = getAdminClient()
   const { data, error } = await supabase.from("clients").select("id,name").order("name", { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    console.error("Database Error (client options):", error)
+    throw new Error("Failed to fetch client options.")
+  }
 
-  return (data ?? []).map((c: any) => ({
-    id: String(c.id),
-    name: String(c.name ?? ""),
-  }))
+  return (data ?? []) as ClientLite[]
 }
 
 /**
- * Full client by id (session-aware)
+ * Single client by id.
  */
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
-  const supabase = getSupabase()
-
+  const supabase = getAdminClient()
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Database Error (fetchClientById):", error)
+    console.error("Database Error (client by id):", error)
     throw new Error("Failed to fetch client.")
   }
 

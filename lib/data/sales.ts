@@ -1,56 +1,100 @@
-import { getAdminClient } from "@/lib/supabase/admin"
-import type { Sale as DbSale } from "@/lib/supabase/types"
+import { unstable_noStore as noStore } from "next/cache"
+import { cookies } from "next/headers"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 
-function mapSale(row: Record<string, any>): DbSale {
-  const quantity = Number(row.quantity ?? 0)
-  const total_amount = Number(row.total_amount ?? row.total ?? row.total_price ?? 0)
-  const sale_date = row.sale_date ?? row.date ?? row.created_at ?? new Date().toISOString().split("T")[0]
-
-  return {
-    id: String(row.id ?? ""),
-    client_id: String(row.client_id ?? row.customer_id ?? ""),
-    product_id: String(row.product_id ?? ""),
-    quantity,
-    total_amount,
-    sale_date: String(sale_date),
-    user_id: String(row.user_id ?? row.created_by ?? ""),
-    created_at: String(row.created_at ?? row.updated_at ?? new Date().toISOString()),
-  }
+// Join clients and products so names render in the table
+// Return a flexible row that SalesList already supports.
+export type JoinedSaleRow = {
+  id: string
+  sale_date?: string | null
+  quantity?: number | null
+  total_amount?: number | null
+  user_id?: string | null
+  client_id?: string | null
+  product_id?: string | null
+  // joined names
+  clients?: { id: string; name: string | null } | null
+  products?: { id: string; name: string | null } | null
+  client_name?: string | null
+  product_name?: string | null
+  created_at?: string | null
 }
 
-export async function fetchSales(): Promise<DbSale[]> {
-  const supabase = getAdminClient()
-  try {
-    const { data, error } = await supabase.from("sales").select("*")
-    if (error) {
-      console.error("Database Error (sales):", error)
-      return []
-    }
-    const rows = (data ?? []) as Record<string, any>[]
-    rows.sort((a, b) => {
-      const da = new Date(a.sale_date ?? a.created_at ?? 0).getTime()
-      const db = new Date(b.sale_date ?? b.created_at ?? 0).getTime()
-      return db - da
-    })
-    return rows.map(mapSale)
-  } catch (err) {
-    console.error("Unexpected Error (sales):", err)
+function getSupabase() {
+  const cookieStore = cookies()
+  const cookieMethods = {
+    get(name: string) {
+      return cookieStore.get(name)?.value
+    },
+    set(_name: string, _value: string, _options: CookieOptions) {},
+    remove(_name: string, _options: CookieOptions) {},
+  }
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: cookieMethods as any,
+  })
+}
+
+export async function fetchSales(): Promise<JoinedSaleRow[]> {
+  noStore()
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from("sales")
+    .select(
+      [
+        "id",
+        "sale_date",
+        "quantity",
+        "total_amount",
+        "user_id",
+        "client_id",
+        "product_id",
+        "clients(id,name)",
+        "products(id,name)",
+      ].join(","),
+    )
+    .order("id", { ascending: false })
+
+  if (error) {
+    console.error("Database Error (sales):", error)
     return []
   }
+
+  const rows = (data ?? []).map((row: any) => ({
+    ...row,
+    // normalize numeric strings -> numbers for the UI currency formatter
+    total_amount: row.total_amount != null ? Number(row.total_amount) : row.total != null ? Number(row.total) : null,
+  })) as JoinedSaleRow[]
+
+  return rows
 }
 
-export async function fetchSaleById(id: string): Promise<DbSale | null> {
-  const supabase = getAdminClient()
-  try {
-    const { data, error } = await supabase.from("sales").select("*").eq("id", id).maybeSingle()
-    if (error) {
-      console.error("Database Error (sale by id):", error)
-      return null
-    }
-    if (!data) return null
-    return mapSale(data as Record<string, any>)
-  } catch (err) {
-    console.error("Unexpected Error (sale by id):", err)
+export async function fetchSaleById(id: string): Promise<JoinedSaleRow | null> {
+  noStore()
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from("sales")
+    .select(
+      [
+        "id",
+        "sale_date",
+        "quantity",
+        "total_amount",
+        "user_id",
+        "client_id",
+        "product_id",
+        "clients(id,name)",
+        "products(id,name)",
+      ].join(","),
+    )
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    console.error("Database Error (sale by id):", error)
     return null
   }
+
+  return data as JoinedSaleRow
 }

@@ -6,23 +6,28 @@ import { Card, CardContent } from "@/components/ui/card"
 export type InventoryProduct = {
   id: string
   name: string
-  sku: string | null
-  price: number
-  stock_quantity: number
+  unit: string | null
+  quantity: number
+  prix_achat: number | null
+  prix_vente_detail_1: number | null
+  prix_vente_detail_2: number | null
+  prix_vente_gros: number | null
+  seuil_stock_bas: number | null
   description: string | null
   created_at: string
-  user_id: string
+  created_by: string | null
 }
 
 type ProductListProps = {
   products: InventoryProduct[]
 }
 
-function formatCurrency(value: number) {
+function currency(n: number | null) {
+  if (n == null || Number.isNaN(n)) return "—"
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value)
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n)
   } catch {
-    return String(value)
+    return String(n)
   }
 }
 
@@ -37,26 +42,37 @@ export default function ProductList({ products }: ProductListProps) {
 
   return (
     <Card>
-      <CardContent className="p-0">
+      <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[160px]">Name</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Stock</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead className="w-[220px]">Name</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead>Unit</TableHead>
+              <TableHead className="text-right">Low stock</TableHead>
+              <TableHead className="text-right">Detail 1</TableHead>
+              <TableHead className="text-right">Detail 2</TableHead>
+              <TableHead className="text-right">Wholesale</TableHead>
+              <TableHead className="text-right">Purchase</TableHead>
               <TableHead className="hidden md:table-cell">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.map((p) => (
               <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell className="text-muted-foreground">{p.sku ?? "—"}</TableCell>
-                <TableCell className="text-right">{formatCurrency(p.price)}</TableCell>
-                <TableCell className="text-right">{p.stock_quantity}</TableCell>
-                <TableCell className="max-w-[320px] truncate">{p.description ?? "—"}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="truncate max-w-[260px]">{p.name}</div>
+                  {p.description ? (
+                    <div className="text-xs text-muted-foreground truncate max-w-[260px]">{p.description}</div>
+                  ) : null}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{p.quantity}</TableCell>
+                <TableCell>{p.unit ?? "—"}</TableCell>
+                <TableCell className="text-right tabular-nums">{p.seuil_stock_bas ?? "—"}</TableCell>
+                <TableCell className="text-right">{currency(p.prix_vente_detail_1)}</TableCell>
+                <TableCell className="text-right">{currency(p.prix_vente_detail_2)}</TableCell>
+                <TableCell className="text-right">{currency(p.prix_vente_gros)}</TableCell>
+                <TableCell className="text-right">{currency(p.prix_achat)}</TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">
                   {new Date(p.created_at).toLocaleDateString()}
                 </TableCell>

@@ -1,4 +1,3 @@
-import { SaleForm } from "@/components/sales/sale-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -8,11 +7,35 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchProducts } from "@/lib/data/products"
+import { createClient } from "@/lib/supabase/server"
 import { fetchClients } from "@/lib/data/clients"
+import { SaleForm } from "@/components/sales/sale-form"
+
+// Shape needed by the form (pricing tiers from your schema)
+export type ProductForSale = {
+  id: string
+  name: string
+  prix_vente_detail_1: number | null
+  prix_vente_detail_2: number | null
+  prix_vente_gros: number | null
+}
 
 export default async function NewSalePage() {
-  const products = await fetchProducts()
+  const supabase = createClient()
+  const { data: productsData } = await supabase
+    .from("products")
+    .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
+    .order("name", { ascending: true })
+
+  const products: ProductForSale[] =
+    (productsData ?? []).map((p: any) => ({
+      id: String(p.id),
+      name: String(p.name ?? ""),
+      prix_vente_detail_1: p.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
+      prix_vente_detail_2: p.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
+      prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
+    })) ?? []
+
   const clients = await fetchClients()
 
   return (

@@ -1,20 +1,26 @@
-import { fetchSaleById } from '@/lib/data/sales';
-import EditSaleForm from '@/components/sales/edit-sale-form';
-import { notFound } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
-import { fetchProducts } from '@/lib/data/products';
-import { fetchClients } from '@/lib/data/clients';
+import { fetchSaleById } from "@/lib/data/sales"
+import { EditSaleForm } from "@/components/sales/edit-sale-form"
+import { notFound } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchClients } from "@/lib/data/clients"
 
 export default async function EditSalePage({ params }: { params: { id: string } }) {
-  const id = params.id;
-  const sale = await fetchSaleById(id);
-  const products = await fetchProducts();
-  const clients = await fetchClients();
+  const id = params.id
+  const sale = await fetchSaleById(id)
+  const products = await fetchProducts()
+  const clients = await fetchClients()
 
   if (!sale) {
-    notFound();
+    notFound()
   }
 
   return (
@@ -47,5 +53,5 @@ export default async function EditSalePage({ params }: { params: { id: string } 
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

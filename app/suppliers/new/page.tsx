@@ -1,7 +1,13 @@
-import SupplierForm from '@/components/suppliers/supplier-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
+import { SupplierForm } from "@/components/suppliers/supplier-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
 
 export default function NewSupplierPage() {
   return (
@@ -34,5 +40,5 @@ export default function NewSupplierPage() {
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

@@ -1,23 +1,22 @@
-'use client';
+"use client"
 
-import { useActionState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { createProduct, State } from '@/app/inventory/actions';
-import { toast } from 'sonner';
+import { useFormState } from "react-dom"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { createProduct, type State } from "@/app/inventory/actions"
+import { toast } from "sonner"
 
 export default function ProductForm() {
-  const initialState: State = { message: null, errors: {} };
-  const [state, formAction] = useActionState(createProduct, initialState);
+  const initialState: State = { message: null, errors: {} }
+  const [state, formAction] = useFormState(createProduct, initialState)
 
-  // Show toast messages for success or error
   if (state?.message) {
-    if (state.message.includes('Failed')) {
-      toast.error(state.message);
+    if (state.message.includes("Failed")) {
+      toast.error(state.message)
     } else {
-      toast.success(state.message);
+      toast.success(state.message)
     }
   }
 
@@ -25,13 +24,7 @@ export default function ProductForm() {
     <form action={formAction} className="space-y-4">
       <div className="grid gap-2">
         <Label htmlFor="name">Product Name</Label>
-        <Input
-          id="name"
-          name="name"
-          type="text"
-          required
-          aria-describedby="name-error"
-        />
+        <Input id="name" name="name" type="text" required aria-describedby="name-error" />
         {state?.errors?.name && (
           <div id="name-error" aria-live="polite" className="text-sm text-red-500">
             {state.errors.name.map((error: string) => (
@@ -42,11 +35,7 @@ export default function ProductForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          aria-describedby="description-error"
-        />
+        <Textarea id="description" name="description" aria-describedby="description-error" />
         {state?.errors?.description && (
           <div id="description-error" aria-live="polite" className="text-sm text-red-500">
             {state.errors.description.map((error: string) => (
@@ -57,14 +46,7 @@ export default function ProductForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="price">Price</Label>
-        <Input
-          id="price"
-          name="price"
-          type="number"
-          step="0.01"
-          required
-          aria-describedby="price-error"
-        />
+        <Input id="price" name="price" type="number" step="0.01" required aria-describedby="price-error" />
         {state?.errors?.price && (
           <div id="price-error" aria-live="polite" className="text-sm text-red-500">
             {state.errors.price.map((error: string) => (
@@ -92,12 +74,7 @@ export default function ProductForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="sku">SKU</Label>
-        <Input
-          id="sku"
-          name="sku"
-          type="text"
-          aria-describedby="sku-error"
-        />
+        <Input id="sku" name="sku" type="text" aria-describedby="sku-error" />
         {state?.errors?.sku && (
           <div id="sku-error" aria-live="polite" className="text-sm text-red-500">
             {state.errors.sku.map((error: string) => (
@@ -110,5 +87,5 @@ export default function ProductForm() {
         Create Product
       </Button>
     </form>
-  );
+  )
 }

@@ -40,7 +40,7 @@
     "@radix-ui/react-tooltip": "latest",
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "^2.44.4",
+    "@supabase/supabase-js": "latest",
     "@tanstack/react-table": "latest",
     "@uidotdev/usehooks": "latest",
     "class-variance-authority": "^0.7.1",

@@ -1,12 +1,18 @@
-import { fetchSuppliers } from '@/lib/data/suppliers';
-import SupplierList from '@/components/suppliers/supplier-list';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { fetchSuppliers } from "@/lib/data/suppliers"
+import { SupplierList } from "@/components/suppliers/supplier-list"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 export default async function SuppliersPage() {
-  const suppliers = await fetchSuppliers();
+  const suppliers = await fetchSuppliers()
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -37,5 +43,5 @@ export default async function SuppliersPage() {
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

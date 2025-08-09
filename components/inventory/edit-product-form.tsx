@@ -1,29 +1,28 @@
-'use client';
+"use client"
 
-import { useActionState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { updateProduct, State } from '@/app/inventory/actions';
-import { Product } from '@/lib/supabase/types';
-import { toast } from 'sonner';
+import { useFormState } from "react-dom"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { updateProduct, type State } from "@/app/inventory/actions"
+import type { Product } from "@/lib/supabase/types"
+import { toast } from "sonner"
 
 interface EditProductFormProps {
-  product: Product;
+  product: Product
 }
 
 export default function EditProductForm({ product }: EditProductFormProps) {
-  const initialState: State = { message: null, errors: {} };
-  const updateProductWithId = updateProduct.bind(null, product.id);
-  const [state, formAction] = useActionState(updateProductWithId, initialState);
+  const initialState: State = { message: null, errors: {} }
+  const updateProductWithId = updateProduct.bind(null, product.id)
+  const [state, formAction] = useFormState(updateProductWithId, initialState)
 
-  // Show toast messages for success or error
   if (state?.message) {
-    if (state.message.includes('Failed')) {
-      toast.error(state.message);
+    if (state.message.includes("Failed")) {
+      toast.error(state.message)
     } else {
-      toast.success(state.message);
+      toast.success(state.message)
     }
   }
 
@@ -32,14 +31,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
       <input type="hidden" name="id" value={product.id} />
       <div className="grid gap-2">
         <Label htmlFor="name">Product Name</Label>
-        <Input
-          id="name"
-          name="name"
-          type="text"
-          defaultValue={product.name}
-          required
-          aria-describedby="name-error"
-        />
+        <Input id="name" name="name" type="text" defaultValue={product.name} required aria-describedby="name-error" />
         {state?.errors?.name && (
           <div id="name-error" aria-live="polite" className="text-sm text-red-500">
             {state.errors.name.map((error: string) => (
@@ -53,7 +45,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         <Textarea
           id="description"
           name="description"
-          defaultValue={product.description || ''}
+          defaultValue={product.description || ""}
           aria-describedby="description-error"
         />
         {state?.errors?.description && (
@@ -103,13 +95,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="sku">SKU</Label>
-        <Input
-          id="sku"
-          name="sku"
-          type="text"
-          defaultValue={product.sku || ''}
-          aria-describedby="sku-error"
-        />
+        <Input id="sku" name="sku" type="text" defaultValue={product.sku || ""} aria-describedby="sku-error" />
         {state?.errors?.sku && (
           <div id="sku-error" aria-live="polite" className="text-sm text-red-500">
             {state.errors.sku.map((error: string) => (
@@ -122,5 +108,5 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         Update Product
       </Button>
     </form>
-  );
+  )
 }

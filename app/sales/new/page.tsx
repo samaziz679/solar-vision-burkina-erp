@@ -1,13 +1,19 @@
-import SaleForm from '@/components/sales/sale-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
-import { fetchProducts } from '@/lib/data/products';
-import { fetchClients } from '@/lib/data/clients';
+import { SaleForm } from "@/components/sales/sale-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchClients } from "@/lib/data/clients"
 
 export default async function NewSalePage() {
-  const products = await fetchProducts();
-  const clients = await fetchClients();
+  const products = await fetchProducts()
+  const clients = await fetchClients()
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -39,5 +45,5 @@ export default async function NewSalePage() {
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

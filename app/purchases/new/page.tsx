@@ -1,13 +1,19 @@
-import PurchaseForm from '@/components/purchases/purchase-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
-import { fetchProducts } from '@/lib/data/products';
-import { fetchSuppliers } from '@/lib/data/suppliers';
+import { PurchaseForm } from "@/components/purchases/purchase-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchSuppliers } from "@/lib/data/suppliers"
 
 export default async function NewPurchasePage() {
-  const products = await fetchProducts();
-  const suppliers = await fetchSuppliers();
+  const products = await fetchProducts()
+  const suppliers = await fetchSuppliers()
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -39,5 +45,5 @@ export default async function NewPurchasePage() {
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

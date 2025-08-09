@@ -1,20 +1,26 @@
-import { fetchPurchaseById } from '@/lib/data/purchases';
-import EditPurchaseForm from '@/components/purchases/edit-purchase-form';
-import { notFound } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
-import { fetchProducts } from '@/lib/data/products';
-import { fetchSuppliers } from '@/lib/data/suppliers';
+import { fetchPurchaseById } from "@/lib/data/purchases"
+import { EditPurchaseForm } from "@/components/purchases/edit-purchase-form"
+import { notFound } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchSuppliers } from "@/lib/data/suppliers"
 
 export default async function EditPurchasePage({ params }: { params: { id: string } }) {
-  const id = params.id;
-  const purchase = await fetchPurchaseById(id);
-  const products = await fetchProducts();
-  const suppliers = await fetchSuppliers();
+  const id = params.id
+  const purchase = await fetchPurchaseById(id)
+  const products = await fetchProducts()
+  const suppliers = await fetchSuppliers()
 
   if (!purchase) {
-    notFound();
+    notFound()
   }
 
   return (
@@ -47,5 +53,5 @@ export default async function EditPurchasePage({ params }: { params: { id: strin
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

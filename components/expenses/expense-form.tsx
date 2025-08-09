@@ -1,32 +1,28 @@
-'use client';
+"use client"
 
-import { useActionState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { createExpense, updateExpense, State } from '@/app/expenses/actions';
-import { Expense } from '@/lib/supabase/types';
-import { toast } from 'sonner';
+import { useFormState } from "react-dom"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { createExpense, updateExpense, type State } from "@/app/expenses/actions"
+import type { Expense } from "@/lib/supabase/types"
+import { toast } from "sonner"
 
 interface ExpenseFormProps {
-  expense?: Expense;
+  expense?: Expense
 }
 
 export default function ExpenseForm({ expense }: ExpenseFormProps) {
-  const initialState: State = { message: null, errors: {} };
-  const updateExpenseWithId = updateExpense.bind(null, expense?.id || '');
-  const [state, formAction] = useActionState(
-    expense ? updateExpenseWithId : createExpense,
-    initialState
-  );
+  const initialState: State = { message: null, errors: {} }
+  const updateExpenseWithId = updateExpense.bind(null, expense?.id || "")
+  const [state, formAction] = useFormState(expense ? updateExpenseWithId : createExpense, initialState)
 
-  // Show toast messages for success or error
   if (state?.message) {
-    if (state.message.includes('Failed')) {
-      toast.error(state.message);
+    if (state.message.includes("Failed")) {
+      toast.error(state.message)
     } else {
-      toast.success(state.message);
+      toast.success(state.message)
     }
   }
 
@@ -58,7 +54,7 @@ export default function ExpenseForm({ expense }: ExpenseFormProps) {
           id="category"
           name="category"
           type="text"
-          defaultValue={expense?.category || ''}
+          defaultValue={expense?.category || ""}
           aria-describedby="category-error"
         />
         {state?.errors?.category && (
@@ -74,7 +70,7 @@ export default function ExpenseForm({ expense }: ExpenseFormProps) {
         <Textarea
           id="description"
           name="description"
-          defaultValue={expense?.description || ''}
+          defaultValue={expense?.description || ""}
           aria-describedby="description-error"
         />
         {state?.errors?.description && (
@@ -91,7 +87,7 @@ export default function ExpenseForm({ expense }: ExpenseFormProps) {
           id="date"
           name="date"
           type="date"
-          defaultValue={expense?.date || new Date().toISOString().split('T')[0]}
+          defaultValue={expense?.date || new Date().toISOString().split("T")[0]}
           required
           aria-describedby="date-error"
         />
@@ -104,8 +100,8 @@ export default function ExpenseForm({ expense }: ExpenseFormProps) {
         )}
       </div>
       <Button type="submit" className="w-full">
-        {expense ? 'Update Expense' : 'Create Expense'}
+        {expense ? "Update Expense" : "Create Expense"}
       </Button>
     </form>
-  );
+  )
 }

@@ -1,31 +1,30 @@
-'use client';
+"use client"
 
-import { useActionState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { createBankingAccount, updateBankingAccount, State } from '@/app/banking/actions';
-import { BankingAccount } from '@/lib/supabase/types';
-import { toast } from 'sonner';
+import { useFormState } from "react-dom"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { createBankingAccount, updateBankingAccount, type State } from "@/app/banking/actions"
+import type { BankingAccount } from "@/lib/supabase/types"
+import { toast } from "sonner"
 
 interface BankingFormProps {
-  bankingAccount?: BankingAccount;
+  bankingAccount?: BankingAccount
 }
 
 export default function BankingForm({ bankingAccount }: BankingFormProps) {
-  const initialState: State = { message: null, errors: {} };
-  const updateBankingAccountWithId = updateBankingAccount.bind(null, bankingAccount?.id || '');
-  const [state, formAction] = useActionState(
+  const initialState: State = { message: null, errors: {} }
+  const updateBankingAccountWithId = updateBankingAccount.bind(null, bankingAccount?.id || "")
+  const [state, formAction] = useFormState(
     bankingAccount ? updateBankingAccountWithId : createBankingAccount,
-    initialState
-  );
+    initialState,
+  )
 
-  // Show toast messages for success or error
   if (state?.message) {
-    if (state.message.includes('Failed')) {
-      toast.error(state.message);
+    if (state.message.includes("Failed")) {
+      toast.error(state.message)
     } else {
-      toast.success(state.message);
+      toast.success(state.message)
     }
   }
 
@@ -38,7 +37,7 @@ export default function BankingForm({ bankingAccount }: BankingFormProps) {
           id="bank_name"
           name="bank_name"
           type="text"
-          defaultValue={bankingAccount?.bank_name || ''}
+          defaultValue={bankingAccount?.bank_name || ""}
           required
           aria-describedby="bank-name-error"
         />
@@ -56,7 +55,7 @@ export default function BankingForm({ bankingAccount }: BankingFormProps) {
           id="account_name"
           name="account_name"
           type="text"
-          defaultValue={bankingAccount?.account_name || ''}
+          defaultValue={bankingAccount?.account_name || ""}
           required
           aria-describedby="account-name-error"
         />
@@ -74,7 +73,7 @@ export default function BankingForm({ bankingAccount }: BankingFormProps) {
           id="account_number"
           name="account_number"
           type="text"
-          defaultValue={bankingAccount?.account_number || ''}
+          defaultValue={bankingAccount?.account_number || ""}
           required
           aria-describedby="account-number-error"
         />
@@ -106,8 +105,8 @@ export default function BankingForm({ bankingAccount }: BankingFormProps) {
         )}
       </div>
       <Button type="submit" className="w-full">
-        {bankingAccount ? 'Update Account' : 'Create Account'}
+        {bankingAccount ? "Update Account" : "Create Account"}
       </Button>
     </form>
-  );
+  )
 }

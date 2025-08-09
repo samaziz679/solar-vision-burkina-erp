@@ -10,13 +10,44 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchProducts } from "@/lib/data/products"
+import { createClient } from "@/lib/supabase/server"
 import { fetchClients } from "@/lib/data/clients"
 import { SaleForm } from "@/components/sales/sale-form"
 
+// Form needs these fields from products
+export type ProductForSale = {
+  id: string
+  name: string
+  prix_vente_detail_1: number | null
+  prix_vente_detail_2: number | null
+  prix_vente_gros: number | null
+}
+
 export default async function NewSalePage() {
-  // Do NOT use searchParams.get in Server Components.
-  const products = await fetchProducts()
+  // Do not use searchParams.get in a Server Component. Server pages receive a plain object.
+
+  // Fetch products directly with Supabase server client
+  const supabase = createClient()
+  const { data: productsData, error: productsError } = await supabase
+    .from("products")
+    .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
+    .order("name", { ascending: true })
+
+  if (productsError) {
+    console.error("Products query error:", productsError)
+    throw new Error("Failed to load products for the sale form.")
+  }
+
+  const products: ProductForSale[] =
+    (productsData ?? []).map((p: any) => ({
+      id: String(p.id),
+      name: String(p.name ?? ""),
+      prix_vente_detail_1: p.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
+      prix_vente_detail_2: p.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
+      prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
+    })) ?? []
+
+  // Fetch clients via data module
   const clients = await fetchClients()
 
   return (

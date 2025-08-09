@@ -15,7 +15,7 @@ import { fetchProducts } from "@/lib/data/products"
 import { fetchSuppliers } from "@/lib/data/suppliers"
 
 export default async function NewPurchasePage() {
-  // Do NOT use searchParams.get in Server Components.
+  // Do not use searchParams.get in a Server Component. Server pages receive a plain object.
   const products = await fetchProducts()
   const suppliers = await fetchSuppliers()
 
@@ -40,6 +40,7 @@ export default async function NewPurchasePage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
       <Card>
         <CardHeader>
           <CardTitle>Add New Purchase</CardTitle>

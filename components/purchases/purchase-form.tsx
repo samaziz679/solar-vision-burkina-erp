@@ -15,6 +15,7 @@ export type PurchaseFormProps = {
 }
 
 export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
+  // Bind server action for React 18 DOM typings
   const formAction = createPurchase as unknown as string
 
   return (
@@ -23,7 +24,10 @@ export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
         <Label>Product</Label>
         <input type="hidden" name="product_id" />
         <Select
-          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="product_id"]')!.value = v)}
+          onValueChange={(v) => {
+            const el = document.querySelector<HTMLInputElement>('input[name="product_id"]')
+            if (el) el.value = v
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select product" />
@@ -42,7 +46,10 @@ export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
         <Label>Supplier</Label>
         <input type="hidden" name="supplier_id" />
         <Select
-          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="supplier_id"]')!.value = v)}
+          onValueChange={(v) => {
+            const el = document.querySelector<HTMLInputElement>('input[name="supplier_id"]')
+            if (el) el.value = v
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select supplier" />
@@ -85,4 +92,5 @@ export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
   )
 }
 
+// Add default export so both default and named imports work
 export default PurchaseForm

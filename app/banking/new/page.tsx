@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+import BankingForm from "@/components/banking/banking-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -10,10 +11,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { BankingForm } from "@/components/banking/banking-form"
 
-export default function NewBankingPage() {
-  // Do NOT use searchParams.get in Server Components.
+export default function NewBankingAccountPage() {
+  // Do not use searchParams.get in a Server Component. Server pages receive a plain object.
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>
@@ -26,18 +26,19 @@ export default function NewBankingPage() {
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/banking">Banking</Link>
+              <Link href="/banking">Banking Accounts</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink>New Entry</BreadcrumbLink>
+            <BreadcrumbLink>New Account</BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
       <Card>
         <CardHeader>
-          <CardTitle>Add Banking Entry</CardTitle>
+          <CardTitle>Add New Banking Account</CardTitle>
         </CardHeader>
         <CardContent>
           <BankingForm />

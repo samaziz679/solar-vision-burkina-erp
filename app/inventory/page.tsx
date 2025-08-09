@@ -1,33 +1,28 @@
-import { fetchProducts } from '@/lib/data/products';
-import ProductList from '@/components/inventory/product-list';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import ProductList, { type InventoryProduct } from "@/components/inventory/product-list"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function InventoryPage() {
-  const products = await fetchProducts();
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("id,name,sku,price,stock_quantity,description,created_at,user_id")
+    .order("created_at", { ascending: false })
+
+  // Fall back to empty array on error
+  const products = (data ?? []) as InventoryProduct[]
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <div className="flex items-center">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink>Inventory</BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <Button asChild className="ml-auto">
-          <Link href="/inventory/new">Add New Product</Link>
-        </Button>
-      </div>
+    <main className="flex-1 p-6">
       <Card>
         <CardHeader>
           <CardTitle>Inventory</CardTitle>
@@ -37,5 +32,5 @@ export default async function InventoryPage() {
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

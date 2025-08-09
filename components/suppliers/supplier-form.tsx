@@ -1,13 +1,11 @@
 "use client"
 
-import type React from "react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createSupplier, updateSupplier } from "@/app/suppliers/actions"
-import { toast } from "sonner"
 import type { Supplier } from "@/lib/supabase/types"
 
 interface SupplierFormProps {
@@ -21,8 +19,6 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
   const [phoneNumber, setPhoneNumber] = useState(initialData?.phone_number || "")
   const [address, setAddress] = useState(initialData?.address || "")
   const [isPending, setIsPending] = useState(false)
-  const [errors, setErrors] = useState<{ [key: string]: string[] }>({})
-  const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (initialData) {
@@ -34,42 +30,13 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
     }
   }, [initialData])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsPending(true)
-    setErrors({})
-    setMessage(null)
-
-    const formData = new FormData(event.currentTarget)
-    if (initialData?.id) {
-      formData.append("id", initialData.id)
-    }
-
-    // Normalize legacy "phone" -> "phone_number" if needed
-    if (formData.has("phone") && !formData.has("phone_number")) {
-      const v = formData.get("phone")
-      if (typeof v === "string") formData.set("phone_number", v)
-    }
-
-    const action = initialData ? updateSupplier : createSupplier
-    const result = await action(undefined as unknown as never, formData)
-
-    if (result?.errors) {
-      setErrors(result.errors)
-      setMessage(result.message)
-      toast.error(result.message)
-    } else if (result?.message) {
-      setMessage(result.message)
-      toast.error(result.message)
-    } else {
-      toast.success(initialData ? "Supplier updated successfully!" : "Supplier created successfully!")
-    }
-    setIsPending(false)
-  }
+  // Choose the correct Server Action and cast for React 18 DOM typings
+  const formAction = (initialData ? updateSupplier : createSupplier) as unknown as (formData: FormData) => void
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form action={formAction} onSubmit={() => setIsPending(true)} className="space-y-4">
       <input type="hidden" name="id" value={initialData?.id ?? ""} />
+
       <div className="grid gap-2">
         <Label htmlFor="name">Supplier Name</Label>
         <Input
@@ -82,8 +49,8 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
           required
           disabled={isPending}
         />
-        {errors.name && <p className="text-red-500 text-sm">{errors.name.join(", ")}</p>}
       </div>
+
       <div className="grid gap-2">
         <Label htmlFor="contact_person">Contact Person</Label>
         <Input
@@ -95,8 +62,8 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
           placeholder="e.g., Jane Smith"
           disabled={isPending}
         />
-        {errors.contact_person && <p className="text-red-500 text-sm">{errors.contact_person.join(", ")}</p>}
       </div>
+
       <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -109,8 +76,8 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
           required
           disabled={isPending}
         />
-        {errors.email && <p className="text-red-500 text-sm">{errors.email.join(", ")}</p>}
       </div>
+
       <div className="grid gap-2">
         <Label htmlFor="phone_number">Phone Number</Label>
         <Input
@@ -123,10 +90,8 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
           required
           disabled={isPending}
         />
-        {(errors.phone_number || errors.phone) && (
-          <p className="text-red-500 text-sm">{(errors.phone_number ?? errors.phone)?.join(", ")}</p>
-        )}
       </div>
+
       <div className="grid gap-2">
         <Label htmlFor="address">Address</Label>
         <Textarea
@@ -138,9 +103,8 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
           required
           disabled={isPending}
         />
-        {errors.address && <p className="text-red-500 text-sm">{errors.address.join(", ")}</p>}
       </div>
-      {message && <p className="text-red-500 text-sm">{message}</p>}
+
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending
           ? initialData
@@ -154,6 +118,6 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
   )
 }
 
-// Export both named and default to satisfy existing imports
+// Export both named and default so existing imports continue to work
 export { SupplierFormComponent as SupplierForm }
 export default SupplierFormComponent

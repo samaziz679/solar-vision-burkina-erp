@@ -3,8 +3,7 @@ import { getAdminClient } from "@/lib/supabase/admin"
 import type { Client } from "../supabase/types"
 
 /**
- * Fetch all clients ordered by creation date (desc).
- * Uses the shared Supabase server client with a universal cookies adapter.
+ * Server-side reads use the admin client to avoid any cookies dependency.
  */
 export async function fetchClients(): Promise<Client[]> {
   noStore()
@@ -20,9 +19,6 @@ export async function fetchClients(): Promise<Client[]> {
   return (data ?? []) as Client[]
 }
 
-/**
- * Fetch a single client by id.
- */
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
   const supabase = getAdminClient()

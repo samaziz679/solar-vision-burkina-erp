@@ -10,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { getAdminClient } from "@/lib/supabase/admin"
 import { fetchClients } from "@/lib/data/clients"
 import { SaleForm } from "@/components/sales/sale-form"
 
@@ -24,12 +24,13 @@ export type ProductForSale = {
 }
 
 export default async function NewSalePage() {
-  // Fetch products directly with Supabase
-  const supabase = createClient()
+  // Use admin client for SSR reads (no cookies required)
+  const supabase = getAdminClient()
   const { data: productsData, error: productsError } = await supabase
     .from("products")
     .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
-    .order("name", { ascending: true })
+  // Note: order by name is optional; if needed server-side:
+  // .order("name", { ascending: true })
 
   if (productsError) {
     console.error("Products query error:", productsError)
@@ -45,7 +46,6 @@ export default async function NewSalePage() {
       prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
     })) ?? []
 
-  // Fetch clients via data module (uses noStore)
   const clients = await fetchClients()
 
   return (

@@ -1,28 +1,15 @@
-import "server-only"
+// Supabase admin client (no cookies required).
+// Use only on the server. Never expose SERVICE_ROLE_KEY to the client.
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-// Server-only admin client using the Service Role key.
-// Never import this in Client Components. It bypasses RLS by design.
-let adminClient: SupabaseClient | null = null
-
-export function getAdminClient(): SupabaseClient {
+export function getAdminClient() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !serviceRoleKey) {
-    throw new Error(
-      "Supabase admin client is not configured. Ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in Vercel Project Settings (Production).",
-    )
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceKey) {
+    throw new Error("Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY")
   }
-
-  if (!adminClient) {
-    adminClient = createClient(url, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: {
-        headers: { "x-application-name": "solar-vision-erp" },
-      },
-    })
-  }
-  return adminClient
+  return createSupabaseClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 }

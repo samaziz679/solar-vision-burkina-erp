@@ -8,12 +8,16 @@ interface BankingFormProps {
   bankingAccount?: BankingAccount
 }
 
+/**
+ * Server Component form that posts to Next.js Server Actions.
+ * Note: React 18 types expect `form.action` to be a string. We cast to `any`
+ * so TS accepts the function reference while runtime behavior remains correct.
+ */
 export default function BankingForm({ bankingAccount }: BankingFormProps) {
-  // When editing, bind the id so the Server Action receives it as the first argument.
   const formAction = bankingAccount ? updateBankingAccount.bind(null, bankingAccount.id) : createBankingAccount
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction as any} className="space-y-4">
       <input type="hidden" name="id" value={bankingAccount?.id ?? ""} />
 
       <div className="grid gap-2">

@@ -13,6 +13,7 @@ import Link from "next/link"
 import SaleForm from "@/components/sales/sale-form"
 import { getAdminClient } from "@/lib/supabase/admin"
 import { fetchClients } from "@/lib/data/clients"
+import type { SearchParams } from "@/lib/utils/safe-params"
 
 // Match exactly what the SaleForm expects for products
 type ProductForSale = {
@@ -25,7 +26,11 @@ type ProductForSale = {
 
 type ClientOption = { id: string; name: string | null }
 
-export default async function NewSalePage() {
+export default async function NewSalePage({
+  searchParams,
+}: {
+  searchParams?: SearchParams
+}) {
   // Cookie-free SSR read
   const supabase = getAdminClient()
 

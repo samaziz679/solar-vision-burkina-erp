@@ -11,14 +11,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import type { SearchParams } from "@/lib/utils/safe-params"
 
-export default function NewClientPage({
-  // Keep optional; never call .get on the server. Use safe helpers if needed.
-  searchParams,
-}: {
-  searchParams?: SearchParams
-}) {
+export default function NewClientPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>

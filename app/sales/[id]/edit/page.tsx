@@ -10,14 +10,17 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchProducts } from "@/lib/data/products"
-import { fetchClients } from "@/lib/data/clients"
+import { fetchProductsForSaleForm } from "@/lib/data/products"
+import { fetchClientsForSaleForm } from "@/lib/data/clients"
 
 export default async function EditSalePage({ params }: { params: { id: string } }) {
   const id = params.id
-  const sale = await fetchSaleById(id)
-  const products = await fetchProducts()
-  const clients = await fetchClients()
+
+  const [sale, products, clients] = await Promise.all([
+    fetchSaleById(id),
+    fetchProductsForSaleForm(),
+    fetchClientsForSaleForm(),
+  ])
 
   if (!sale) {
     notFound()

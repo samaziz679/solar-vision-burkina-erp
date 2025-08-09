@@ -10,15 +10,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import type { SearchParams } from "@/lib/utils/safe-params"
 
 export default async function EditClientPage({
   params,
-  // Keep optional; do not call .get on server
-  searchParams,
 }: {
   params: { id: string }
-  searchParams?: SearchParams
 }) {
   const id = params.id
   const client = await fetchClientById(id)

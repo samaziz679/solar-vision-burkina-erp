@@ -1,7 +1,7 @@
 "use client"
-
+import { useRouter } from "next/navigation"
+import { LogOut, Settings, UserIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,64 +10,70 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import Link from "next/link"
-import { LogOut, UserIcon } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import type { User } from "@supabase/supabase-js"
+import { Button } from "@/components/ui/button"
+import { getBrowserClient } from "@/lib/supabase/client"
 
-type Props = {
-  user: User | null
+export type UserButtonProps = {
+  name?: string
+  email?: string
+  imageUrl?: string
+  onSignOut?: () => void
 }
 
-export default function UserButton({ user }: Props) {
-  const supabase = createClient()
+export default function UserButton({
+  name = "User",
+  email = "user@example.com",
+  imageUrl = "/placeholder-user.jpg",
+  onSignOut,
+}: UserButtonProps) {
   const router = useRouter()
 
   async function handleSignOut() {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      toast.error("Failed to sign out.")
+    if (onSignOut) {
+      onSignOut()
       return
     }
-    toast.success("Signed out")
-    router.push("/login")
+    try {
+      const supabase = getBrowserClient()
+      await supabase.auth.signOut()
+      router.push("/login")
+    } catch (err) {
+      // Fallback if sign-out fails for any reason
+      router.push("/login")
+    }
   }
-
-  if (!user) {
-    return (
-      <Button asChild variant="outline" size="sm">
-        <Link href="/login">Login</Link>
-      </Button>
-    )
-  }
-
-  const email = user.email ?? "user"
-  const initials = email.slice(0, 2).toUpperCase()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 px-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder-user.jpg" alt="User avatar" />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <span className="hidden md:inline-block text-sm">{email}</span>
+        <Button variant="ghost" className="h-9 px-2">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-7 w-7">
+              <AvatarImage src={imageUrl || "/placeholder.svg"} alt="User avatar" />
+              <AvatarFallback>{(name ?? "U").slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="hidden sm:inline text-sm font-medium">{name}</span>
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <UserIcon className="h-4 w-4" />
-          {email}
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{name}</span>
+            <span className="text-xs text-muted-foreground">{email}</span>
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard">Dashboard</Link>
+        <DropdownMenuItem className="cursor-pointer">
+          <UserIcon className="mr-2 h-4 w-4" />
+          Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-700">
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>

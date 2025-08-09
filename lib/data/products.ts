@@ -3,7 +3,9 @@ import { unstable_noStore as noStore } from "next/cache"
 import { cookies } from "next/headers"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
-import type { Product, ProductLite } from "../supabase/types"
+import type { Product } from "../supabase/types"
+
+export type ProductLite = { id: string; name: string }
 
 function getSupabase() {
   const cookieStore = cookies()

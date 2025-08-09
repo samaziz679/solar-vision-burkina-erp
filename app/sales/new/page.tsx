@@ -13,7 +13,6 @@ import Link from "next/link"
 import SaleForm from "@/components/sales/sale-form"
 import { getAdminClient } from "@/lib/supabase/admin"
 
-// Keep the product shape minimal and aligned with DB columns (no invented fields)
 type ProductForSale = {
   id: string
   name: string
@@ -22,22 +21,19 @@ type ProductForSale = {
   prix_vente_gros: number | null
 }
 
-type ClientOption = { id: string; name: string }
-
+// Note: We will pass full client rows to match SaleForm's type expectations.
 export default async function NewSalePage() {
-  // Use the admin client for cookie-free server reads
   const supabase = getAdminClient()
 
-  // Only select columns that exist in the products table
   const [{ data: productsData, error: productsError }, { data: clientsData, error: clientsError }] = await Promise.all([
     supabase
       .from("products")
       .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
       .order("name", { ascending: true }),
-    // For the clients dropdown, fetch only id and name from clients
+    // Fetch full client rows so typing matches SaleForm's props (Client[])
     supabase
       .from("clients")
-      .select("id,name")
+      .select("*")
       .order("name", { ascending: true }),
   ])
 
@@ -58,10 +54,8 @@ export default async function NewSalePage() {
     prix_vente_gros: p?.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
   }))
 
-  const clients: ClientOption[] = (clientsData ?? []).map((c: any) => ({
-    id: String(c.id),
-    name: String(c?.name ?? ""),
-  }))
+  // Pass as-is to SaleForm to satisfy its typing (expected Client[]).
+  const clients = clientsData ?? []
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -90,8 +84,7 @@ export default async function NewSalePage() {
           <CardTitle>Add New Sale</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* SaleForm expects products with tier prices and a clients list of { id, name } */}
-          <SaleForm products={products} clients={clients} />
+          <SaleForm products={products} clients={clients as any} />
         </CardContent>
       </Card>
     </main>

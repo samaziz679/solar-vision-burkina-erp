@@ -1,181 +1,100 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { format } from 'date-fns'
-import { CalendarIcon, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { updatePurchase } from '@/app/purchases/actions'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { Database } from '@/lib/supabase/types'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { updatePurchase } from "@/app/purchases/actions"
 
-type Purchase = Database['public']['Tables']['purchases']['Row']
-type Product = Database['public']['Tables']['products']['Row']
-type Supplier = Database['public']['Tables']['suppliers']['Row']
+type Product = { id: string; name: string }
+type Supplier = { id: string; name: string }
+type Purchase = {
+  id: string
+  product_id: string
+  supplier_id: string
+  quantity: number
+  total_amount: number
+  purchase_date: string
+}
 
-interface EditPurchaseFormProps {
+export type EditPurchaseFormProps = {
   initialData: Purchase
   products: Product[]
   suppliers: Supplier[]
 }
 
 export function EditPurchaseForm({ initialData, products, suppliers }: EditPurchaseFormProps) {
-  const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(initialData ? new Date(initialData.purchase_date) : undefined)
-  const [productId, setProductId] = useState(initialData?.product_id || '')
-  const [supplierId, setSupplierId] = useState(initialData?.supplier_id || '')
-  const [quantity, setQuantity] = useState<number | ''>(initialData?.quantity || '')
-  const [unitPrice, setUnitPrice] = useState<number | ''>(initialData?.unit_price || '')
-  const [totalAmount, setTotalAmount] = useState<number | ''>(initialData?.total_amount || '')
-  const [isPending, setIsPending] = useState(false)
-  const router = useRouter()
-
-  useEffect(() => {
-    if (quantity && unitPrice) {
-      setTotalAmount(quantity * unitPrice)
-    } else {
-      setTotalAmount('')
-    }
-  }, [quantity, unitPrice])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsPending(true)
-
-    const formData = new FormData()
-    formData.append('id', initialData.id)
-    formData.append('purchase_date', purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : '')
-    formData.append('product_id', productId)
-    formData.append('supplier_id', supplierId)
-    formData.append('quantity', String(quantity))
-    formData.append('unit_price', String(unitPrice))
-    formData.append('total_amount', String(totalAmount))
-
-    const result = await updatePurchase(formData)
-
-    if (result.success) {
-      toast.success('Purchase updated successfully!')
-      router.push('/purchases')
-    } else {
-      toast.error(result.message || 'Failed to update purchase.')
-      if (result.errors) {
-        result.errors.forEach(err => toast.error(err.message));
-      }
-    }
-    setIsPending(false)
-  }
+  const formAction = updatePurchase.bind(null, initialData.id) as unknown as string
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="id" value={initialData.id} />
+
       <div className="grid gap-2">
-        <Label htmlFor="purchase_date">Purchase Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={'outline'}
-              className={cn(
-                'w-full justify-start text-left font-normal',
-                !purchaseDate && 'text-muted-foreground'
-              )}
-              disabled={isPending}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {purchaseDate ? format(purchaseDate, 'PPP') : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={purchaseDate}
-              onSelect={setPurchaseDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="product_id">Product</Label>
-        <Select value={productId} onValueChange={setProductId} disabled={isPending}>
+        <Label>Product</Label>
+        <input type="hidden" name="product_id" value={initialData.product_id} />
+        <Select
+          defaultValue={initialData.product_id}
+          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="product_id"]')!.value = v)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select product" />
           </SelectTrigger>
           <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
+            {products.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
       <div className="grid gap-2">
-        <Label htmlFor="supplier_id">Supplier</Label>
-        <Select value={supplierId} onValueChange={setSupplierId} disabled={isPending}>
+        <Label>Supplier</Label>
+        <input type="hidden" name="supplier_id" value={initialData.supplier_id} />
+        <Select
+          defaultValue={initialData.supplier_id}
+          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="supplier_id"]')!.value = v)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select supplier" />
           </SelectTrigger>
           <SelectContent>
-            {suppliers.map((supplier) => (
-              <SelectItem key={supplier.id} value={supplier.id}>
-                {supplier.name}
+            {suppliers.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantity</Label>
-        <Input
-          id="quantity"
-          type="number"
-          step="1"
-          value={quantity}
-          onChange={(e) => setQuantity(parseInt(e.target.value))}
-          required
-          disabled={isPending}
-        />
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData.quantity} required />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Unit Price</Label>
-        <Input
-          id="unit_price"
-          type="number"
-          step="0.01"
-          value={unitPrice}
-          onChange={(e) => setUnitPrice(parseFloat(e.target.value))}
-          required
-          disabled={isPending}
-        />
-      </div>
+
       <div className="grid gap-2">
         <Label htmlFor="total_amount">Total Amount</Label>
         <Input
           id="total_amount"
+          name="total_amount"
           type="number"
           step="0.01"
-          value={totalAmount}
-          readOnly
-          disabled={true} // Always disabled as it's calculated
+          defaultValue={initialData.total_amount}
+          required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          'Save Changes'
-        )}
+
+      <div className="grid gap-2">
+        <Label htmlFor="purchase_date">Purchase Date</Label>
+        <Input id="purchase_date" name="purchase_date" type="date" defaultValue={initialData.purchase_date} required />
+      </div>
+
+      <Button type="submit" className="w-full">
+        Update Purchase
       </Button>
     </form>
   )
 }
-
-// This file is no longer needed as purchase-form.tsx handles both create and edit.
-// It will be removed in a future update.

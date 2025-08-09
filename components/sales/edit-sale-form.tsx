@@ -1,181 +1,100 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { format } from 'date-fns'
-import { CalendarIcon, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { updateSale } from '@/app/sales/actions'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { Database } from '@/lib/supabase/types'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { updateSale } from "@/app/sales/actions"
 
-type Sale = Database['public']['Tables']['sales']['Row']
-type Client = Database['public']['Tables']['clients']['Row']
-type Product = Database['public']['Tables']['products']['Row']
-
-interface EditSaleFormProps {
-  initialData: Sale
-  clients: Client[]
-  products: Product[]
+type Product = { id: string; name: string }
+type Client = { id: string; name: string }
+type Sale = {
+  id: string
+  product_id: string
+  client_id: string
+  quantity: number
+  total_amount: number
+  sale_date: string
 }
 
-export function EditSaleForm({ initialData, clients, products }: EditSaleFormProps) {
-  const [saleDate, setSaleDate] = useState<Date | undefined>(initialData ? new Date(initialData.sale_date) : undefined)
-  const [productId, setProductId] = useState(initialData?.product_id || '')
-  const [clientId, setClientId] = useState(initialData?.client_id || '')
-  const [quantity, setQuantity] = useState<number | ''>(initialData?.quantity || '')
-  const [unitPrice, setUnitPrice] = useState<number | ''>(initialData?.unit_price || '')
-  const [totalAmount, setTotalAmount] = useState<number | ''>(initialData?.total_amount || '')
-  const [isPending, setIsPending] = useState(false)
-  const router = useRouter()
+export type EditSaleFormProps = {
+  initialData: Sale
+  products: Product[]
+  clients: Client[]
+}
 
-  useEffect(() => {
-    if (quantity && unitPrice) {
-      setTotalAmount(quantity * unitPrice)
-    } else {
-      setTotalAmount('')
-    }
-  }, [quantity, unitPrice])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsPending(true)
-
-    const formData = new FormData()
-    formData.append('id', initialData.id)
-    formData.append('sale_date', saleDate ? format(saleDate, 'yyyy-MM-dd') : '')
-    formData.append('product_id', productId)
-    formData.append('client_id', clientId)
-    formData.append('quantity', String(quantity))
-    formData.append('unit_price', String(unitPrice))
-    formData.append('total_amount', String(totalAmount))
-
-    const result = await updateSale(formData)
-
-    if (result.success) {
-      toast.success('Sale updated successfully!')
-      router.push('/sales')
-    } else {
-      toast.error(result.message || 'Failed to update sale.')
-      if (result.errors) {
-        result.errors.forEach(err => toast.error(err.message));
-      }
-    }
-    setIsPending(false)
-  }
+export function EditSaleForm({ initialData, products, clients }: EditSaleFormProps) {
+  const formAction = updateSale.bind(null, initialData.id) as unknown as string
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="id" value={initialData.id} />
+
       <div className="grid gap-2">
-        <Label htmlFor="sale_date">Sale Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={'outline'}
-              className={cn(
-                'w-full justify-start text-left font-normal',
-                !saleDate && 'text-muted-foreground'
-              )}
-              disabled={isPending}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {saleDate ? format(saleDate, 'PPP') : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={saleDate}
-              onSelect={setSaleDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="product_id">Product</Label>
-        <Select value={productId} onValueChange={setProductId} disabled={isPending}>
+        <Label>Product</Label>
+        <input type="hidden" name="product_id" value={initialData.product_id} />
+        <Select
+          defaultValue={initialData.product_id}
+          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="product_id"]')!.value = v)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select product" />
           </SelectTrigger>
           <SelectContent>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
+            {products.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
       <div className="grid gap-2">
-        <Label htmlFor="client_id">Client</Label>
-        <Select value={clientId} onValueChange={setClientId} disabled={isPending}>
+        <Label>Client</Label>
+        <input type="hidden" name="client_id" value={initialData.client_id} />
+        <Select
+          defaultValue={initialData.client_id}
+          onValueChange={(v) => (document.querySelector<HTMLInputElement>('input[name="client_id"]')!.value = v)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select client" />
           </SelectTrigger>
           <SelectContent>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
+            {clients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
       <div className="grid gap-2">
         <Label htmlFor="quantity">Quantity</Label>
-        <Input
-          id="quantity"
-          type="number"
-          step="1"
-          value={quantity}
-          onChange={(e) => setQuantity(parseInt(e.target.value))}
-          required
-          disabled={isPending}
-        />
+        <Input id="quantity" name="quantity" type="number" defaultValue={initialData.quantity} required />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="unit_price">Unit Price</Label>
-        <Input
-          id="unit_price"
-          type="number"
-          step="0.01"
-          value={unitPrice}
-          onChange={(e) => setUnitPrice(parseFloat(e.target.value))}
-          required
-          disabled={isPending}
-        />
-      </div>
+
       <div className="grid gap-2">
         <Label htmlFor="total_amount">Total Amount</Label>
         <Input
           id="total_amount"
+          name="total_amount"
           type="number"
           step="0.01"
-          value={totalAmount}
-          readOnly
-          disabled={true} // Always disabled as it's calculated
+          defaultValue={initialData.total_amount}
+          required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          'Save Changes'
-        )}
+
+      <div className="grid gap-2">
+        <Label htmlFor="sale_date">Sale Date</Label>
+        <Input id="sale_date" name="sale_date" type="date" defaultValue={initialData.sale_date} required />
+      </div>
+
+      <Button type="submit" className="w-full">
+        Update Sale
       </Button>
     </form>
   )
 }
-
-// This file is no longer needed as sale-form.tsx handles both create and edit.
-// It will be removed in a future update.

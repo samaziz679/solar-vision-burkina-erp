@@ -10,42 +10,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { getAdminClient } from "@/lib/supabase/admin"
+import { fetchProducts } from "@/lib/data/products"
 import { fetchClients } from "@/lib/data/clients"
 import { SaleForm } from "@/components/sales/sale-form"
 
-// Shape needed by the form (pricing tiers from your schema)
-export type ProductForSale = {
-  id: string
-  name: string
-  prix_vente_detail_1: number | null
-  prix_vente_detail_2: number | null
-  prix_vente_gros: number | null
-}
-
 export default async function NewSalePage() {
-  // Important: do NOT read searchParams.get here (server pages receive a plain object)
-  // Use admin client for SSR read (cookie-independent)
-  const supabase = getAdminClient()
-  const { data: productsData, error: productsError } = await supabase
-    .from("products")
-    .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
-    .order("name", { ascending: true })
-
-  if (productsError) {
-    console.error("Products query error:", productsError)
-    throw new Error("Failed to load products for the sale form.")
-  }
-
-  const products: ProductForSale[] =
-    (productsData ?? []).map((p: any) => ({
-      id: String(p.id),
-      name: String(p.name ?? ""),
-      prix_vente_detail_1: p.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
-      prix_vente_detail_2: p.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
-      prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
-    })) ?? []
-
+  // Do NOT use searchParams.get in Server Components.
+  const products = await fetchProducts()
   const clients = await fetchClients()
 
   return (

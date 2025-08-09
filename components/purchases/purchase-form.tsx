@@ -84,3 +84,5 @@ export function PurchaseForm({ products, suppliers }: PurchaseFormProps) {
     </form>
   )
 }
+
+export default PurchaseForm

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-import PurchaseForm from "@/components/purchases/purchase-form"
+import { PurchaseForm } from "@/components/purchases/purchase-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,9 +11,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchSuppliers } from "@/lib/data/suppliers"
 
-export default function NewPurchasePage() {
-  // Important: do NOT read searchParams.get here (server pages receive a plain object)
+export default async function NewPurchasePage() {
+  // Do NOT use searchParams.get in Server Components.
+  const products = await fetchProducts()
+  const suppliers = await fetchSuppliers()
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>
@@ -35,13 +40,12 @@ export default function NewPurchasePage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-
       <Card>
         <CardHeader>
           <CardTitle>Add New Purchase</CardTitle>
         </CardHeader>
         <CardContent>
-          <PurchaseForm />
+          <PurchaseForm products={products} suppliers={suppliers} />
         </CardContent>
       </Card>
     </main>

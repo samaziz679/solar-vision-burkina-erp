@@ -5,7 +5,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Product } from "../supabase/types"
 
-// Local lightweight type for selects in lists
+// Lightweight shape for selects and dropdowns
 export type ProductLite = Pick<Product, "id" | "name">
 
 function getSupabase() {
@@ -24,7 +24,9 @@ function getSupabase() {
   })
 }
 
-// List products for selects (id, name)
+/**
+ * List products for selects (id, name)
+ */
 export async function fetchProducts(): Promise<ProductLite[]> {
   const supabase = getAdminClient()
   const { data, error } = await supabase.from("products").select("id,name").order("name", { ascending: true })
@@ -37,7 +39,9 @@ export async function fetchProducts(): Promise<ProductLite[]> {
   }))
 }
 
-// Fetch a full product by id
+/**
+ * Full product by id (session-aware)
+ */
 export async function fetchProductById(id: string): Promise<Product | null> {
   noStore()
   const supabase = getSupabase()

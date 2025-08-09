@@ -5,7 +5,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Client } from "../supabase/types"
 
-// Local lightweight type for selects in lists
+// Local lightweight type for selects
 export type ClientLite = Pick<Client, "id" | "name">
 
 function getSupabase() {
@@ -24,7 +24,9 @@ function getSupabase() {
   })
 }
 
-// List clients for selects (id, name)
+/**
+ * List clients (id, name) for dropdowns
+ */
 export async function fetchClients(): Promise<ClientLite[]> {
   const supabase = getAdminClient()
   const { data, error } = await supabase.from("clients").select("id,name").order("name", { ascending: true })
@@ -37,7 +39,9 @@ export async function fetchClients(): Promise<ClientLite[]> {
   }))
 }
 
-// Fetch a full client by id (optional, if used elsewhere)
+/**
+ * Full client by id (session-aware)
+ */
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
   const supabase = getSupabase()

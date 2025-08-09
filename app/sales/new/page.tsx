@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+import SaleForm from "@/components/sales/sale-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,11 +12,8 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 import { getAdminClient } from "@/lib/supabase/admin"
-import { fetchClients } from "@/lib/data/clients"
-import { SaleForm } from "@/components/sales/sale-form"
 
-// Fields needed by the SaleForm from products
-export type ProductForSale = {
+type ProductForSale = {
   id: string
   name: string
   prix_vente_detail_1: number | null
@@ -23,18 +21,23 @@ export type ProductForSale = {
   prix_vente_gros: number | null
 }
 
-export default async function NewSalePage() {
-  // IMPORTANT: Do NOT use searchParams.get in Server Components.
-  // Read products server-side using admin client (no cookies).
-  const supabase = getAdminClient()
-  const { data: productsData, error: productsError } = await supabase
-    .from("products")
-    .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
-    .order("name", { ascending: true })
+type Client = { id: string; name: string }
 
-  if (productsError) {
-    console.error("Products query error:", productsError)
-    throw new Error("Failed to load products for the sale form.")
+export default async function NewSalePage() {
+  // Do NOT use searchParams.get in Server Components.
+  const supabase = getAdminClient()
+
+  const [{ data: productsData, error: prodErr }, { data: clientsData, error: clientErr }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
+      .order("name", { ascending: true }),
+    supabase.from("clients").select("id,name").order("name", { ascending: true }),
+  ])
+
+  if (prodErr || clientErr) {
+    console.error("sales/new preload error:", { prodErr, clientErr })
+    throw new Error("Failed to load sale prerequisites.")
   }
 
   const products: ProductForSale[] =
@@ -46,7 +49,10 @@ export default async function NewSalePage() {
       prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
     })) ?? []
 
-  const clients = await fetchClients()
+  const clients: Client[] = (clientsData ?? []).map((c: any) => ({
+    id: String(c.id),
+    name: String(c.name ?? ""),
+  }))
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">

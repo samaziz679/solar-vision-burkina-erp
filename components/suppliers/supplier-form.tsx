@@ -34,7 +34,7 @@ function SupplierFormComponent({ initialData }: SupplierFormProps) {
   const formAction = (initialData ? updateSupplier : createSupplier) as unknown as (formData: FormData) => void
 
   return (
-    <form action={formAction} onSubmit={() => setIsPending(true)} className="space-y-4">
+    <form action={formAction as unknown as string} onSubmit={() => setIsPending(true)} className="space-y-4">
       <input type="hidden" name="id" value={initialData?.id ?? ""} />
 
       <div className="grid gap-2">

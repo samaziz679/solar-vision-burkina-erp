@@ -1,26 +1,37 @@
 import { getAdminClient } from "@/lib/supabase/admin"
 
-export type ExpenseRow = Record<string, unknown>
+export type Expense = Record<string, unknown>
 
 /**
- * Fetch Expenses safely:
- * - Select "*" to avoid missing-column errors (e.g., created_at not present).
- * - Never throw; return [] on error and log details.
+ * Your schema indicates expenses may not have created_at.
+ * We avoid ordering by missing columns and return [] on error.
  */
-export async function fetchExpenses(): Promise<ExpenseRow[]> {
+export async function fetchExpenses(): Promise<Expense[]> {
   const supabase = getAdminClient()
   try {
-    const { data, error } = await supabase
-      .from("expenses" as any)
-      .select("*")
-      .limit(1000)
+    const { data, error } = await supabase.from("expenses").select("*").order("id", { ascending: false })
     if (error) {
       console.error("Database Error (expenses):", error)
       return []
     }
-    return (data ?? []) as ExpenseRow[]
-  } catch (err) {
-    console.error("Unexpected Error (expenses):", err)
+    return (data ?? []) as Expense[]
+  } catch (e) {
+    console.error("Unexpected Error (expenses):", e)
     return []
+  }
+}
+
+export async function fetchExpenseById(id: string): Promise<Expense | null> {
+  const supabase = getAdminClient()
+  try {
+    const { data, error } = await supabase.from("expenses").select("*").eq("id", id).maybeSingle()
+    if (error) {
+      console.error("Database Error (expense by id):", error)
+      return null
+    }
+    return (data as Expense) ?? null
+  } catch (e) {
+    console.error("Unexpected Error (expense by id):", e)
+    return null
   }
 }

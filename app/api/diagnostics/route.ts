@@ -1,27 +1,8 @@
 import { NextResponse } from "next/server"
 import { getAdminClient } from "@/lib/supabase/admin"
+import { fetchCardData } from "@/lib/data/dashboard"
 
 export async function GET() {
-  const supabase = getAdminClient()
-
-  async function probe(table: string) {
-    try {
-      const { data, error } = await supabase
-        .from(table as any)
-        .select("*")
-        .limit(1)
-      if (error) {
-        return { ok: false, error: { code: error.code, message: error.message, hint: error.hint } }
-      }
-      return { ok: true, sample: (data && data[0]) ?? null }
-    } catch (err: any) {
-      return {
-        ok: false,
-        error: { code: err?.code ?? "UNKNOWN", message: String(err?.message ?? err) },
-      }
-    }
-  }
-
   const env = {
     SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
     SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
@@ -29,18 +10,46 @@ export async function GET() {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
   }
 
-  const checks = {
-    banking_accounts: await probe("banking_accounts"),
-    bank_accounts: await probe("bank_accounts"),
-    bank_entries: await probe("bank_entries"),
-    expenses: await probe("expenses"),
-    purchases: await probe("purchases"),
-    sales: await probe("sales"),
+  const sources: Record<string, { ok: boolean; err?: unknown }> = {}
+  try {
+    const supabase = getAdminClient()
+    const tables = [
+      "products",
+      "purchases",
+      "sales",
+      "expenses",
+      "banking_accounts",
+      "bank_accounts",
+      "bank_entries",
+      "financial_summary",
+      "total_sales_per_product",
+      "current_stock",
+    ]
+    await Promise.all(
+      tables.map(async (t) => {
+        const { error } = await supabase.from(t).select("*").limit(1)
+        sources[t] = { ok: !error, err: error ?? undefined }
+      }),
+    )
+  } catch (e) {
+    sources["adminClient"] = { ok: false, err: String(e) }
+  }
+
+  let cards: { totalSales: number; totalExpenses: number; totalProducts: number } = {
+    totalSales: 0,
+    totalExpenses: 0,
+    totalProducts: 0,
+  }
+  try {
+    cards = await fetchCardData()
+  } catch (e) {
+    // keep defaults
   }
 
   return NextResponse.json({
     timestamp: new Date().toISOString(),
     env,
-    checks,
+    tables: sources,
+    cards,
   })
 }

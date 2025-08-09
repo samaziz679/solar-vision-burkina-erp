@@ -1,42 +1,49 @@
 import { getAdminClient } from "@/lib/supabase/admin"
 
-export type BankingAccount = {
-  id: number | string
-  name?: string | null
-  account_name?: string | null
-  balance?: number | null
-  current_balance?: number | null
-  created_at?: string | null
-}
+export type BankingRow = Record<string, unknown>
 
 /**
- * Fetch Banking Accounts with graceful fallbacks.
- * - Prefer a table named "banking_accounts" or "bank_accounts".
- * - If neither exists, return an empty list instead of throwing.
+ * Some projects name this table "banking_accounts" or "bank_accounts".
+ * Your error logs suggest "bank_entries" exists instead.
+ * We try a small cascade so pages don't crash even if a name differs.
  */
-export async function fetchBankingAccounts(): Promise<BankingAccount[]> {
+const BANK_TABLE_CANDIDATES = ["banking_accounts", "bank_accounts", "bank_entries"]
+
+async function selectFirstAvailable<T = BankingRow>(limit = 1000) {
   const supabase = getAdminClient()
+  let lastError: unknown = null
 
-  // Try common table names in order.
-  const candidates = ["banking_accounts", "bank_accounts"]
-
-  for (const table of candidates) {
-    const { data, error } = await supabase
-      .from(table as any)
-      .select("*")
-      .limit(1000)
-    if (!error && Array.isArray(data)) {
-      return data as BankingAccount[]
-    }
-    if (error && error.code !== "PGRST205") {
-      console.error("Database Error (banking):", error)
-      // Try next fallback instead of throwing.
-    }
+  for (const table of BANK_TABLE_CANDIDATES) {
+    const { data, error } = await supabase.from(table).select("*").limit(limit)
+    if (!error) return { table, rows: (data ?? []) as T[] }
+    lastError = error
+    // Continue to next candidate
   }
 
-  // If a legacy "bank_entries" exists, we don't try to aggregate guesses here.
-  // Return [] safely so the page renders without crashing.
-  // You can tell me the exact accounts table name and columns; I’ll wire it explicitly.
-  console.warn("Banking accounts table not found (tried banking_accounts, bank_accounts). Returning empty list.")
-  return []
+  console.error("Database Error (banking tables):", lastError)
+  return { table: null as unknown as string, rows: [] as T[] }
+}
+
+async function selectByIdFirstAvailable<T = BankingRow>(id: string) {
+  const supabase = getAdminClient()
+  let lastError: unknown = null
+
+  for (const table of BANK_TABLE_CANDIDATES) {
+    const { data, error } = await supabase.from(table).select("*").eq("id", id).maybeSingle()
+    if (!error) return { table, row: (data as T) ?? null }
+    lastError = error
+  }
+
+  console.error("Database Error (banking by id):", lastError)
+  return { table: null as unknown as string, row: null as T | null }
+}
+
+export async function fetchBankingAccounts(): Promise<BankingRow[]> {
+  const { rows } = await selectFirstAvailable<BankingRow>()
+  return rows
+}
+
+export async function fetchBankingAccountById(id: string): Promise<BankingRow | null> {
+  const { row } = await selectByIdFirstAvailable<BankingRow>(id)
+  return row
 }

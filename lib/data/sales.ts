@@ -1,26 +1,37 @@
 import { getAdminClient } from "@/lib/supabase/admin"
 
-export type SaleRow = Record<string, unknown>
+export type Sale = Record<string, unknown>
 
 /**
- * Fetch Sales safely:
- * - Select "*" to avoid missing-column errors (e.g., created_at not present).
- * - Never throw; return [] on error and log details.
+ * Your errors showed sales.created_at is missing.
+ * We avoid ordering by created_at and fall back to id.
  */
-export async function fetchSales(): Promise<SaleRow[]> {
+export async function fetchSales(): Promise<Sale[]> {
   const supabase = getAdminClient()
   try {
-    const { data, error } = await supabase
-      .from("sales" as any)
-      .select("*")
-      .limit(1000)
+    const { data, error } = await supabase.from("sales").select("*").order("id", { ascending: false })
     if (error) {
       console.error("Database Error (sales):", error)
       return []
     }
-    return (data ?? []) as SaleRow[]
-  } catch (err) {
-    console.error("Unexpected Error (sales):", err)
+    return (data ?? []) as Sale[]
+  } catch (e) {
+    console.error("Unexpected Error (sales):", e)
     return []
+  }
+}
+
+export async function fetchSaleById(id: string): Promise<Sale | null> {
+  const supabase = getAdminClient()
+  try {
+    const { data, error } = await supabase.from("sales").select("*").eq("id", id).maybeSingle()
+    if (error) {
+      console.error("Database Error (sale by id):", error)
+      return null
+    }
+    return (data as Sale) ?? null
+  } catch (e) {
+    console.error("Unexpected Error (sale by id):", e)
+    return null
   }
 }

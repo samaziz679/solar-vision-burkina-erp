@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server"
 import { debugFetchCardData } from "@/lib/data/dashboard"
 
 export async function GET() {
@@ -8,9 +9,14 @@ export async function GET() {
     SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
   }
 
-  const data = await debugFetchCardData()
+  let data: unknown = null
+  try {
+    data = await debugFetchCardData()
+  } catch (e: any) {
+    data = { error: e?.message ?? "Failed to run debugFetchCardData" }
+  }
 
-  return Response.json({
+  return NextResponse.json({
     timestamp: new Date().toISOString(),
     env,
     data,

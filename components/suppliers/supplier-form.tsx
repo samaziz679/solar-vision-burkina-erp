@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +18,8 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
   const [name, setName] = useState(initialData?.name || "")
   const [contactPerson, setContactPerson] = useState(initialData?.contact_person || "")
   const [email, setEmail] = useState(initialData?.email || "")
-  const [phone, setPhone] = useState(initialData?.phone || "")
+  // Use phone_number to match Supabase type shape
+  const [phoneNumber, setPhoneNumber] = useState(initialData?.phone_number || "")
   const [address, setAddress] = useState(initialData?.address || "")
   const [isPending, setIsPending] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string[] }>({})
@@ -30,7 +30,7 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
       setName(initialData.name || "")
       setContactPerson(initialData.contact_person || "")
       setEmail(initialData.email || "")
-      setPhone(initialData.phone || "")
+      setPhoneNumber(initialData.phone_number || "")
       setAddress(initialData.address || "")
     }
   }, [initialData])
@@ -46,8 +46,19 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
       formData.append("id", initialData.id)
     }
 
+    // Ensure the backend receives the correct field name
+    // Normalize legacy "phone" name if the form was previously submitted with it.
+    const hasPhone = formData.has("phone")
+    const hasPhoneNumber = formData.has("phone_number")
+    if (hasPhone && !hasPhoneNumber) {
+      const val = formData.get("phone")
+      if (typeof val === "string") {
+        formData.set("phone_number", val)
+      }
+    }
+
     const action = initialData ? updateSupplier : createSupplier
-    const result = await action(undefined, formData) // Pass undefined for prevState
+    const result = await action(undefined as unknown as never, formData)
 
     if (result?.errors) {
       setErrors(result.errors)
@@ -64,7 +75,7 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <input type="hidden" name="id" value={initialData?.id} />
+      <input type="hidden" name="id" value={initialData?.id ?? ""} />
       <div className="grid gap-2">
         <Label htmlFor="name">Supplier Name</Label>
         <Input
@@ -107,25 +118,28 @@ export function SupplierForm({ initialData }: SupplierFormProps) {
         {errors.email && <p className="text-red-500 text-sm">{errors.email.join(", ")}</p>}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="phone">Phone Number</Label>
+        <Label htmlFor="phone_number">Phone Number</Label>
         <Input
-          id="phone"
-          name="phone"
+          id="phone_number"
+          name="phone_number"
           type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          value={phoneNumber ?? ""}
+          onChange={(e) => setPhoneNumber(e.target.value)}
           placeholder="e.g., +1987654321"
           required
           disabled={isPending}
         />
-        {errors.phone && <p className="text-red-500 text-sm">{errors.phone.join(", ")}</p>}
+        {/* Support either key from server validation */}
+        {(errors.phone_number || errors.phone) && (
+          <p className="text-red-500 text-sm">{(errors.phone_number ?? errors.phone)?.join(", ")}</p>
+        )}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="address">Address</Label>
         <Textarea
           id="address"
           name="address"
-          value={address}
+          value={address ?? ""}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="e.g., 456 Panel Rd, Solarville"
           required

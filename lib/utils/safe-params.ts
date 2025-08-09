@@ -2,7 +2,7 @@ export type SearchParams = Record<string, string | string[] | undefined>
 
 /**
  * Safely read a string from Next.js App Router searchParams (server-side).
- * searchParams is a plain object on the server, not URLSearchParams.
+ * On the server, searchParams is a plain object, not URLSearchParams.
  */
 export function pickParam(sp: SearchParams | undefined, key: string): string | null {
   const v = sp?.[key]

@@ -14,7 +14,7 @@ import type { SearchParams } from "@/lib/utils/safe-params"
 
 export default async function EditClientPage({
   params,
-  // keep optional but never call .get on it
+  // Keep optional; do not call .get on server
   searchParams,
 }: {
   params: { id: string }

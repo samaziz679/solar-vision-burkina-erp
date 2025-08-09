@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+import ClientForm from "@/components/clients/client-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -10,11 +11,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import ClientForm from "@/components/clients/client-form"
 import type { SearchParams } from "@/lib/utils/safe-params"
 
 export default function NewClientPage({
-  // keep optional but never call .get on it; use safe helpers if needed
+  // Keep optional; never call .get on the server. Use safe helpers if needed.
   searchParams,
 }: {
   searchParams?: SearchParams

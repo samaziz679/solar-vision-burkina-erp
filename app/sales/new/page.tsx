@@ -10,8 +10,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import SaleForm from "@/components/sales/sale-form"
 import { getAdminClient } from "@/lib/supabase/admin"
+import type { ComponentType } from "react"
+
+// Flexible import (default or named) and relaxed props to avoid import-shape drift
+import * as SaleFormNS from "@/components/sales/sale-form"
+const SaleForm = (SaleFormNS.default ?? (SaleFormNS as any).SaleForm) as ComponentType<any>
 
 type ProductForSale = {
   id: string
@@ -21,45 +25,40 @@ type ProductForSale = {
   prix_vente_gros: number | null
 }
 
-type ClientRow = {
-  id: string
-  name: string
-  // keep extra columns returned by * but they are ignored by SaleForm
-  [k: string]: any
-}
-
 export default async function NewSalePage() {
   const supabase = getAdminClient()
 
-  const [{ data: productsData, error: productsError }, { data: clientsData, error: clientsError }] = await Promise.all([
+  // Fetch only real columns from your schema
+  const [{ data: productsData, error: prodErr }, { data: clientsData, error: clientErr }] = await Promise.all([
     supabase
       .from("products")
       .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
       .order("name", { ascending: true }),
-    supabase.from("clients").select("*").order("name", { ascending: true }),
+    // Pass full rows so SaleForm's typing is satisfied without guesswork
+    supabase
+      .from("clients")
+      .select("*")
+      .order("name", { ascending: true }),
   ])
 
-  if (productsError) {
-    console.error("Failed to load products for /sales/new:", productsError)
-    throw new Error("Unable to load products.")
-  }
-  if (clientsError) {
-    console.error("Failed to load clients for /sales/new:", clientsError)
-    throw new Error("Unable to load clients.")
+  if (prodErr || clientErr) {
+    console.error("sales/new preload error:", { prodErr, clientErr })
+    throw new Error("Failed to load prerequisites for sale form.")
   }
 
-  const products: ProductForSale[] = (productsData ?? []).map((p: any) => ({
-    id: String(p.id),
-    name: String(p.name ?? ""),
-    prix_vente_detail_1: p?.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
-    prix_vente_detail_2: p?.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
-    prix_vente_gros: p?.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
-  }))
+  const products: ProductForSale[] =
+    (productsData ?? []).map((p: any) => ({
+      id: String(p.id),
+      name: String(p.name ?? ""),
+      prix_vente_detail_1: p?.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
+      prix_vente_detail_2: p?.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
+      prix_vente_gros: p?.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
+    })) ?? []
 
-  const clients: ClientRow[] = (clientsData ?? []).map((c: any) => ({
-    id: String(c.id),
-    name: String(c?.name ?? ""),
+  const clients = (clientsData ?? []).map((c: any) => ({
     ...c,
+    id: String(c.id),
+    name: String(c.name ?? ""),
   }))
 
   return (
@@ -89,7 +88,7 @@ export default async function NewSalePage() {
           <CardTitle>Add New Sale</CardTitle>
         </CardHeader>
         <CardContent>
-          <SaleForm products={products} clients={clients as any} />
+          <SaleForm products={products} clients={clients} />
         </CardContent>
       </Card>
     </main>

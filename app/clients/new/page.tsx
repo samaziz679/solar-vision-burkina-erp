@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-import ClientForm from "@/components/clients/client-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,8 +10,19 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import ClientForm from "@/components/clients/client-form"
+import type { SearchParams } from "@/lib/utils/safe-params"
 
-export default function NewClientPage() {
+// Server component: do NOT call searchParams.get(). Next passes a plain object.
+export default function NewClientPage({
+  // Included only if you want to read query hints; keep it optional and server-safe
+  searchParams,
+}: {
+  searchParams?: SearchParams
+}) {
+  // If you want to prefill later, use safe helpers from lib/utils/safe-params
+  // const prefillName = pickParam(searchParams, "name")
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>
@@ -40,6 +50,7 @@ export default function NewClientPage() {
           <CardTitle>Add New Client</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* ClientForm handles its own client-less create flow */}
           <ClientForm />
         </CardContent>
       </Card>

@@ -11,21 +11,29 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error("Global error boundary:", error)
+    // Log for client-side visibility; server logs already capture the stack.
+    // eslint-disable-next-line no-console
+    console.error("Global error boundary", error)
   }, [error])
 
+  const digest = (error as any)?.digest
+
   return (
-    <html>
-      <body className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md text-center space-y-4">
-          <h1 className="text-xl font-semibold">Something went wrong</h1>
-          <p className="text-sm text-muted-foreground">We hit an unexpected error while rendering this page.</p>
-          {error?.digest && <p className="text-xs text-muted-foreground">Digest: {error.digest}</p>}
-          <div className="flex items-center justify-center gap-2">
-            <Button onClick={() => reset()}>Try again</Button>
-          </div>
+    <div className="min-h-svh flex items-center justify-center p-6">
+      <div className="mx-auto w-full max-w-lg rounded-lg border bg-background p-6 text-center">
+        <h1 className="text-xl font-semibold">Something went wrong</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          An unexpected error occurred. Please try again. If the problem persists, share the digest with support.
+        </p>
+        {digest ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Digest: <span className="font-mono">{digest}</span>
+          </p>
+        ) : null}
+        <div className="mt-5 flex justify-center gap-2">
+          <Button onClick={() => reset()}>Try again</Button>
         </div>
-      </body>
-    </html>
+      </div>
+    </div>
   )
 }

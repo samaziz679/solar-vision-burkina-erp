@@ -23,29 +23,23 @@ function toIntSafe(value: unknown) {
 
 export default async function DashboardPage() {
   const supabase = createClient()
-
   let userEmail: string | null = null
+
   try {
-    const { data, error } = await supabase.auth.getUser()
-    if (!error && data?.user) {
-      userEmail = data.user.email ?? null
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+    if (!error && user) {
+      userEmail = user.email ?? null
     }
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error("dashboard: auth.getUser failed", e)
   }
 
-  let totalSales = 0
-  let totalExpenses = 0
-  let totalProducts = 0
-
-  try {
-    const data = await fetchCardData()
-    totalSales = data.totalSales ?? 0
-    totalExpenses = data.totalExpenses ?? 0
-    totalProducts = data.totalProducts ?? 0
-  } catch (e) {
-    console.error("dashboard: fetchCardData failed", e)
-  }
+  // fetchCardData is resilient and never throws
+  const { totalSales, totalExpenses, totalProducts } = await fetchCardData()
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">

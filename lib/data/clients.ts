@@ -4,47 +4,55 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import type { Client } from "../supabase/types"
 
 function getSupabase() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      // SSR v0.6.x expects a function returning cookie methods
-      cookies: () => {
-        const cookieStore = cookies()
-        return {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set(name, value, options as any)
-          },
-          remove(name: string, options: CookieOptions) {
-            cookieStore.delete(name, options as any)
-          },
-        }
+  const cookieStore = cookies()
+
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    // Use object shape; add a light cast for cross-version compatibility.
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
       },
-    },
-  )
+      set(name: string, value: string, options: CookieOptions) {
+        // In RSC, mutating cookies may throw. We no-op to satisfy types.
+        try {
+          // @ts-expect-error: cookies().set may not be available in RSC
+          cookieStore.set(name, value, options as any)
+        } catch {}
+      },
+      remove(name: string, options: CookieOptions) {
+        try {
+          // @ts-expect-error: cookies().delete may not be available in RSC
+          cookieStore.delete(name, options as any)
+        } catch {}
+      },
+    } as any,
+  })
 }
 
 export async function fetchClients(): Promise<Client[]> {
   noStore()
   const supabase = getSupabase()
+
   const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
+
   if (error) {
     console.error("Database Error:", error)
     throw new Error("Failed to fetch clients.")
   }
-  return data as Client[]
+
+  return (data ?? []) as Client[]
 }
 
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
   const supabase = getSupabase()
+
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
+
   if (error) {
     console.error("Database Error:", error)
     throw new Error("Failed to fetch client.")
   }
-  return data as Client
+
+  return (data ?? null) as Client | null
 }

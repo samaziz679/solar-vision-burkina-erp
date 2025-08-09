@@ -22,7 +22,7 @@ type ProductForSale = {
   prix_vente_gros: number | null
 }
 
-type ClientOption = { id: string; name: string | null }
+type ClientOption = { id: string; name: string }
 
 export default async function NewSalePage() {
   // Use the admin client for cookie-free server reads
@@ -60,7 +60,7 @@ export default async function NewSalePage() {
 
   const clients: ClientOption[] = (clientsData ?? []).map((c: any) => ({
     id: String(c.id),
-    name: c?.name ?? null,
+    name: String(c?.name ?? ""),
   }))
 
   return (

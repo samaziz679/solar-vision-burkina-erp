@@ -1,23 +1,57 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { fetchCardData } from '@/lib/data/dashboard';
-import { DollarSign, ShoppingCart, Package } from 'lucide-react';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server'
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { fetchCardData } from "@/lib/data/dashboard"
+import { DollarSign, ShoppingCart, Package } from "lucide-react"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/server"
+
+function toCurrencySafe(value: unknown) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n.toFixed(2) : "0.00"
+}
+
+function toIntSafe(value: unknown) {
+  const n = Number(value)
+  return Number.isFinite(n) ? Math.trunc(n) : 0
+}
 
 export default async function DashboardPage() {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
-  const { totalSales, totalExpenses, totalProducts } = await fetchCardData();
+  let userEmail: string | null = null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (!error && data?.user) {
+      userEmail = data.user.email ?? null
+    }
+  } catch (e) {
+    console.error("dashboard: auth.getUser failed", e)
+  }
+
+  let totalSales = 0
+  let totalExpenses = 0
+  let totalProducts = 0
+
+  try {
+    const data = await fetchCardData()
+    totalSales = data.totalSales ?? 0
+    totalExpenses = data.totalExpenses ?? 0
+    totalProducts = data.totalProducts ?? 0
+  } catch (e) {
+    console.error("dashboard: fetchCardData failed", e)
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <p className="mt-2 text-muted-foreground">
-        {user ? `Signed in as ${user.email}` : 'No user session detected.'}
+        {userEmail ? `Signed in as ${userEmail}` : "No user session detected."}
       </p>
       <Breadcrumb>
         <BreadcrumbList>
@@ -39,10 +73,8 @@ export default async function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              Total revenue from all sales
-            </p>
+            <div className="text-2xl font-bold">${toCurrencySafe(totalSales)}</div>
+            <p className="text-xs text-muted-foreground">Total revenue from all sales</p>
           </CardContent>
         </Card>
         <Card>
@@ -51,10 +83,8 @@ export default async function DashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalExpenses.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              Total amount spent on expenses
-            </p>
+            <div className="text-2xl font-bold">${toCurrencySafe(totalExpenses)}</div>
+            <p className="text-xs text-muted-foreground">Total amount spent on expenses</p>
           </CardContent>
         </Card>
         <Card>
@@ -63,14 +93,11 @@ export default async function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              Sum of all product quantities
-            </p>
+            <div className="text-2xl font-bold">{toIntSafe(totalProducts)}</div>
+            <p className="text-xs text-muted-foreground">Sum of all product quantities</p>
           </CardContent>
         </Card>
       </div>
-      {/* You can add more dashboard components here, e.g., recent sales, charts */}
     </main>
-  );
+  )
 }

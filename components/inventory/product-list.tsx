@@ -13,6 +13,9 @@ export type ProductRow = {
   created_at: string
 }
 
+// Add this line right after ProductRow:
+export type InventoryProduct = ProductRow
+
 type Props = {
   products: ProductRow[]
 }

@@ -2,6 +2,7 @@ import "server-only"
 
 import { NextResponse } from "next/server"
 import { getAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET() {
   const env = {
@@ -11,15 +12,25 @@ export async function GET() {
     SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
   }
 
-  const supabase = getAdminClient()
+  const admin = getAdminClient()
 
   async function check(tableOrView: string) {
     try {
-      const { data, error } = await supabase.from(tableOrView).select("id").limit(1)
+      const { data, error } = await admin.from(tableOrView).select("id").limit(1)
       return { ok: !error, error: error?.message ?? null, sample: data?.[0] ?? null }
     } catch (e: any) {
       return { ok: false, error: e?.message ?? String(e), sample: null }
     }
+  }
+
+  // Validate the RSC Supabase client (uses the cookies adapter we fixed)
+  let rscClientCheck: { ok: boolean; error: string | null } = { ok: true, error: null }
+  try {
+    const supabase = createClient()
+    const { error } = await supabase.from("products").select("id").limit(1)
+    if (error) rscClientCheck = { ok: false, error: error.message }
+  } catch (e: any) {
+    rscClientCheck = { ok: false, error: e?.message ?? String(e) }
   }
 
   const checks = {
@@ -37,6 +48,7 @@ export async function GET() {
       total_sales_per_product: await check("total_sales_per_product"),
       current_stock: await check("current_stock"),
     },
+    rscClientCheck,
   }
 
   return NextResponse.json({

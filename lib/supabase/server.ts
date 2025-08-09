@@ -2,12 +2,12 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 /**
- * Server-side Supabase client for App Router (RSC/Route Handlers/Actions).
+ * Server-side Supabase client for App Router (RSC/Route Handlers/Server Actions).
  *
  * Universal cookies adapter:
- * - Exposes both get/set/remove and getAll/setAll to be compatible across @supabase/ssr versions.
- * - set/remove/setAll are NO-OPs in RSC to avoid mutating headers during render.
- *   Perform cookie mutations in Route Handlers or Server Actions with NextResponse.
+ * - Exposes BOTH get/set/remove and getAll/setAll to be compatible across @supabase/ssr versions.
+ * - set/remove/setAll are NO-OPs during RSC render to avoid header mutations.
+ *   Perform cookie mutations in Route Handlers or Server Actions using NextResponse instead.
  */
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -15,13 +15,13 @@ export function createClient() {
 
   if (!url || !anon) {
     throw new Error(
-      "Missing Supabase env: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your Vercel Project Settings.",
+      "Missing Supabase env: ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your Vercel Project Settings.",
     )
   }
 
   return createServerClient(url, anon, {
     cookies: {
-      // Newer API shape on some @supabase/ssr paths
+      // Modern adapter shape used by @supabase/ssr in many versions
       get(name: string) {
         try {
           return cookies().get(name)?.value
@@ -30,13 +30,13 @@ export function createClient() {
         }
       },
       set(_name: string, _value: string, _options: CookieOptions) {
-        // no-op in RSC
+        // no-op in RSC render path
       },
       remove(_name: string, _options: CookieOptions) {
-        // no-op in RSC
+        // no-op in RSC render path
       },
 
-      // Older / alternative API shape used in some environments
+      // Legacy/alternative shape some builds expect
       getAll() {
         try {
           return cookies().getAll()
@@ -45,7 +45,7 @@ export function createClient() {
         }
       },
       setAll(_cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-        // no-op in RSC
+        // no-op in RSC render path
       },
     } as any,
   })

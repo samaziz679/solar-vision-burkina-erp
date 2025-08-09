@@ -1,24 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache"
 import { cookies } from "next/headers"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
-
-// Join clients and products so names render in the table
-// Return a flexible row that SalesList already supports.
-export type JoinedSaleRow = {
-  id: string
-  sale_date?: string | null
-  quantity?: number | null
-  total_amount?: number | null
-  user_id?: string | null
-  client_id?: string | null
-  product_id?: string | null
-  // joined names
-  clients?: { id: string; name: string | null } | null
-  products?: { id: string; name: string | null } | null
-  client_name?: string | null
-  product_name?: string | null
-  created_at?: string | null
-}
+import type { Sale } from "@/lib/supabase/types"
 
 function getSupabase() {
   const cookieStore = cookies()
@@ -29,72 +12,50 @@ function getSupabase() {
     set(_name: string, _value: string, _options: CookieOptions) {},
     remove(_name: string, _options: CookieOptions) {},
   }
+  // Use anon key; RLS should allow reads for authenticated users.
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: cookieMethods as any,
   })
 }
 
-export async function fetchSales(): Promise<JoinedSaleRow[]> {
+// Normalize a database row into the exact Sale type shape
+function normalizeSale(row: any): Sale {
+  return {
+    id: String(row.id ?? ""),
+    product_id: String(row.product_id ?? ""),
+    client_id: String(row.client_id ?? ""),
+    quantity: Number(row.quantity ?? 0),
+    total_amount: Number(row.total_amount ?? row.total ?? row.total_price ?? 0),
+    sale_date: String(row.sale_date ?? row.date ?? new Date().toISOString().slice(0, 10)),
+    user_id: String(row.user_id ?? row.created_by ?? ""),
+    created_at: String(row.created_at ?? new Date().toISOString()),
+  }
+}
+
+export async function fetchSales(): Promise<Sale[]> {
   noStore()
   const supabase = getSupabase()
-
-  const { data, error } = await supabase
-    .from("sales")
-    .select(
-      [
-        "id",
-        "sale_date",
-        "quantity",
-        "total_amount",
-        "user_id",
-        "client_id",
-        "product_id",
-        "clients(id,name)",
-        "products(id,name)",
-      ].join(","),
-    )
-    .order("id", { ascending: false })
+  const { data, error } = await supabase.from("sales").select("*").order("id", { ascending: false })
 
   if (error) {
     console.error("Database Error (sales):", error)
     return []
   }
 
-  const rows = (data ?? []).map((row: any) => ({
-    ...row,
-    // normalize numeric strings -> numbers for the UI currency formatter
-    total_amount: row.total_amount != null ? Number(row.total_amount) : row.total != null ? Number(row.total) : null,
-  })) as JoinedSaleRow[]
-
-  return rows
+  const rows = (data ?? []) as any[]
+  return rows.map(normalizeSale)
 }
 
-export async function fetchSaleById(id: string): Promise<JoinedSaleRow | null> {
+export async function fetchSaleById(id: string): Promise<Sale | null> {
   noStore()
   const supabase = getSupabase()
-
-  const { data, error } = await supabase
-    .from("sales")
-    .select(
-      [
-        "id",
-        "sale_date",
-        "quantity",
-        "total_amount",
-        "user_id",
-        "client_id",
-        "product_id",
-        "clients(id,name)",
-        "products(id,name)",
-      ].join(","),
-    )
-    .eq("id", id)
-    .maybeSingle()
+  const { data, error } = await supabase.from("sales").select("*").eq("id", id).maybeSingle()
 
   if (error) {
     console.error("Database Error (sale by id):", error)
     return null
   }
 
-  return data as JoinedSaleRow
+  if (!data) return null
+  return normalizeSale(data as any)
 }

@@ -4,23 +4,25 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import type { Product } from "../supabase/types"
 
 function getSupabase() {
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: () => {
-      const cookieStore = cookies()
-      return {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(_name: string, _value: string, _options: CookieOptions) {},
-        remove(_name: string, _options: CookieOptions) {},
-      }
+  const cookieStore = cookies()
+
+  const cookieMethods = {
+    get(name: string) {
+      return cookieStore.get(name)?.value
     },
+    set(_name: string, _value: string, _options: CookieOptions) {},
+    remove(_name: string, _options: CookieOptions) {},
+  }
+
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: cookieMethods as any,
   })
 }
 
 export async function fetchProducts(): Promise<Product[]> {
   noStore()
   const supabase = getSupabase()
+
   const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
 
   if (error) {
@@ -34,6 +36,7 @@ export async function fetchProducts(): Promise<Product[]> {
 export async function fetchProductById(id: string): Promise<Product | null> {
   noStore()
   const supabase = getSupabase()
+
   const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
 
   if (error) {

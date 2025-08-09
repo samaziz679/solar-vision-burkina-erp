@@ -4,25 +4,27 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import type { Client } from "../supabase/types"
 
 function getSupabase() {
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    // Use the callback form; provide get/set/remove methods.
-    cookies: () => {
-      const cookieStore = cookies()
-      return {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        // No-ops in RSC; method signatures must exist for @supabase/ssr
-        set(_name: string, _value: string, _options: CookieOptions) {},
-        remove(_name: string, _options: CookieOptions) {},
-      }
+  const cookieStore = cookies()
+
+  // Cross-version compatible CookieMethods for @supabase/ssr
+  const cookieMethods = {
+    get(name: string) {
+      return cookieStore.get(name)?.value
     },
+    // No-op in Server Components; method presence satisfies @supabase/ssr
+    set(_name: string, _value: string, _options: CookieOptions) {},
+    remove(_name: string, _options: CookieOptions) {},
+  }
+
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: cookieMethods as any,
   })
 }
 
 export async function fetchClients(): Promise<Client[]> {
   noStore()
   const supabase = getSupabase()
+
   const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
 
   if (error) {
@@ -36,6 +38,7 @@ export async function fetchClients(): Promise<Client[]> {
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
   const supabase = getSupabase()
+
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
 
   if (error) {

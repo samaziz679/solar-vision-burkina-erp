@@ -1,46 +1,53 @@
 import "server-only"
 import { unstable_noStore as noStore } from "next/cache"
+import { cookies } from "next/headers"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
-import type { Database } from "@/lib/supabase/types"
+import type { Client } from "../supabase/types"
 
-export type Client = Database["public"]["Tables"]["clients"]["Row"]
-export type ClientLite = { id: string; name: string }
+// Local lightweight type for selects in lists
+export type ClientLite = Pick<Client, "id" | "name">
 
-/**
- * Full list of clients for pages like /clients (preserves existing shape).
- */
-export async function fetchClients(): Promise<Client[]> {
-  noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
-  if (error) {
-    console.error("Database Error (clients):", error)
-    throw new Error("Failed to fetch clients.")
+function getSupabase() {
+  const cookieStore = cookies()
+
+  const cookieMethods = {
+    get(name: string) {
+      return cookieStore.get(name)?.value
+    },
+    set(_name: string, _value: string, _options: CookieOptions) {},
+    remove(_name: string, _options: CookieOptions) {},
   }
-  return (data ?? []) as Client[]
+
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: cookieMethods as any,
+  })
 }
 
-/**
- * Lightweight options for dropdowns (id, name) to avoid over-fetching.
- */
-export async function fetchClientOptions(): Promise<ClientLite[]> {
-  noStore()
+// List clients for selects (id, name)
+export async function fetchClients(): Promise<ClientLite[]> {
   const supabase = getAdminClient()
   const { data, error } = await supabase.from("clients").select("id,name").order("name", { ascending: true })
-  if (error) {
-    console.error("Database Error (client options):", error)
-    throw new Error("Failed to fetch client options.")
-  }
-  return (data ?? []).map((c: any) => ({ id: String(c.id), name: String(c.name ?? "") }))
+
+  if (error) throw error
+
+  return (data ?? []).map((c: any) => ({
+    id: String(c.id),
+    name: String(c.name ?? ""),
+  }))
 }
 
+// Fetch a full client by id (optional, if used elsewhere)
 export async function fetchClientById(id: string): Promise<Client | null> {
   noStore()
-  const supabase = getAdminClient()
+  const supabase = getSupabase()
+
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
+
   if (error) {
-    console.error("Database Error (client by id):", error)
+    console.error("Database Error (fetchClientById):", error)
     throw new Error("Failed to fetch client.")
   }
+
   return (data ?? null) as Client | null
 }

@@ -5,7 +5,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Supplier } from "../supabase/types"
 
-type SupplierLite = Pick<Supplier, "id" | "name">
+// Local lightweight type for selects in lists
+export type SupplierLite = Pick<Supplier, "id" | "name">
 
 function getSupabase() {
   const cookieStore = cookies()
@@ -23,13 +24,20 @@ function getSupabase() {
   })
 }
 
+// List suppliers for selects (id, name)
 export async function fetchSuppliers(): Promise<SupplierLite[]> {
   const supabase = getAdminClient()
   const { data, error } = await supabase.from("suppliers").select("id,name").order("name", { ascending: true })
+
   if (error) throw error
-  return (data ?? []).map((s: any) => ({ id: String(s.id), name: String(s.name ?? "") }))
+
+  return (data ?? []).map((s: any) => ({
+    id: String(s.id),
+    name: String(s.name ?? ""),
+  }))
 }
 
+// Fetch a full supplier by id (handy for edit/detail pages)
 export async function fetchSupplierById(id: string): Promise<Supplier | null> {
   noStore()
   const supabase = getSupabase()
@@ -37,7 +45,7 @@ export async function fetchSupplierById(id: string): Promise<Supplier | null> {
   const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Database Error:", error)
+    console.error("Database Error (fetchSupplierById):", error)
     throw new Error("Failed to fetch supplier.")
   }
 

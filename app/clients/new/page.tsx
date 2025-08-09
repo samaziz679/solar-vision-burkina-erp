@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-import ClientForm from "@/components/clients/client-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,9 +10,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import type { ComponentType } from "react"
 
-export default function NewClientPage() {
-  // No searchParams.get usage on the server.
+// Flexible import and relaxed types
+import * as ClientFormNS from "@/components/clients/client-form"
+const ClientForm = (ClientFormNS.default ?? (ClientFormNS as any).ClientForm) as ComponentType<any>
+
+export default async function NewClientPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>
@@ -38,7 +41,7 @@ export default function NewClientPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add New Client</CardTitle>
+          <CardTitle>Add Client</CardTitle>
         </CardHeader>
         <CardContent>
           <ClientForm />

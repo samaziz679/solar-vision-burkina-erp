@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-import ExpenseForm from "@/components/expenses/expense-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,8 +10,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import type { ComponentType } from "react"
 
-export default function NewExpensePage() {
+// Flexible import and relaxed types
+import * as ExpenseFormNS from "@/components/expenses/expense-form"
+const ExpenseForm = (ExpenseFormNS.default ?? (ExpenseFormNS as any).ExpenseForm) as ComponentType<any>
+
+export default async function NewExpensePage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Breadcrumb>
@@ -37,7 +41,7 @@ export default function NewExpensePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add New Expense</CardTitle>
+          <CardTitle>Add Expense</CardTitle>
         </CardHeader>
         <CardContent>
           <ExpenseForm />

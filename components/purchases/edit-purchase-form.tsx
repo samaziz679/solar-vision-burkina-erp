@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useFormState, useFormStatus } from "react" // Corrected import from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -52,7 +52,6 @@ export function EditPurchaseForm({ purchase, products, suppliers }: EditPurchase
           </Select>
         </div>
 
-        {/* For simplicity, we assume a single product per purchase in this form */}
         <div className="grid gap-2">
           <Label htmlFor="product_id">Product</Label>
           <Select name="product_id" defaultValue={String(purchase.purchase_items[0]?.product_id)} required>

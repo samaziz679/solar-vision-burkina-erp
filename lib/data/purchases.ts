@@ -2,12 +2,13 @@ import "server-only"
 import { unstable_noStore as noStore } from "next/cache"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { PurchaseWithItems } from "@/lib/supabase/types"
-import { fetchProductsForPurchaseForm } from "./products"
-import { fetchSuppliersForPurchaseForm } from "./suppliers"
+import { fetchProductOptions } from "./products" // Corrected import
+import { fetchSupplierOptions } from "./suppliers" // Corrected import
 
 export async function fetchPrerequisitesForPurchaseForm() {
   noStore()
-  const [products, suppliers] = await Promise.all([fetchProductsForPurchaseForm(), fetchSuppliersForPurchaseForm()])
+  // Corrected to call the new 'Options' functions
+  const [products, suppliers] = await Promise.all([fetchProductOptions(), fetchSupplierOptions()])
   return { products, suppliers }
 }
 

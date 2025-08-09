@@ -3,11 +3,11 @@ import { unstable_noStore as noStore } from "next/cache"
 import { getAdminClient } from "@/lib/supabase/admin"
 import type { Client } from "@/lib/supabase/types"
 
-// Lightweight options for selects
+// Lightweight options for dropdowns
 export type ClientLite = Pick<Client, "id" | "name">
 
 /**
- * Full list of clients for pages like /clients (preserves existing shape).
+ * Full list of clients for /clients page and other places expecting full shape.
  */
 export async function fetchClients(): Promise<Client[]> {
   noStore()
@@ -35,7 +35,10 @@ export async function fetchClientOptions(): Promise<ClientLite[]> {
     throw new Error("Failed to fetch client options.")
   }
 
-  return (data ?? []) as ClientLite[]
+  return (data ?? []).map((c: any) => ({
+    id: String(c.id),
+    name: String(c.name ?? ""),
+  }))
 }
 
 /**

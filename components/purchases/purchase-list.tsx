@@ -1,62 +1,112 @@
 "use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import type { ColumnDef } from "@tanstack/react-table"
-import { DataTable } from "@/components/ui/data-table"
 import type { Purchase } from "@/lib/supabase/types"
-import { cn } from "@/lib/utils"
+import { DataTable } from "@/components/ui/data-table"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
+import { DeletePurchaseDialog } from "./delete-purchase-dialog"
 import { format } from "date-fns"
 
-type PurchaseRow = Purchase & {
-  // Support joined relations if present
-  suppliers?: { name?: string | null } | null
+// Support both flat and joined shapes
+export type PurchaseRow = Purchase & {
+  // Optional joined objects (if you did select with relations)
   products?: { name?: string | null } | null
-  // Support flat aliased fields if queries project them
-  supplier_name?: string | null
+  suppliers?: { name?: string | null } | null
+  // Or flat aliased columns from SELECT
   product_name?: string | null
+  supplier_name?: string | null
 }
 
-const columns: ColumnDef<PurchaseRow>[] = [
-  {
-    accessorKey: "supplier_name",
-    header: "Supplier",
-    cell: ({ row }) => row.original.supplier_name ?? row.original.suppliers?.name ?? "N/A",
-  },
-  {
-    accessorKey: "product_name",
-    header: "Product",
-    cell: ({ row }) => row.original.product_name ?? row.original.products?.name ?? "N/A",
-  },
-  {
-    accessorKey: "quantity",
-    header: "Qty",
-  },
-  {
-    accessorKey: "total_amount",
-    header: "Total",
-    cell: ({ getValue }) => {
-      const val = Number(getValue() as number)
-      if (Number.isNaN(val)) return "—"
-      return new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-      }).format(val)
-    },
-  },
-  {
-    accessorKey: "purchase_date",
-    header: "Date",
-    cell: ({ getValue }) => {
-      const v = getValue() as string | Date | null
-      if (!v) return "—"
-      const d = typeof v === "string" ? new Date(v) : v
-      return Number.isNaN(d.getTime()) ? "—" : format(d, "PP")
-    },
-  },
-]
+// Backward-compatible props: allow either `purchases` or `data`
+type PurchaseListProps = { purchases: PurchaseRow[] } | { data: PurchaseRow[] }
 
-export function PurchaseList({ data }: { data: PurchaseRow[] }) {
+export function PurchaseList(props: PurchaseListProps) {
+  const purchases = "purchases" in props ? props.purchases : props.data
+
+  const router = useRouter()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null)
+
+  const handleDeleteClick = (id: string) => {
+    setSelectedPurchaseId(id)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const columns: ColumnDef<PurchaseRow>[] = [
+    {
+      accessorKey: "supplier_name",
+      header: "Supplier",
+      cell: ({ row }) => {
+        const sup = row.original.supplier_name ?? row.original.suppliers?.name
+        return <div>{sup ?? "N/A"}</div>
+      },
+    },
+    {
+      accessorKey: "product_name",
+      header: "Product",
+      cell: ({ row }) => {
+        const prod = row.original.product_name ?? row.original.products?.name
+        return <div>{prod ?? "N/A"}</div>
+      },
+    },
+    {
+      accessorKey: "quantity",
+      header: "Quantity",
+    },
+    {
+      accessorKey: "purchase_date",
+      header: "Purchase Date",
+      cell: ({ row }) => {
+        const raw = row.getValue("purchase_date") as string | Date
+        const date = typeof raw === "string" ? new Date(raw) : raw
+        return <div>{isNaN(date.getTime()) ? "—" : format(date, "PPP")}</div>
+      },
+    },
+    {
+      accessorKey: "total_amount",
+      header: "Total Amount",
+      cell: ({ row }) => {
+        const amount = Number(row.getValue("total_amount"))
+        if (Number.isNaN(amount)) return <div className="font-medium">—</div>
+        const formatted = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "XOF",
+        }).format(amount)
+        return <div className="font-medium">{formatted}</div>
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Open menu">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => router.push(`/purchases/${row.original.id}/edit`)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDeleteClick(row.original.id)}>Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
+
   return (
-    <div className={cn("w-full")}>
-      <DataTable columns={columns} data={data} />
-    </div>
+    <>
+      <DataTable columns={columns} data={purchases} />
+      {selectedPurchaseId && (
+        <DeletePurchaseDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          purchaseId={selectedPurchaseId}
+        />
+      )}
+    </>
   )
 }

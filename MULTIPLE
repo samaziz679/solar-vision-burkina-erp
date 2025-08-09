@@ -1,65 +1,26 @@
 // lib/data/clients.ts
-export class Clients {
-  // Other methods here
+export type ClientLite = { id: string; name: string };
 
-  remove(name: string, _options?: CookieOptions) {
-    cookieStore.delete(name)
-  }
+// app/sales/new/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  // Other methods here
-}
+// app/purchases/new/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-// lib/data/expenses.ts
-export class Expenses {
-  // Other methods here
+// app/banking/new/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  remove(name: string, _options?: CookieOptions) {
-    cookieStore.delete(name)
-  }
+// app/clients/new/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  // Other methods here
-}
+// app/suppliers/new/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-// lib/data/products.ts
-export class Products {
-  // Other methods here
-
-  remove(name: string, _options?: CookieOptions) {
-    cookieStore.delete(name)
-  }
-
-  // Other methods here
-}
-
-// lib/data/purchases.ts
-export class Purchases {
-  // Other methods here
-
-  remove(name: string, _options?: CookieOptions) {
-    cookieStore.delete(name)
-  }
-
-  // Other methods here
-}
-
-// lib/data/sales.ts
-export class Sales {
-  // Other methods here
-
-  remove(name: string, _options?: CookieOptions) {
-    cookieStore.delete(name)
-  }
-
-  // Other methods here
-}
-
-// lib/data/suppliers.ts
-export class Suppliers {
-  // Other methods here
-
-  remove(name: string, _options?: CookieOptions) {
-    cookieStore.delete(name)
-  }
-
-  // Other methods here
-}
+// app/expenses/new/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;

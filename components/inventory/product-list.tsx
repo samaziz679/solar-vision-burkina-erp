@@ -1,51 +1,61 @@
 "use client"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
-export type InventoryProduct = {
+// Match your Supabase row shape: `sku` can be null, and `stock_quantity` exists.
+export type ProductRow = {
   id: string
   name: string
-  sku: string | null
-  price: number
-  stock_quantity: number
   description: string | null
-  created_at: string
+  price: number
+  sku: string | null
+  stock_quantity: number
   user_id: string
+  created_at: string
 }
 
-export default function ProductList({ products = [] as InventoryProduct[] }: { products?: InventoryProduct[] }) {
+type Props = {
+  products: ProductRow[]
+}
+
+function formatCurrency(value: number) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: "USD",
+    }).format(value)
+  } catch {
+    return `$${value.toFixed(2)}`
+  }
+}
+
+export default function ProductList({ products }: Props) {
+  if (!products || products.length === 0) {
+    return <div className="text-sm text-muted-foreground">No products found. Add a product to get started.</div>
+  }
+
   return (
-    <div className="w-full overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[180px]">Name</TableHead>
-            <TableHead className="min-w-[120px]">SKU</TableHead>
-            <TableHead className="min-w-[100px]">Price</TableHead>
-            <TableHead className="min-w-[100px]">Stock</TableHead>
-            <TableHead>Description</TableHead>
+    <Table>
+      <TableCaption>Inventory products</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[120px]">SKU</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead className="text-right">Price</TableHead>
+          <TableHead className="text-right">In Stock</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {products.map((p) => (
+          <TableRow key={p.id}>
+            <TableCell className="font-mono text-xs">{p.sku ?? "-"}</TableCell>
+            <TableCell className="font-medium">{p.name}</TableCell>
+            <TableCell className="max-w-[420px] truncate">{p.description ?? "-"}</TableCell>
+            <TableCell className="text-right">{formatCurrency(p.price)}</TableCell>
+            <TableCell className="text-right">{p.stock_quantity}</TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                No products found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            products.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell>{p.sku ?? "-"}</TableCell>
-                <TableCell>{"$" + p.price.toFixed(2)}</TableCell>
-                <TableCell>{p.stock_quantity}</TableCell>
-                <TableCell className="max-w-[400px] truncate">{p.description ?? "-"}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   )
 }

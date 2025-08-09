@@ -45,7 +45,7 @@ export default async function EditSupplierPage({ params }: { params: { id: strin
           <CardTitle>Edit Supplier</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditSupplierForm supplier={supplier} />
+          <EditSupplierForm initialData={supplier} />
         </CardContent>
       </Card>
     </main>

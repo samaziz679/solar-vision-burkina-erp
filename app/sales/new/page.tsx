@@ -10,48 +10,49 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import SaleForm from "@/components/sales/sale-form"
 import { getAdminClient } from "@/lib/supabase/admin"
-import { fetchClients } from "@/lib/data/clients"
-import type { ComponentType } from "react"
+import { fetchClientOptions } from "@/lib/data/clients"
 
-// Import in a way that works whether the form exports named or default, and relax types to avoid TS friction.
-import * as SaleFormNS from "@/components/sales/sale-form"
-const SaleForm = (SaleFormNS.default ?? (SaleFormNS as any).SaleForm) as ComponentType<any>
-
-// Shape needed by the form (pricing tiers from your schema)
-export type ProductForSale = {
+type ProductForSale = {
   id: string
   name: string
-  prix_vente_detail_1: number | null
-  prix_vente_detail_2: number | null
-  prix_vente_gros: number | null
+  unit?: string | null
+  quantity?: number | null
+  prix_achat?: number | null
+  prix_vente_detail_1?: number | null
+  prix_vente_detail_2?: number | null
+  prix_vente_gros?: number | null
 }
 
 export default async function NewSalePage() {
-  // Avoid searchParams.get in Server Components. Preload via admin client (no cookies).
+  // Server-side, cookie-free reads via admin client to avoid any cookies.get issues.
   const supabase = getAdminClient()
 
-  const [{ data: productsData, error: prodErr }, clients] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id,name,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
-      .order("name", { ascending: true }),
-    fetchClients(),
-  ])
+  // Fetch products with relevant fields for pricing/stock.
+  const { data: productsData, error: productsError } = await supabase
+    .from("products")
+    .select("id,name,unit,quantity,prix_achat,prix_vente_detail_1,prix_vente_detail_2,prix_vente_gros")
+    .order("name", { ascending: true })
 
-  if (prodErr) {
-    console.error("sales/new preload products error:", prodErr)
-    throw new Error("Failed to load products for the sale form.")
+  if (productsError) {
+    console.error("Failed to load products:", productsError)
+    throw new Error("Unable to load products.")
   }
 
-  const products: ProductForSale[] =
-    (productsData ?? []).map((p: any) => ({
-      id: String(p.id),
-      name: String(p.name ?? ""),
-      prix_vente_detail_1: p.prix_vente_detail_1 != null ? Number(p.prix_vente_detail_1) : null,
-      prix_vente_detail_2: p.prix_vente_detail_2 != null ? Number(p.prix_vente_detail_2) : null,
-      prix_vente_gros: p.prix_vente_gros != null ? Number(p.prix_vente_gros) : null,
-    })) ?? []
+  // Fetch clients as lightweight options for the dropdown.
+  const clients = await fetchClientOptions()
+
+  const products: ProductForSale[] = (productsData ?? []).map((p: any) => ({
+    id: String(p.id),
+    name: String(p.name ?? ""),
+    unit: p.unit ?? null,
+    quantity: typeof p.quantity === "number" ? p.quantity : null,
+    prix_achat: p.prix_achat ?? null,
+    prix_vente_detail_1: p.prix_vente_detail_1 ?? null,
+    prix_vente_detail_2: p.prix_vente_detail_2 ?? null,
+    prix_vente_gros: p.prix_vente_gros ?? null,
+  }))
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">

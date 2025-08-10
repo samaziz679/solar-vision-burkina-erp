@@ -89,7 +89,7 @@ export function SaleForm({ products, clients }: SaleFormProps) {
               <SelectItem value="gros">Prix Gros</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> 
 
         <div className="grid gap-2">
           <Label htmlFor="unit_price">Unit Price</Label>

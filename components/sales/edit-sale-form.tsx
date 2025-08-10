@@ -33,8 +33,6 @@ export function EditSaleForm({ sale, products, clients }: EditSaleFormProps) {
     }
   }, [state])
 
-  // Note: Edit form is simplified and doesn't have dynamic price changing.
-  // It assumes the core data (product, client, price) is fixed on edit.
   return (
     <form action={dispatch}>
       <div className="grid gap-4">
@@ -54,7 +52,6 @@ export function EditSaleForm({ sale, products, clients }: EditSaleFormProps) {
           </Select>
         </div>
 
-        {/* For simplicity, we assume a single product per sale in this form */}
         <div className="grid gap-2">
           <Label htmlFor="product_id">Product</Label>
           <Select name="product_id" defaultValue={String(sale.sale_items[0]?.product_id)} required>

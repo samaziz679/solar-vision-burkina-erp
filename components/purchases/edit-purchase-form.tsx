@@ -18,7 +18,6 @@ type EditPurchaseFormProps = {
   suppliers: Supplier[]
 }
 
-
 export function EditPurchaseForm({ purchase, products, suppliers }: EditPurchaseFormProps) {
   const initialState = { message: null, errors: {} }
   const updatePurchaseWithId = updatePurchase.bind(null, purchase.id)

@@ -87,7 +87,7 @@ export function EditSaleForm({ sale, products, clients }: EditSaleFormProps) {
       </div>
     </form>
   )
-} 
+}
 
 function SubmitButton() {
   const { pending } = useFormStatus()

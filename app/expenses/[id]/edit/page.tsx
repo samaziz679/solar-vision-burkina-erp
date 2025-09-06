@@ -1,16 +1,29 @@
-import { fetchExpenseById } from '@/lib/data/expenses';
-import ExpenseForm from '@/components/expenses/expense-form';
-import { notFound } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
+import { notFound } from "next/navigation"
+import { fetchExpenseById } from "@/lib/data/expenses"
+import { fetchExpenseCategories } from "@/lib/data/categories"
+import ExpenseForm from "@/components/expenses/expense-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
 
-export default async function EditExpensePage({ params }: { params: { id: string } }) {
-  const id = params.id;
-  const expense = await fetchExpenseById(id);
+type PageProps = {
+  params: {
+    id: string
+  }
+}
+
+export default async function EditExpensePage({ params }: PageProps) {
+  const { id } = params
+  const [expense, categories] = await Promise.all([fetchExpenseById(id), fetchExpenseCategories()])
 
   if (!expense) {
-    notFound();
+    notFound()
   }
 
   return (
@@ -19,29 +32,29 @@ export default async function EditExpensePage({ params }: { params: { id: string
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/dashboard">Tableau de bord</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/expenses">Expenses</Link>
+              <Link href="/expenses">Dépenses</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink>Edit Expense</BreadcrumbLink>
+            <BreadcrumbLink>Modifier Dépense</BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <Card>
         <CardHeader>
-          <CardTitle>Edit Expense</CardTitle>
+          <CardTitle>Modifier Dépense</CardTitle>
         </CardHeader>
         <CardContent>
-          <ExpenseForm expense={expense} />
+          <ExpenseForm expense={expense} categories={categories || []} />
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

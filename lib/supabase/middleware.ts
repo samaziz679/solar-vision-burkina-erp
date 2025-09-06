@@ -1,13 +1,11 @@
-import { type NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from "@supabase/ssr"
+import { NextResponse, type NextRequest } from "next/server"
 
-/**
- * Keeps Supabase session cookies in sync from middleware.
- * Uses ONLY getAll/setAll per Supabase SSR guidance.
- */
 export async function updateSession(request: NextRequest) {
-  const response = NextResponse.next({
-    request: { headers: request.headers },
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
   })
 
   const supabase = createServerClient(
@@ -18,17 +16,37 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookies) {
-          cookies.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
           })
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
-    }
+    },
   )
 
-  // Ensures refresh token rotation and cookie sync
-  await supabase.auth.getSession()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  return { supabase, response }
+  const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback")
+  const isLoginPage = request.nextUrl.pathname === "/"
+
+  if (!user && !isLoginPage && !isAuthCallback) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/"
+    return NextResponse.redirect(url)
+  }
+
+  if (user && isLoginPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/dashboard"
+    return NextResponse.redirect(url)
+  }
+
+  return response
 }

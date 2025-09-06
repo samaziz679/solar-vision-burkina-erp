@@ -1,46 +1,45 @@
-import "server-only"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { unstable_noStore as noStore } from "next/cache"
-import { getAdminClient } from "@/lib/supabase/admin"
 import type { Client } from "@/lib/supabase/types"
 
-export type ClientOption = Pick<Client, "id" | "name">
-
-export async function fetchClients(): Promise<Client[]> {
+export async function fetchClients() {
   noStore()
-  const supabase = getAdminClient()
+  const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Database Error (fetchClients):", error)
+    console.error("Database Error:", error)
     throw new Error("Failed to fetch clients.")
   }
 
-  return (data ?? []) as Client[]
+  return data as Client[]
 }
 
-export async function fetchClientById(id: string): Promise<Client | null> {
+export async function fetchClientById(id: string) {
   noStore()
-  const supabase = getAdminClient()
+  if (!id) return null
+
+  const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase.from("clients").select("*").eq("id", id).single()
 
   if (error) {
-    if (error.code === "PGRST116") return null
-    console.error("Database Error (fetchClientById):", error)
-    throw new Error("Failed to fetch client.")
+    console.error("Database Error:", error)
+    // Don't throw for single record not found, page will show 404
+    return null
   }
 
-  return (data ?? null) as Client | null
+  return data as Client | null
 }
 
-export async function fetchClientOptions(): Promise<ClientOption[]> {
+export async function fetchClientsForForm() {
   noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("clients").select("id, name").order("name", { ascending: true })
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase.from("clients").select("id, name")
 
   if (error) {
-    console.error("Database Error (fetchClientOptions):", error)
-    throw new Error("Failed to fetch client options.")
+    console.error("Database Error:", error)
+    throw new Error("Failed to fetch clients for form.")
   }
 
-  return (data ?? []).map((c) => ({ ...c, id: String(c.id), name: c.name ?? "" }))
+  return data
 }

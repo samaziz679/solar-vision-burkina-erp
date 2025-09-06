@@ -1,21 +1,35 @@
-export const dynamic = "force-dynamic"
-export const revalidate = 0
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { fetchProducts } from "@/lib/data/products"
+import { fetchClients } from "@/lib/data/clients"
+import SaleForm from "@/components/sales/sale-form"
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
-import { fetchProductOptions } from "@/lib/data/products"
-import { fetchClientOptions } from "@/lib/data/clients"
-import { SaleForm } from "@/components/sales/sale-form"
 
 export default async function NewSalePage() {
-  const [products, clients] = await Promise.all([fetchProductOptions(), fetchClientOptions()])
+  const productsResult = await fetchProducts(1, 1000) // Get up to 1000 products
+  const products = productsResult.products || []
+  const clients = await fetchClients()
+
+  const productOptions = products.map((product) => ({
+    id: product.id,
+    name: product.name,
+    prix_vente_detail_1: product.prix_vente_detail_1,
+    prix_vente_detail_2: product.prix_vente_detail_2,
+    prix_vente_gros: product.prix_vente_gros,
+    stock_quantity: product.quantity,
+    image: product.image,
+  }))
+
+  const clientOptions = clients.map((client) => ({
+    id: client.id,
+    name: client.name,
+  }))
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -34,18 +48,13 @@ export default async function NewSalePage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink>New Sale</BreadcrumbLink>
+            <BreadcrumbPage>New Sale</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <Card>
-        <CardHeader>
-          <CardTitle>Create New Sale</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SaleForm products={products} clients={clients} />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6">
+        <SaleForm products={productOptions} clients={clientOptions} />
+      </div>
     </main>
   )
 }

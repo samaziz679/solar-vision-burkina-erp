@@ -1,61 +1,79 @@
-import "server-only"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { unstable_noStore as noStore } from "next/cache"
-import { getAdminClient } from "@/lib/supabase/admin"
 import type { Product } from "@/lib/supabase/types"
 
-export type ProductOption = {
-  id: string
-  name: string
-  prix_vente_detail_1: number | null
-  prix_vente_gros_1: number | null
-  prix_achat: number | null
-}
-
-export async function fetchProducts(): Promise<Product[]> {
+export async function fetchProducts(page = 1, limit = 10) {
   noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
+  const supabase = await createSupabaseServerClient()
+
+  // Calculate offset for pagination
+  const offset = (page - 1) * limit
+
+  // Get total count for pagination info
+  const { count } = await supabase.from("products").select("*", { count: "exact", head: true })
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      `
+      id,
+      name,
+      description,
+      type,
+      quantity,
+      prix_achat,
+      prix_vente_detail_1,
+      prix_vente_detail_2,
+      prix_vente_gros,
+      unit,
+      image,
+      created_at
+    `,
+    )
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) {
-    console.error("Database Error (fetchProducts):", error)
+    console.error("Database Error:", error)
     throw new Error("Failed to fetch products.")
   }
 
-  return (data ?? []) as Product[]
+  const totalPages = Math.ceil((count || 0) / limit)
+
+  return {
+    products: data as Product[],
+    totalPages,
+    currentPage: page,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
+    totalCount: count || 0,
+  }
 }
 
-export async function fetchProductById(id: string): Promise<Product | null> {
+export async function fetchProductById(id: string) {
   noStore()
-  const supabase = getAdminClient()
+  if (!id) return null
+
+  const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
 
   if (error) {
-    if (error.code === "PGRST116") return null
-    console.error("Database Error (fetchProductById):", error)
-    throw new Error("Failed to fetch product.")
+    console.error("Database Error:", error)
+    return null
   }
 
-  return (data ?? null) as Product | null
+  return data as Product | null
 }
 
-export async function fetchProductOptions(): Promise<ProductOption[]> {
+export async function fetchProductsForForm() {
   noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, name, prix_vente_detail_1, prix_vente_gros_1, prix_achat")
-    .order("name", { ascending: true })
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase.from("products").select("id, name, prix_vente_detail_1")
 
   if (error) {
-    console.error("Database Error (fetchProductOptions):", error)
-    throw new Error("Failed to fetch product options.")
+    console.error("Database Error:", error)
+    throw new Error("Failed to fetch products for form.")
   }
 
-  return (data ?? []).map((p) => ({
-    id: String(p.id),
-    name: p.name ?? "",
-    prix_vente_detail_1: p.prix_vente_detail_1 as number | null,
-    prix_vente_gros_1: p.prix_vente_gros_1 as number | null,
-    prix_achat: p.prix_achat as number | null,
-  }))
+  return data
 }

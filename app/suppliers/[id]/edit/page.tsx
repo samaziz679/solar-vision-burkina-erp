@@ -1,6 +1,6 @@
-import { fetchSupplierById } from "@/lib/data/suppliers"
-import { EditSupplierForm } from "@/components/suppliers/edit-supplier-form"
 import { notFound } from "next/navigation"
+import { fetchSupplierById } from "@/lib/data/suppliers"
+import SupplierForm from "@/components/suppliers/supplier-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,8 +11,14 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 
-export default async function EditSupplierPage({ params }: { params: { id: string } }) {
-  const id = params.id
+type PageProps = {
+  params: {
+    id: string
+  }
+}
+
+export default async function EditSupplierPage({ params }: PageProps) {
+  const { id } = params
   const supplier = await fetchSupplierById(id)
 
   if (!supplier) {
@@ -45,7 +51,7 @@ export default async function EditSupplierPage({ params }: { params: { id: strin
           <CardTitle>Edit Supplier</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditSupplierForm initialData={supplier} />
+          <SupplierForm supplier={supplier} />
         </CardContent>
       </Card>
     </main>

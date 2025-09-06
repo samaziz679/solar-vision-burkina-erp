@@ -1,49 +1,121 @@
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+"use client"
+
+import type React from "react"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
+import { createClient, updateClient } from "@/app/clients/actions"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { createClientAction, updateClientAction } from "@/app/clients/actions"
 import type { Client } from "@/lib/supabase/types"
 
-interface ClientFormProps {
-  client?: Client
-}
+export default function ClientForm({ client }: { client?: Client }) {
+  const [isLoading, setIsLoading] = useState(false)
 
-export default function ClientForm({ client }: ClientFormProps) {
-  // Bind the appropriate Server Action.
-  const formAction = client?.id ? updateClientAction.bind(null, client.id) : createClientAction
+  const splitName = (fullName: string) => {
+    const parts = fullName.trim().split(" ")
+    return {
+      firstName: parts[0] || "",
+      lastName: parts.slice(1).join(" ") || "",
+    }
+  }
+
+  const clientName = client?.name ? splitName(client.name) : { firstName: "", lastName: "" }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsLoading(true)
+    const formData = new FormData(event.currentTarget)
+
+    if (client) {
+      await updateClient(client.id, { success: false }, formData)
+    } else {
+      await createClient({ success: false }, formData)
+    }
+    // Note: redirect() in server actions will handle navigation
+    setIsLoading(false)
+  }
+
+  const renderErrors = (errors: string[] | undefined) => {
+    if (!errors || !Array.isArray(errors)) return null
+    return errors.map((error: string) => (
+      <p className="mt-2 text-sm text-red-500" key={error}>
+        {error}
+      </p>
+    ))
+  }
 
   return (
-    <form action={formAction as unknown as string} className="space-y-4">
-      <input type="hidden" name="id" value={client?.id ?? ""} />
-
-      <div className="grid gap-2">
-        <Label htmlFor="name">Client Name</Label>
-        <Input id="name" name="name" type="text" defaultValue={client?.name ?? ""} required />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+            Prénom
+          </label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            defaultValue={clientName.firstName}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+            Nom de famille
+          </label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            defaultValue={clientName.lastName}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          />
+        </div>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="contact_person">Contact Person</Label>
-        <Input id="contact_person" name="contact_person" type="text" defaultValue={client?.contact_person ?? ""} />
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          E-mail
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          defaultValue={client?.email || ""}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          required
+        />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" defaultValue={client?.email ?? ""} />
+      <div>
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+          Téléphone
+        </label>
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          defaultValue={client?.phone || ""}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="phone_number">Phone Number</Label>
-        <Input id="phone_number" name="phone_number" type="tel" defaultValue={client?.phone_number ?? ""} />
+      <div>
+        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+          Adresse
+        </label>
+        <textarea
+          id="address"
+          name="address"
+          rows={3}
+          defaultValue={client?.address || ""}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        />
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="address">Address</Label>
-        <Textarea id="address" name="address" defaultValue={client?.address ?? ""} />
-      </div>
-
-      <Button type="submit" className="w-full">
-        {client ? "Update Client" : "Create Client"}
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {isLoading ? (client ? "Mise à jour..." : "Création...") : client ? "Modifier Client" : "Créer Client"}
       </Button>
     </form>
   )

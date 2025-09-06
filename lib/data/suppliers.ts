@@ -1,46 +1,44 @@
-import "server-only"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { unstable_noStore as noStore } from "next/cache"
-import { getAdminClient } from "@/lib/supabase/admin"
 import type { Supplier } from "@/lib/supabase/types"
 
-export type SupplierOption = Pick<Supplier, "id" | "name">
-
-export async function fetchSuppliers(): Promise<Supplier[]> {
+export async function fetchSuppliers() {
   noStore()
-  const supabase = getAdminClient()
+  const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase.from("suppliers").select("*").order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Database Error (fetchSuppliers):", error)
+    console.error("Database Error:", error)
     throw new Error("Failed to fetch suppliers.")
   }
 
-  return (data ?? []) as Supplier[]
+  return data as Supplier[]
 }
 
-export async function fetchSupplierById(id: string): Promise<Supplier | null> {
+export async function fetchSupplierById(id: string) {
   noStore()
-  const supabase = getAdminClient()
+  if (!id) return null
+
+  const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).single()
 
   if (error) {
-    if (error.code === "PGRST116") return null
-    console.error("Database Error (fetchSupplierById):", error)
-    throw new Error("Failed to fetch supplier.")
+    console.error("Database Error:", error)
+    return null
   }
 
-  return (data ?? null) as Supplier | null
+  return data as Supplier | null
 }
 
-export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
+export async function fetchSuppliersForForm() {
   noStore()
-  const supabase = getAdminClient()
-  const { data, error } = await supabase.from("suppliers").select("id, name").order("name", { ascending: true })
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase.from("suppliers").select("id, name")
 
   if (error) {
-    console.error("Database Error (fetchSupplierOptions):", error)
-    throw new Error("Failed to fetch supplier options.")
+    console.error("Database Error:", error)
+    throw new Error("Failed to fetch suppliers for form.")
   }
 
-  return (data ?? []).map((s) => ({ ...s, id: String(s.id), name: s.name ?? "" }))
+  return data
 }

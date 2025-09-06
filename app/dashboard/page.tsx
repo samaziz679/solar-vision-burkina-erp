@@ -1,90 +1,116 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { fetchCardData } from "@/lib/data/dashboard"
-import { DollarSign, ShoppingCart, Package } from "lucide-react"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
-import { formatMoney } from "@/lib/currency"
-
-function toIntSafe(value: unknown) {
-  const n = Number(value)
-  return Number.isFinite(n) ? Math.trunc(n) : 0
-}
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getDashboardData } from "@/lib/data/dashboard"
+import { getCompanyConfig } from "@/lib/config/company"
 
 export default async function DashboardPage() {
-  const supabase = createClient()
-  let userEmail: string | null = null
+  const cookieStore = cookies()
+  const company = getCompanyConfig()
 
-  try {
-    const { data, error } = await supabase.auth.getUser()
-    if (!error && data?.user) userEmail = data.user.email ?? null
-  } catch (e) {
-    console.error("dashboard: auth.getUser failed", e)
-  }
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+    },
+  })
 
-  // Resilient: returns zeros on failure; never throws
-  const { totalSales, totalExpenses, totalProducts } = await fetchCardData()
+  const dashboardData = await getDashboardData(supabase)
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p className="mt-2 text-muted-foreground">
-        {userEmail ? `Signed in as ${userEmail}` : "No user session detected."}
-      </p>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink>Overview</BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-solar-orange">Tableau de bord</h1>
+        <p className="text-muted-foreground">{company.tagline}</p>
+      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+      {/* ... existing dashboard cards ... */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-solar-orange">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total des ventes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMoney(totalSales)}</div>
-            <p className="text-xs text-muted-foreground">Total revenue from all sales</p>
+            <div className="text-2xl font-bold text-solar-orange">{dashboardData.totalSales}</div>
+            <p className="text-xs text-muted-foreground">+20,1% par rapport au mois dernier</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-sky-blue">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Produits</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMoney(totalExpenses)}</div>
-            <p className="text-xs text-muted-foreground">Total amount spent on expenses</p>
+            <div className="text-2xl font-bold text-sky-blue">{dashboardData.totalProducts}</div>
+            <p className="text-xs text-muted-foreground">+180,1% par rapport au mois dernier</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products in Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Clients</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{toIntSafe(totalProducts)}</div>
-            <p className="text-xs text-muted-foreground">Sum of all product quantities</p>
+            <div className="text-2xl font-bold text-green-600">{dashboardData.totalClients}</div>
+            <p className="text-xs text-muted-foreground">+19% par rapport au mois dernier</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-amber-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Fournisseurs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{dashboardData.totalSuppliers}</div>
+            <p className="text-xs text-muted-foreground">+201 depuis la dernière heure</p>
           </CardContent>
         </Card>
       </div>
-    </main>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-orange-50/30">
+          <CardHeader>
+            <CardTitle className="text-solar-orange">Ventes récentes</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <div className="space-y-4">
+              {dashboardData.recentSales.map((sale, index) => (
+                <div key={index} className="flex items-center p-2 rounded-lg hover:bg-orange-50/50 transition-colors">
+                  <div className="ml-4 space-y-1">
+                    <p className="text-sm font-medium leading-none">Vente #{sale.id}</p>
+                    <p className="text-sm text-muted-foreground">{sale.client_name}</p>
+                  </div>
+                  <div className="ml-auto font-medium text-solar-orange">
+                    {company.currency} {sale.total_amount}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-3 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-blue-50/30">
+          <CardHeader>
+            <CardTitle className="text-sky-blue">Articles en rupture de stock</CardTitle>
+            <CardDescription>Articles qui nécessitent un réapprovisionnement</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {dashboardData.lowStockItems.map((item, index) => (
+                <div key={index} className="flex items-center p-2 rounded-lg hover:bg-blue-50/50 transition-colors">
+                  <div className="ml-4 space-y-1">
+                    <p className="text-sm font-medium leading-none">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Stock: <span className="text-amber-600 font-medium">{item.quantity}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }

@@ -1,56 +1,32 @@
+"use client"
+
+import type React from "react"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { updateSupplier } from "@/app/suppliers/actions"
+import type { Supplier } from "@/lib/supabase/types"
 
-type Supplier = {
-  id: string
-  name: string
-  contact_person: string | null
-  email: string | null
-  phone_number: string | null
-  address: string | null
-}
+export function EditSupplierForm({ supplier }: { supplier: Supplier }) {
+  const [isLoading, setIsLoading] = useState(false)
 
-export type EditSupplierFormProps = {
-  initialData: Supplier
-}
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsLoading(true)
+    const formData = new FormData(event.currentTarget)
 
-export function EditSupplierForm({ initialData }: EditSupplierFormProps) {
-  const formAction = updateSupplier.bind(null, initialData.id) as unknown as string
+    await updateSupplier(supplier.id, { success: false }, formData)
+    // Note: redirect() in server actions will handle navigation
+    setIsLoading(false)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="id" value={initialData.id} />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* ... existing form fields ... */}
 
-      <div className="grid gap-2">
-        <Label htmlFor="name">Supplier Name</Label>
-        <Input id="name" name="name" type="text" defaultValue={initialData.name} required />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="contact_person">Contact Person</Label>
-        <Input id="contact_person" name="contact_person" type="text" defaultValue={initialData.contact_person ?? ""} />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" defaultValue={initialData.email ?? ""} />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="phone_number">Phone Number</Label>
-        <Input id="phone_number" name="phone_number" type="tel" defaultValue={initialData.phone_number ?? ""} />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="address">Address</Label>
-        <Textarea id="address" name="address" defaultValue={initialData.address ?? ""} />
-      </div>
-
-      <Button type="submit" className="w-full">
-        Update Supplier
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {isLoading ? "Updating..." : "Update Supplier"}
       </Button>
     </form>
   )

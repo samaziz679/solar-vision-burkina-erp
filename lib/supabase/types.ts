@@ -1,202 +1,155 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   public: {
     Tables: {
-      banking_accounts: {
-        Row: {
-          account_name: string
-          account_number: string
-          balance: number
-          bank_name: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          account_name: string
-          account_number: string
-          balance?: number
-          bank_name: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Update: {
-          account_name?: string
-          account_number?: string
-          balance?: number
-          bank_name?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "banking_accounts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       clients: {
         Row: {
-          address: string | null
-          contact_person: string | null
-          created_at: string
-          email: string | null
           id: string
           name: string
-          phone_number: string | null
-          user_id: string
+          phone: string | null
+          email: string | null
+          address: string | null
+          created_at: string
+          created_by: string | null
         }
         Insert: {
-          address?: string | null
-          contact_person?: string | null
-          created_at?: string
-          email?: string | null
           id?: string
           name: string
-          phone_number?: string | null
-          user_id?: string
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
         }
         Update: {
-          address?: string | null
-          contact_person?: string | null
-          created_at?: string
-          email?: string | null
           id?: string
           name?: string
-          phone_number?: string | null
-          user_id?: string
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "clients_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       expenses: {
         Row: {
-          amount: number
-          category: string | null
-          created_at: string
-          date: string
-          description: string | null
           id: string
-          user_id: string
+          description: string
+          category: string
+          amount: number
+          expense_date: string
+          created_by: string | null
+          notes: string | null
         }
         Insert: {
-          amount: number
-          category?: string | null
-          created_at?: string
-          date: string
-          description?: string | null
           id?: string
-          user_id?: string
+          description: string
+          category: string
+          amount: number
+          expense_date?: string
+          created_by?: string | null
+          notes?: string | null
         }
         Update: {
-          amount?: number
-          category?: string | null
-          created_at?: string
-          date?: string
-          description?: string | null
           id?: string
-          user_id?: string
+          description?: string
+          category?: string
+          amount?: number
+          expense_date?: string
+          created_by?: string | null
+          notes?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "expenses_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       products: {
         Row: {
-          created_at: string
-          description: string | null
           id: string
           name: string
-          price: number
-          sku: string | null
-          stock_quantity: number
-          user_id: string
+          type: string | null
+          quantity: number
+          prix_achat: number
+          prix_vente_detail_1: number
+          prix_vente_detail_2: number
+          prix_vente_gros: number
+          seuil_stock_bas: number
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          unit: string | null
+          description: string | null
+          image: string | null
         }
         Insert: {
-          created_at?: string
-          description?: string | null
           id?: string
           name: string
-          price: number
-          sku?: string | null
-          stock_quantity?: number
-          user_id?: string
+          type?: string | null
+          quantity?: number
+          prix_achat?: number
+          prix_vente_detail_1?: number
+          prix_vente_detail_2?: number
+          prix_vente_gros?: number
+          seuil_stock_bas?: number
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          unit?: string | null
+          description?: string | null
+          image?: string | null
         }
         Update: {
-          created_at?: string
-          description?: string | null
           id?: string
           name?: string
-          price?: number
-          sku?: string | null
-          stock_quantity?: number
-          user_id?: string
+          type?: string | null
+          quantity?: number
+          prix_achat?: number
+          prix_vente_detail_1?: number
+          prix_vente_detail_2?: number
+          prix_vente_gros?: number
+          seuil_stock_bas?: number
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          unit?: string | null
+          description?: string | null
+          image?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "products_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       purchases: {
         Row: {
-          created_at: string
           id: string
-          product_id: string
-          purchase_date: string
+          product_id: string | null
+          supplier_id: string | null
           quantity: number
-          supplier_id: string
-          total_amount: number
-          user_id: string
+          unit_price: number
+          total: number
+          purchase_date: string
+          created_by: string | null
+          notes: string | null
         }
         Insert: {
-          created_at?: string
           id?: string
-          product_id: string
-          purchase_date: string
+          product_id?: string | null
+          supplier_id?: string | null
           quantity: number
-          supplier_id: string
-          total_amount: number
-          user_id?: string
+          unit_price: number
+          total: number
+          purchase_date?: string
+          created_by?: string | null
+          notes?: string | null
         }
         Update: {
-          created_at?: string
           id?: string
-          product_id?: string
-          purchase_date?: string
+          product_id?: string | null
+          supplier_id?: string | null
           quantity?: number
-          supplier_id?: string
-          total_amount?: number
-          user_id?: string
+          unit_price?: number
+          total?: number
+          purchase_date?: string
+          created_by?: string | null
+          notes?: string | null
         }
         Relationships: [
           {
@@ -213,45 +166,50 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "purchases_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       sales: {
         Row: {
-          client_id: string
-          created_at: string
           id: string
-          product_id: string
+          product_id: string | null
+          client_id: string | null
           quantity: number
+          price_plan: string
+          unit_price: number
+          total: number
           sale_date: string
-          total_amount: number
-          user_id: string
+          created_by: string | null
+          notes: string | null
+          quantity_sold: number
+          total_price: number
         }
         Insert: {
-          client_id: string
-          created_at?: string
           id?: string
-          product_id: string
+          product_id?: string | null
+          client_id?: string | null
           quantity: number
-          sale_date: string
-          total_amount: number
-          user_id?: string
+          price_plan: string
+          unit_price: number
+          total: number
+          sale_date?: string
+          created_by?: string | null
+          notes?: string | null
+          quantity_sold?: number
+          total_price?: number
         }
         Update: {
-          client_id?: string
-          created_at?: string
           id?: string
-          product_id?: string
+          product_id?: string | null
+          client_id?: string | null
           quantity?: number
+          price_plan?: string
+          unit_price?: number
+          total?: number
           sale_date?: string
-          total_amount?: number
-          user_id?: string
+          created_by?: string | null
+          notes?: string | null
+          quantity_sold?: number
+          total_price?: number
         }
         Relationships: [
           {
@@ -268,71 +226,35 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sales_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       suppliers: {
         Row: {
-          address: string | null
-          contact_person: string | null
-          created_at: string
-          email: string | null
           id: string
           name: string
-          phone_number: string | null
-          user_id: string
+          phone: string | null
+          email: string | null
+          address: string | null
+          created_at: string
+          created_by: string | null
         }
         Insert: {
-          address?: string | null
-          contact_person?: string | null
-          created_at?: string
-          email?: string | null
           id?: string
           name: string
-          phone_number?: string | null
-          user_id?: string
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
         }
         Update: {
-          address?: string | null
-          contact_person?: string | null
-          created_at?: string
-          email?: string | null
           id?: string
           name?: string
-          phone_number?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "suppliers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      users: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-        }
-        Insert: {
+          phone?: string | null
+          email?: string | null
+          address?: string | null
           created_at?: string
-          email: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
+          created_by?: string | null
         }
         Relationships: []
       }
@@ -367,10 +289,8 @@ export type Tables<
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
-        Database["public"]["Views"])
-    ? (Database["public"]["Tables"] &
-        Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    ? (Database["public"]["Tables"] & Database["public"]["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -378,9 +298,7 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -399,9 +317,7 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof Database["public"]["Tables"]
-    | { schema: keyof Database },
+  PublicTableNameOrOptions extends keyof Database["public"]["Tables"] | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
@@ -420,9 +336,7 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof Database["public"]["Enums"]
-    | { schema: keyof Database },
+  PublicEnumNameOrOptions extends keyof Database["public"]["Enums"] | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
@@ -432,11 +346,39 @@ export type Enums<
     ? Database["public"]["Enums"][PublicEnumNameOrOptions]
     : never
 
-export type BankingAccount = Tables<'banking_accounts'>;
-export type Client = Tables<'clients'>;
-export type Expense = Tables<'expenses'>;
-export type Product = Tables<'products'>;
-export type Purchase = Tables<'purchases'>;
-export type Sale = Tables<'sales'>;
-export type Supplier = Tables<'suppliers'>;
-export type User = Tables<'users'>;
+export type Product = Tables<"products">
+export type Client = Tables<"clients">
+export type Sale = Tables<"sales">
+export type Supplier = Tables<"suppliers">
+export type Purchase = Tables<"purchases">
+export type Expense = Tables<"expenses">
+
+// Adding missing SaleItem type for compatibility
+export type SaleItem = {
+  id: string
+  sale_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
+  created_at: string
+  products?: Product | null
+}
+
+export type SaleWithDetails = Sale & {
+  clients: Client | null
+  products: Product | null
+}
+
+// Adding missing SaleWithItems export
+export type SaleWithItems = Sale & {
+  sale_items: SaleItem[]
+  clients: Client | null
+}
+
+export type PurchaseWithDetails = Purchase & {
+  suppliers: Supplier | null
+  products: Product | null
+}
+
+// Adding missing PurchaseWithItems export
+export type PurchaseWithItems = PurchaseWithDetails

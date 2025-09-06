@@ -1,41 +1,39 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Client } from '@/lib/supabase/types';
-import Link from 'next/link';
-import { PencilIcon, TrashIcon } from 'lucide-react';
-import DeleteClientDialog from './delete-client-dialog';
+import { useState } from "react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import type { Client } from "@/lib/supabase/types"
+import Link from "next/link"
+import { PencilIcon, TrashIcon } from "lucide-react"
+import DeleteClientDialog from "./delete-client-dialog"
 
 interface ClientListProps {
-  clients: Client[];
+  clients: Client[]
 }
 
 export default function ClientList({ clients }: ClientListProps) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
 
   const handleDeleteClick = (id: string) => {
-    setSelectedClientId(id);
-    setIsDeleteDialogOpen(true);
-  };
+    setSelectedClientId(id)
+    setIsDeleteDialogOpen(true)
+  }
 
   const handleCloseDialog = () => {
-    setIsDeleteDialogOpen(false);
-    setSelectedClientId(null);
-  };
+    setIsDeleteDialogOpen(false)
+    setSelectedClientId(null)
+  }
 
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Contact Person</TableHead>
+            <TableHead>Nom</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Phone Number</TableHead>
-            <TableHead>Address</TableHead>
+            <TableHead>Téléphone</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -43,20 +41,18 @@ export default function ClientList({ clients }: ClientListProps) {
           {clients.map((client) => (
             <TableRow key={client.id}>
               <TableCell className="font-medium">{client.name}</TableCell>
-              <TableCell>{client.contact_person}</TableCell>
               <TableCell>{client.email}</TableCell>
-              <TableCell>{client.phone_number}</TableCell>
-              <TableCell>{client.address}</TableCell>
+              <TableCell>{client.phone}</TableCell>
               <TableCell className="flex justify-end gap-2">
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/clients/${client.id}/edit`}>
                     <PencilIcon className="h-4 w-4" />
-                    <span className="sr-only">Edit</span>
+                    <span className="sr-only">Modifier</span>
                   </Link>
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(client.id)}>
+                <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(client.id.toString())}>
                   <TrashIcon className="h-4 w-4" />
-                  <span className="sr-only">Delete</span>
+                  <span className="sr-only">Supprimer</span>
                 </Button>
               </TableCell>
             </TableRow>
@@ -65,12 +61,8 @@ export default function ClientList({ clients }: ClientListProps) {
       </Table>
 
       {selectedClientId && (
-        <DeleteClientDialog
-          clientId={selectedClientId}
-          isOpen={isDeleteDialogOpen}
-          onClose={handleCloseDialog}
-        />
+        <DeleteClientDialog clientId={selectedClientId} isOpen={isDeleteDialogOpen} onClose={handleCloseDialog} />
       )}
     </>
-  );
+  )
 }

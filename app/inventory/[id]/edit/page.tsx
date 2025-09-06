@@ -1,16 +1,28 @@
-import { fetchProductById } from '@/lib/data/products';
-import EditProductForm from '@/components/inventory/edit-product-form';
-import { notFound } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
+import { notFound } from "next/navigation"
+import { fetchProductById } from "@/lib/data/products"
+import ProductForm from "@/components/inventory/product-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import Link from "next/link"
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const id = params.id;
-  const product = await fetchProductById(id);
+type PageProps = {
+  params: {
+    id: string
+  }
+}
+
+export default async function EditProductPage({ params }: PageProps) {
+  const { id } = params
+  const product = await fetchProductById(id)
 
   if (!product) {
-    notFound();
+    notFound()
   }
 
   return (
@@ -39,9 +51,9 @@ export default async function EditProductPage({ params }: { params: { id: string
           <CardTitle>Edit Product</CardTitle>
         </CardHeader>
         <CardContent>
-          <EditProductForm product={product} />
+          <ProductForm product={product} />
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

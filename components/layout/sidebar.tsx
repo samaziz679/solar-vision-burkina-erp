@@ -1,73 +1,118 @@
-'use client'
+"use client"
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { BanknoteIcon, CreditCardIcon, HomeIcon, PackageIcon, ShoppingCartIcon, UsersIcon, LogOutIcon, DollarSignIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import type React from "react"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import Image from "next/image"
+import { Home, LineChart, Package, Package2, ShoppingCart, Users, DollarSign, Truck, Settings } from "lucide-react"
+import { usePathname } from "next/navigation"
+import UserButton from "@/components/auth/user-button"
+import { getCurrentUserProfileClient, ROLE_PERMISSIONS, type UserRole } from "@/lib/auth/rbac-client"
+import { useCompany } from "@/components/providers/company-provider"
+
+interface NavigationItem {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  module: string
+}
+
+const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
+  { href: "/dashboard", label: "Tableau de bord", icon: Home, module: "dashboard" },
+  { href: "/inventory", label: "Inventaire", icon: Package, module: "inventory" },
+  { href: "/sales", label: "Ventes", icon: ShoppingCart, module: "sales" },
+  { href: "/purchases", label: "Achats", icon: Truck, module: "purchases" },
+  { href: "/clients", label: "Clients", icon: Users, module: "clients" },
+  { href: "/suppliers", label: "Fournisseurs", icon: Users, module: "suppliers" },
+  { href: "/expenses", label: "Dépenses", icon: DollarSign, module: "expenses" },
+  { href: "/reports", label: "Rapports", icon: LineChart, module: "reports" },
+  { href: "/admin/users", label: "Gestion Utilisateurs", icon: Users, module: "admin" },
+  { href: "/settings", label: "Paramètres", icon: Settings, module: "settings" },
+]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(ALL_NAVIGATION_ITEMS)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [loading, setLoading] = useState(true)
+  const company = useCompany()
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      toast.error(error.message)
-    } else {
-      toast.success('Logged out successfully!')
-      router.push('/login')
-      router.refresh()
+  useEffect(() => {
+    async function loadUserRole() {
+      try {
+        const profile = await getCurrentUserProfileClient()
+        if (profile && profile.status === "active") {
+          setUserRole(profile.role)
+          const permissions = ROLE_PERMISSIONS[profile.role]
+          const filteredItems = ALL_NAVIGATION_ITEMS.filter((item) => permissions.modules.includes(item.module as any))
+          setNavigationItems(filteredItems)
+        }
+      } catch (error) {
+        console.error("Error loading user role:", error)
+        const basicItems = ALL_NAVIGATION_ITEMS.filter((item) =>
+          ["dashboard", "sales", "clients"].includes(item.module),
+        )
+        setNavigationItems(basicItems)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
-  const navItems = [
-    { href: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
-    { href: '/clients', icon: UsersIcon, label: 'Clients' },
-    { href: '/inventory', icon: PackageIcon, label: 'Inventory' },
-    { href: '/sales', icon: ShoppingCartIcon, label: 'Sales' },
-    { href: '/purchases', icon: CreditCardIcon, label: 'Purchases' },
-    { href: '/expenses', icon: DollarSignIcon, label: 'Expenses' },
-    { href: '/banking', icon: BanknoteIcon, label: 'Banking' },
-    { href: '/suppliers', icon: UsersIcon, label: 'Suppliers' }, // Reusing UsersIcon for Suppliers
-  ]
+    loadUserRole()
+  }, [])
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-gray-100/40 dark:bg-gray-800/40">
-      <div className="flex h-[60px] items-center border-b px-6">
-        <Link className="flex items-center gap-2 font-semibold" href="/dashboard">
-          <img src="/placeholder-logo.svg" alt="Solar Vision ERP Logo" className="h-6 w-6" />
-          <span className="">Solar Vision ERP</span>
-        </Link>
-      </div>
-      <div className="flex-1 overflow-auto py-2">
-        <nav className="grid items-start px-4 text-sm font-medium">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-            return (
-              <Link
-                key={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-gray-900 dark:hover:text-gray-50 ${
-                  isActive ? 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-50' : 'text-gray-500 dark:text-gray-400'
-                }`}
-                href={item.href}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
-      <div className="mt-auto p-4 border-t">
-        <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
-          <LogOutIcon className="mr-3 h-4 w-4" />
-          Logout
-        </Button>
+    <div className="hidden border-r bg-muted/40 md:block">
+      <div className="flex h-full max-h-screen flex-col gap-2">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <div className="flex items-center gap-2">
+              {company.logo ? (
+                <Image
+                  src={company.logo || "/placeholder.svg"}
+                  alt={`${company.name} Logo`}
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none"
+                    e.currentTarget.nextElementSibling?.classList.remove("hidden")
+                  }}
+                />
+              ) : null}
+              <Package2 className={`h-6 w-6 ${company.logo ? "hidden" : ""}`} />
+            </div>
+            <span className="">{company.name}</span>
+          </Link>
+          <UserButton />
+        </div>
+        <div className="flex-1">
+          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+            {userRole && !loading && (
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b mb-2">
+                Rôle: <span className="font-medium capitalize">{userRole}</span>
+              </div>
+            )}
+            {navigationItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+                    pathname === item.href ? "bg-muted text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
       </div>
     </div>
   )
 }
+
+export default Sidebar

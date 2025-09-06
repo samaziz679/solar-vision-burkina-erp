@@ -1,12 +1,18 @@
-import { fetchClients } from '@/lib/data/clients';
-import ClientList from '@/components/clients/client-list';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { fetchClients } from "@/lib/data/clients"
+import ClientList from "@/components/clients/client-list"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 export default async function ClientsPage() {
-  const clients = await fetchClients();
+  const clients = await fetchClients()
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -15,7 +21,7 @@ export default async function ClientsPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard">Tableau de bord</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -25,7 +31,7 @@ export default async function ClientsPage() {
           </BreadcrumbList>
         </Breadcrumb>
         <Button asChild className="ml-auto">
-          <Link href="/clients/new">Add New Client</Link>
+          <Link href="/clients/new">Ajouter Nouveau Client</Link>
         </Button>
       </div>
       <Card>
@@ -37,5 +43,5 @@ export default async function ClientsPage() {
         </CardContent>
       </Card>
     </main>
-  );
+  )
 }

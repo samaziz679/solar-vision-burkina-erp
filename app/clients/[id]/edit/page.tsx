@@ -1,6 +1,6 @@
+import { notFound } from "next/navigation"
 import { fetchClientById } from "@/lib/data/clients"
 import ClientForm from "@/components/clients/client-form"
-import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Breadcrumb,
@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 
-export default async function EditClientPage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const id = params.id
+type PageProps = {
+  params: {
+    id: string
+  }
+}
+
+export default async function EditClientPage({ params }: PageProps) {
+  const { id } = params
   const client = await fetchClientById(id)
 
   if (!client) {

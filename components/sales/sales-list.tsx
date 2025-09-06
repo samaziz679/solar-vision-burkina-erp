@@ -2,86 +2,88 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatMoney } from "@/lib/currency"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { Pencil, Trash2 } from "lucide-react"
+import { DeleteSaleDialog } from "./delete-sale-dialog"
+import { useState } from "react"
 
-type BaseSale = {
+type SaleForList = {
   id: string
-  created_at: string
-  product_id: string
-  client_id: string
-  sale_date: string
-  quantity: number
+  date: string
   total_amount: number
-  user_id: string
+  client_name: string
 }
 
-// Support either flat aliased fields or joined objects
-type SaleJoins = {
-  client_name?: string | null
-  product_name?: string | null
-  clients?: { id: string; name: string | null } | null
-  products?: { id: string; name: string | null } | null
-}
+export function SalesList({ sales }: { sales: SaleForList[] }) {
+  const router = useRouter()
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [saleToDelete, setSaleToDelete] = useState<string | null>(null)
 
-export type SaleRow = BaseSale & Partial<SaleJoins>
+  const handleEdit = (id: string) => {
+    router.push(`/sales/${id}/edit`)
+  }
 
-type Props = {
-  data?: SaleRow[]
-  sales?: SaleRow[]
-}
-
-function formatDate(d: string | Date) {
-  const date = typeof d === "string" ? new Date(d) : d
-  if (Number.isNaN(date.getTime())) return d?.toString() ?? "N/A"
-  return date.toLocaleDateString()
-}
-
-function safeClientName(row: SaleRow) {
-  return row.client_name ?? row.clients?.name ?? "N/A"
-}
-
-function safeProductName(row: SaleRow) {
-  return row.product_name ?? row.products?.name ?? "N/A"
-}
-
-function SalesListComponent({ data, sales }: Props) {
-  const rows = data ?? sales ?? []
+  const handleDelete = (id: string) => {
+    setSaleToDelete(id)
+    setDeleteDialogOpen(true)
+  }
 
   return (
     <div className="w-full overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Sale Date</TableHead>
+            <TableHead>ID Vente</TableHead>
+            <TableHead>Date</TableHead>
             <TableHead>Client</TableHead>
-            <TableHead>Product</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right">Montant Total</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.length === 0 ? (
+          {sales.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center">
-                No sales found.
+                Aucune vente trouvée.
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{formatDate(row.sale_date)}</TableCell>
-                <TableCell>{safeClientName(row)}</TableCell>
-                <TableCell>{safeProductName(row)}</TableCell>
-                <TableCell className="text-right">{row.quantity}</TableCell>
-                <TableCell className="text-right">{formatMoney(row.total_amount)}</TableCell>
+            sales.map((sale) => (
+              <TableRow key={sale.id}>
+                <TableCell>
+                  <Badge variant="outline">VENTE-{sale.id.slice(0, 8)}</Badge>
+                </TableCell>
+                <TableCell>{new Date(sale.date).toLocaleDateString("fr-FR")}</TableCell>
+                <TableCell>{sale.client_name}</TableCell>
+                <TableCell className="text-right">{formatMoney(sale.total_amount)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(sale.id)}>
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Modifier la Vente</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(sale.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Supprimer la Vente</span>
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+
+      {saleToDelete && (
+        <DeleteSaleDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} saleId={saleToDelete} />
+      )}
     </div>
   )
 }
-
-// Export both named and default to be compatible with varying imports
-export { SalesListComponent as SalesList }
-export default SalesListComponent
